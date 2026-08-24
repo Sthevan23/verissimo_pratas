@@ -55,6 +55,29 @@ const BERLOQUES_TIPOS = [
   },
 ] as const
 
+const MASCULINOS_TIPOS = [
+  {
+    slug: 'masculinos',
+    title: 'Ver tudo',
+    description: 'Toda a linha masculina',
+  },
+  {
+    slug: 'masculinos-colares',
+    title: 'Colares',
+    description: 'Colares masculinos em prata 925',
+  },
+  {
+    slug: 'masculinos-pulseiras',
+    title: 'Pulseiras',
+    description: 'Pulseiras masculinas em prata 925',
+  },
+  {
+    slug: 'masculinos-pingentes',
+    title: 'Pingentes',
+    description: 'Pingentes masculinos em prata 925',
+  },
+] as const
+
 function isTrioProduct(name: string) {
   return /trio/i.test(name)
 }
@@ -94,6 +117,16 @@ function isBerloquesCategory(cat: string) {
   return cat === 'berloques' || cat === 'berloques-pulseiras'
 }
 
+function isMasculinosCategory(cat: string) {
+  return (
+    cat === 'masculinos' ||
+    cat === 'masculinos-colares' ||
+    cat === 'masculinos-pulseiras' ||
+    cat === 'masculinos-pingentes' ||
+    cat === 'linha-masculina'
+  )
+}
+
 export function Products() {
   const [searchParams] = useSearchParams()
   const category = searchParams.get('categoria')
@@ -109,6 +142,12 @@ export function Products() {
     category === 'pulseiras-infantil'
   const isBerloquesFamily =
     category === 'berloques' || category === 'berloques-pulseiras'
+  const isMasculinosFamily =
+    category === 'masculinos' ||
+    category === 'masculinos-colares' ||
+    category === 'masculinos-pulseiras' ||
+    category === 'masculinos-pingentes' ||
+    category === 'linha-masculina'
   const familyHub = isBrincosFamily
     ? { label: 'Brincos', tipos: BRINCOS_TIPOS, hint: 'Escolha o formato certo para a quantidade de furos.' }
     : isPulseirasFamily
@@ -119,7 +158,13 @@ export function Products() {
             tipos: BERLOQUES_TIPOS,
             hint: 'Berloques avulsos ou pulseiras para montar do seu jeito.',
           }
-        : null
+        : isMasculinosFamily
+          ? {
+              label: 'Masculinos',
+              tipos: MASCULINOS_TIPOS,
+              hint: 'Colares, pulseiras e pingentes da linha masculina.',
+            }
+          : null
 
   const filtered = useMemo(() => {
     let result = [...products]
@@ -174,6 +219,14 @@ export function Products() {
             (p.category === 'berloques' &&
               isPulseiraBerloqueProduct(p.name, p.description))
         )
+      } else if (category === 'masculinos' || category === 'linha-masculina') {
+        result = result.filter((p) => isMasculinosCategory(p.category))
+      } else if (category === 'masculinos-colares') {
+        result = result.filter((p) => p.category === 'masculinos-colares')
+      } else if (category === 'masculinos-pulseiras') {
+        result = result.filter((p) => p.category === 'masculinos-pulseiras')
+      } else if (category === 'masculinos-pingentes') {
+        result = result.filter((p) => p.category === 'masculinos-pingentes')
       } else {
         result = result.filter((p) => p.category === category)
       }
@@ -229,7 +282,13 @@ export function Products() {
           </AnimateIn>
 
           {familyHub && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-12 lg:mb-16">
+            <div
+              className={`grid gap-3 sm:gap-4 mb-12 lg:mb-16 ${
+                familyHub.tipos.length > 3
+                  ? 'grid-cols-2 lg:grid-cols-4'
+                  : 'grid-cols-1 sm:grid-cols-3'
+              }`}
+            >
               {familyHub.tipos.map((tipo) => {
                 const active = category === tipo.slug
                 return (
@@ -292,6 +351,13 @@ export function Products() {
                   {' '}
                   Cadastre produtos em <strong>Berloques</strong> ou{' '}
                   <strong>Pulseiras</strong> (para berloques) no painel.
+                </>
+              )}
+              {isMasculinosFamily && (
+                <>
+                  {' '}
+                  Cadastre produtos em <strong>Masculinos</strong> — Colares, Pulseiras ou
+                  Pingentes — no painel.
                 </>
               )}
             </p>
