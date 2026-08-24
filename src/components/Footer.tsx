@@ -5,7 +5,7 @@ import { Logo } from './Logo'
 const footerLinks = {
   marca: [
     { label: 'Sobre nós', href: '/sobre' },
-    { label: 'Nossa história', href: '/sobre' },
+    { label: 'Nossa história', href: '/sobre#historia' },
     { label: 'Contato', href: '/sobre#contato' },
   ],
   atendimento: [

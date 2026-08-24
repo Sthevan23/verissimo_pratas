@@ -31,19 +31,18 @@ export function AboutSection() {
             </h2>
             <div className="space-y-4 text-warm-gray font-light leading-relaxed">
               <p>
-                A Verissimo Pratas nasceu da paixão por transformar prata 925 em
-                peças que carregam significado. Cada anel, brinco e colar é
-                selecionado com rigor estético e cuidado artesanal.
+                A Verissimo Pratas é o sonho de Isadora Veríssimo — 3 anos dedicados
+                à prata 925, com carinho, dedicação e o apoio de quem sempre
+                acreditou nessa história.
               </p>
               <p>
-                Oferecemos garantia vitalícia, certificado de autenticidade e
-                envio em até 24 horas úteis — porque acreditamos que a experiência
-                de compra deve ser tão especial quanto a joia em si.
+                De Boa Esperança para todo o Brasil: peças escolhidas para carregar
+                beleza, delicadeza e significado na sua história também.
               </p>
             </div>
             <div className="mt-8">
-              <Link to="/sobre">
-                <Button variant="outline">Conheça nossa história</Button>
+              <Link to="/sobre#historia">
+                <Button variant="outline">Ler minha história</Button>
               </Link>
             </div>
           </AnimateIn>
