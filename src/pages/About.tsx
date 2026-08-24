@@ -1,7 +1,7 @@
 import { Helmet } from 'react-helmet-async'
 import { ChevronDown, Gem, MessageCircle, Shield, Truck } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { Button } from '../components/ui/Button'
 
@@ -15,6 +15,24 @@ const storyParagraphs = [
   'Cada peça em Prata 925 é escolhida e pensada com muito carinho para vocês, para que possam encontrar aqui não apenas uma joia, mas algo que faça parte da sua história.',
   'Espero, de coração, que vocês também possam se sentir realizadas, confiantes e especiais usando nossas peças, assim como eu me sinto realizando esse sonho todos os dias.',
   'Obrigada por fazerem parte da nossa história. Ela também é feita por vocês.',
+]
+
+const benefits = [
+  {
+    icon: Gem,
+    title: 'Prata 925 autêntica',
+    text: 'Garantia vitalícia em todas as peças.',
+  },
+  {
+    icon: Shield,
+    title: 'Compra segura',
+    text: 'Pagamento protegido e atendimento próximo.',
+  },
+  {
+    icon: Truck,
+    title: 'Envio nacional',
+    text: 'Para todo o Brasil. Frete grátis acima de R$349.',
+  },
 ]
 
 export function About() {
@@ -31,7 +49,6 @@ export function About() {
     }
   }
 
-  // Abre ao chegar no final da página (ou ao abrir /sobre#historia)
   useEffect(() => {
     const el = storyRef.current
     if (!el) return
@@ -61,67 +78,70 @@ export function About() {
       </Helmet>
 
       <div className="header-offset pb-16 sm:pb-20">
-        <section className="container-brand mb-16 lg:mb-24">
-          <AnimateIn className="max-w-3xl mx-auto text-center">
-            <p className="text-[11px] tracking-[0.3em] uppercase text-muted mb-4">
-              Sobre nós
-            </p>
-            <h1 className="heading-display text-4xl lg:text-5xl text-graphite mb-6 leading-tight overflow-visible">
-              Verissimo Pratas 925
-            </h1>
-            <p className="text-lg text-warm-gray font-light leading-relaxed mb-8">
-              Joias em prata 925 pensadas com carinho — da cidade de Boa Esperança
-              para quem busca beleza, delicadeza e significado.
-            </p>
-            <button
-              type="button"
-              onClick={() => openStory(true)}
-              className="inline-flex items-center gap-2 text-[11px] tracking-[0.2em] uppercase text-graphite border-b border-graphite/40 pb-1 hover:border-graphite transition-colors"
-            >
-              Ler minha história
-              <ChevronDown className="w-4 h-4" strokeWidth={1.5} />
-            </button>
-          </AnimateIn>
+        {/* Hero — primeira tela com foto + marca */}
+        <section className="relative min-h-[70vh] lg:min-h-[calc(100dvh-var(--header-height))] flex items-end lg:items-center overflow-hidden bg-off-white">
+          <div className="absolute inset-0">
+            <img
+              src="/products/conjunto-halo-cravejado.png"
+              alt="Joias Verissimo Pratas 925"
+              className="w-full h-full object-cover object-center"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-cream via-cream/85 to-cream/40 lg:bg-gradient-to-r lg:from-cream lg:via-cream/90 lg:to-cream/20" />
+          </div>
+
+          <div className="relative container-brand w-full py-12 sm:py-16 lg:py-20">
+            <AnimateIn className="max-w-xl">
+              <p className="text-[11px] tracking-[0.3em] uppercase text-muted mb-3">
+                Sobre nós · Isadora Veríssimo
+              </p>
+              <h1 className="heading-display text-4xl sm:text-5xl lg:text-6xl text-graphite mb-4 leading-tight overflow-visible">
+                Verissimo
+                <span className="block text-3xl sm:text-4xl lg:text-5xl mt-1 font-light tracking-[0.08em]">
+                  Pratas 925
+                </span>
+              </h1>
+              <p className="text-base sm:text-lg text-warm-gray font-light leading-relaxed mb-8 max-w-md">
+                3 anos de prata 925, de Boa Esperança para todo o Brasil — peças
+                com beleza, delicadeza e significado.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <button type="button" onClick={() => openStory(true)}>
+                  <Button size="lg" className="w-full sm:w-auto inline-flex items-center gap-2">
+                    Ler minha história
+                    <ChevronDown className="w-4 h-4" strokeWidth={1.5} />
+                  </Button>
+                </button>
+                <Link to="/produtos">
+                  <Button variant="outline" size="lg" className="w-full sm:w-auto">
+                    Ver coleção
+                  </Button>
+                </Link>
+              </div>
+            </AnimateIn>
+          </div>
         </section>
 
-        <section className="bg-off-white/60 py-16 lg:py-24 mb-16 lg:mb-20">
-          <div className="container-brand">
-            <div className="grid md:grid-cols-3 gap-10 lg:gap-16">
-              {[
-                {
-                  icon: Gem,
-                  title: 'Prata 925 autêntica',
-                  text: 'Todas as peças são em prata 925 com certificado de garantia vitalícia.',
-                },
-                {
-                  icon: Shield,
-                  title: 'Compra segura',
-                  text: 'Ambiente protegido com as melhores formas de pagamento e proteção ao consumidor.',
-                },
-                {
-                  icon: Truck,
-                  title: 'Envio nacional',
-                  text: 'Entregamos para todo o Brasil com rastreamento. Frete grátis acima de R$349.',
-                },
-              ].map((item, i) => (
-                <AnimateIn key={item.title} delay={i * 0.1}>
-                  <div className="text-center">
-                    <item.icon
-                      className="w-8 h-8 text-silver-dark mx-auto mb-4"
-                      strokeWidth={1.5}
-                    />
-                    <h3 className="font-serif text-xl font-light mb-3">{item.title}</h3>
-                    <p className="text-warm-gray font-light leading-relaxed">{item.text}</p>
+        <section className="border-y border-border bg-cream">
+          <div className="container-brand py-6 sm:py-8">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
+              {benefits.map(({ icon: Icon, title, text }) => (
+                <div key={title} className="flex items-start gap-3">
+                  <Icon className="w-5 h-5 text-silver-dark shrink-0 mt-0.5" strokeWidth={1.5} />
+                  <div>
+                    <p className="text-sm text-graphite mb-0.5">{title}</p>
+                    <p className="text-sm text-warm-gray font-light leading-snug">{text}</p>
                   </div>
-                </AnimateIn>
+                </div>
               ))}
             </div>
           </div>
         </section>
 
-        <section id="contato" className="container-brand mb-16 lg:mb-20 scroll-mt-32">
+        <section id="contato" className="container-brand py-16 lg:py-20 scroll-mt-32">
           <AnimateIn className="max-w-2xl mx-auto text-center">
-            <h2 className="heading-display text-3xl text-graphite mb-4">Fale conosco</h2>
+            <h2 className="heading-display text-3xl text-graphite mb-4 overflow-visible">
+              Fale conosco
+            </h2>
             <p className="text-warm-gray font-light mb-8">
               Estamos prontas para ajudar você a encontrar a peça perfeita.
             </p>
@@ -140,7 +160,7 @@ export function About() {
 
         <section id="faq" className="container-brand max-w-3xl mb-16 lg:mb-24 scroll-mt-32">
           <AnimateIn>
-            <h2 className="heading-display text-2xl text-graphite mb-8 text-center">
+            <h2 className="heading-display text-2xl text-graphite mb-8 text-center overflow-visible">
               Perguntas frequentes
             </h2>
             <div className="space-y-6">
@@ -154,7 +174,6 @@ export function About() {
           </AnimateIn>
         </section>
 
-        {/* História — só aparece ao clicar ou ao rolar até aqui */}
         <section
           id="historia"
           ref={storyRef}
