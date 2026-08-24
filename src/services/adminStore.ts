@@ -137,6 +137,7 @@ function createSeedDatabase(): AdminDatabase {
       email: 'verissimopratass@gmail.com',
       phone: '(35) 99124-0681',
       whatsapp: '5535991240681',
+      // link oficial: api.whatsapp.com/message/UJC2GNIKLZX4K1
       address: 'Boa Esperança — Brasil',
       instagram: '@verissimopratas',
       facebook: 'verissimopratas',
