@@ -94,25 +94,59 @@ export function Header() {
         }`}
       >
         <div className="container-brand">
-          {/* Desktop */}
-          <div className="hidden lg:grid grid-cols-[auto_1fr_auto] items-center gap-6">
-            <div className="justify-self-start">
+          {/* Desktop — logo/ícones em cima, menu em faixa única embaixo */}
+          <div className="hidden lg:block">
+            <div className="flex items-center justify-between gap-6">
               <Logo />
+              <div className="flex items-center gap-4">
+                <IconButton onClick={openSearch} label="Buscar">
+                  <Search className="w-[18px] h-[18px]" strokeWidth={1.5} />
+                </IconButton>
+                <IconButton label="Conta">
+                  <User className="w-[18px] h-[18px]" strokeWidth={1.5} />
+                </IconButton>
+                <Link to="/produtos" className="relative">
+                  <IconButton label="Favoritos">
+                    <Heart className="w-[18px] h-[18px]" strokeWidth={1.5} />
+                  </IconButton>
+                  {favorites.length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-graphite text-cream text-[9px] flex items-center justify-center rounded-full">
+                      {favorites.length}
+                    </span>
+                  )}
+                </Link>
+                <button
+                  onClick={openCart}
+                  className="relative touch-target text-graphite hover:text-charcoal transition-colors"
+                  aria-label="Carrinho"
+                >
+                  <ShoppingBag className="w-[18px] h-[18px]" strokeWidth={1.5} />
+                  {cartCount > 0 && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute top-1 right-1 w-4 h-4 bg-graphite text-cream text-[9px] flex items-center justify-center rounded-full"
+                    >
+                      {cartCount}
+                    </motion.span>
+                  )}
+                </button>
+              </div>
             </div>
 
             <nav
               ref={desktopRef}
-              className="flex items-center justify-center flex-wrap gap-x-4 gap-y-2 xl:gap-x-5"
+              className="mt-4 pt-3 border-t border-border/50 flex items-center justify-center gap-x-3 xl:gap-x-4 2xl:gap-x-5 flex-nowrap overflow-x-auto scrollbar-hide"
             >
               {navLinks.map((link) =>
                 link.children ? (
-                  <div key={link.label} className="relative">
+                  <div key={link.label} className="relative shrink-0">
                     <button
                       type="button"
                       onClick={() =>
                         setDesktopOpen((cur) => (cur === link.label ? null : link.label))
                       }
-                      className="inline-flex items-center gap-1 text-[10px] xl:text-[11px] tracking-[0.12em] uppercase text-warm-gray hover:text-graphite transition-colors duration-300 whitespace-nowrap"
+                      className="inline-flex items-center gap-0.5 text-[9px] xl:text-[10px] 2xl:text-[11px] tracking-[0.1em] xl:tracking-[0.12em] uppercase text-warm-gray hover:text-graphite transition-colors duration-300 whitespace-nowrap"
                       aria-expanded={desktopOpen === link.label}
                     >
                       {link.label}
@@ -152,48 +186,13 @@ export function Header() {
                   <Link
                     key={link.href}
                     to={link.href}
-                    className="text-[10px] xl:text-[11px] tracking-[0.12em] uppercase text-warm-gray hover:text-graphite transition-colors duration-300 link-underline whitespace-nowrap"
+                    className="shrink-0 text-[9px] xl:text-[10px] 2xl:text-[11px] tracking-[0.1em] xl:tracking-[0.12em] uppercase text-warm-gray hover:text-graphite transition-colors duration-300 link-underline whitespace-nowrap"
                   >
                     {link.label}
                   </Link>
                 )
               )}
             </nav>
-
-            <div className="flex items-center gap-4 justify-self-end">
-              <IconButton onClick={openSearch} label="Buscar">
-                <Search className="w-[18px] h-[18px]" strokeWidth={1.5} />
-              </IconButton>
-              <IconButton label="Conta">
-                <User className="w-[18px] h-[18px]" strokeWidth={1.5} />
-              </IconButton>
-              <Link to="/produtos" className="relative">
-                <IconButton label="Favoritos">
-                  <Heart className="w-[18px] h-[18px]" strokeWidth={1.5} />
-                </IconButton>
-                {favorites.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-graphite text-cream text-[9px] flex items-center justify-center rounded-full">
-                    {favorites.length}
-                  </span>
-                )}
-              </Link>
-              <button
-                onClick={openCart}
-                className="relative touch-target text-graphite hover:text-charcoal transition-colors"
-                aria-label="Carrinho"
-              >
-                <ShoppingBag className="w-[18px] h-[18px]" strokeWidth={1.5} />
-                {cartCount > 0 && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute top-1 right-1 w-4 h-4 bg-graphite text-cream text-[9px] flex items-center justify-center rounded-full"
-                  >
-                    {cartCount}
-                  </motion.span>
-                )}
-              </button>
-            </div>
           </div>
 
           {/* Mobile top bar */}
