@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { FacebookIcon, InstagramIcon } from './ui/SocialIcons'
 import { Logo } from './Logo'
+import { STORE_CONTACT, whatsappLink } from '../data/contact'
 
 const footerLinks = {
   marca: [
@@ -9,8 +10,8 @@ const footerLinks = {
     { label: 'Contato', href: '/sobre#contato' },
   ],
   atendimento: [
-    { label: 'Fale conosco', href: 'https://wa.me/5535991240681', external: true },
-    { label: 'WhatsApp', href: 'https://wa.me/5535991240681', external: true },
+    { label: 'Fale conosco', href: whatsappLink(), external: true },
+    { label: 'WhatsApp', href: whatsappLink(), external: true },
     { label: 'Garantia e cuidados', href: '/sobre#garantia' },
     { label: 'Trocas e devoluções', href: '/sobre#trocas' },
     { label: 'Perguntas frequentes', href: '/sobre#faq' },
@@ -50,17 +51,17 @@ export function Footer() {
 
           <div className="flex items-center gap-5">
             <SocialLink
-              href="https://instagram.com/verissimopratos"
+              href={STORE_CONTACT.instagramUrl}
               label="Instagram"
               icon={<InstagramIcon className="w-4 h-4" />}
             />
             <SocialLink
-              href="https://www.facebook.com/verissimopratos"
+              href="https://www.facebook.com/verissimopratas"
               label="Facebook"
               icon={<FacebookIcon className="w-4 h-4" />}
             />
             <SocialLink
-              href="https://www.tiktok.com/@verissimopratos"
+              href="https://www.tiktok.com/@verissimopratas"
               label="TikTok"
               icon={
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">

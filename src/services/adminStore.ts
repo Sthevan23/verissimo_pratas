@@ -12,7 +12,7 @@ import type {
 } from '../types/admin'
 import { getSession } from './authService'
 
-const STORAGE_KEY = 'verissimo-admin-db-v2'
+const STORAGE_KEY = 'verissimo-admin-db-v3'
 
 function uid() {
   return crypto.randomUUID()
@@ -134,13 +134,13 @@ function createSeedDatabase(): AdminDatabase {
       storeName: 'Verissimo Pratas 925',
       logo: '',
       favicon: '/favicon.svg',
-      email: 'contato@verissimopratos.com.br',
-      phone: '(19) 99562-6888',
-      whatsapp: '5519995626888',
-      address: 'São Paulo, SP — Brasil',
-      instagram: '@verissimopratos',
-      facebook: 'verissimopratos',
-      tiktok: '@verissimopratos',
+      email: 'verissimopratass@gmail.com',
+      phone: '(35) 99124-0681',
+      whatsapp: '5535991240681',
+      address: 'Boa Esperança — Brasil',
+      instagram: '@verissimopratas',
+      facebook: 'verissimopratas',
+      tiktok: '@verissimopratas',
       freeShippingMin: 349,
       minOrder: 0,
       maxInstallments: 3,

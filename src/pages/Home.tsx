@@ -11,6 +11,7 @@ import { Testimonials } from '../components/Testimonials'
 import { InstagramFeed } from '../components/Instagram'
 import { Newsletter } from '../components/Newsletter'
 import { getFeaturedProducts } from '../data/products'
+import { STORE_CONTACT } from '../data/contact'
 
 export function Home() {
   const featured = getFeaturedProducts()
@@ -28,11 +29,13 @@ export function Home() {
             '@context': 'https://schema.org',
             '@type': 'Organization',
             name: 'Verissimo Pratas 925',
-            url: 'https://www.verissimopratos.com.br',
+            url: 'https://sthevandev.com.br',
+            email: STORE_CONTACT.email,
+            telephone: STORE_CONTACT.phoneDisplay,
             sameAs: [
-              'https://www.facebook.com/verissimopratos',
-              'https://instagram.com/verissimopratos',
-              'https://www.tiktok.com/@verissimopratos',
+              STORE_CONTACT.instagramUrl,
+              'https://www.facebook.com/verissimopratas',
+              'https://www.tiktok.com/@verissimopratas',
             ],
           })}
         </script>

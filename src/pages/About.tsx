@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { Button } from '../components/ui/Button'
+import { STORE_CONTACT, whatsappLink } from '../data/contact'
 
 const storyParagraphs = [
   'Seja muito bem-vinda à nossa marca!',
@@ -138,23 +139,55 @@ export function About() {
         </section>
 
         <section id="contato" className="container-brand py-16 lg:py-20 scroll-mt-32">
-          <AnimateIn className="max-w-2xl mx-auto text-center">
-            <h2 className="heading-display text-3xl text-graphite mb-4 overflow-visible">
-              Fale conosco
+          <AnimateIn className="max-w-2xl mx-auto">
+            <h2 className="heading-display text-3xl text-graphite mb-8 text-center overflow-visible">
+              Contato
             </h2>
-            <p className="text-warm-gray font-light mb-8">
-              Estamos prontas para ajudar você a encontrar a peça perfeita.
-            </p>
-            <a
-              href="https://wa.me/5535991240681"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button size="lg" className="inline-flex items-center gap-2">
-                <MessageCircle className="w-4 h-4" strokeWidth={1.5} />
-                WhatsApp
-              </Button>
-            </a>
+            <div className="border border-border bg-off-white/40 px-6 py-8 space-y-3 text-warm-gray font-light">
+              <p className="text-graphite font-medium text-base">
+                {STORE_CONTACT.ownerName}
+              </p>
+              <p>CNPJ: {STORE_CONTACT.cnpj}</p>
+              <p>
+                Telefone/WhatsApp:{' '}
+                <a
+                  href={whatsappLink()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-graphite underline underline-offset-2 hover:text-charcoal"
+                >
+                  {STORE_CONTACT.phoneDisplay}
+                </a>
+              </p>
+              <p>
+                E-mail:{' '}
+                <a
+                  href={`mailto:${STORE_CONTACT.email}`}
+                  className="text-graphite underline underline-offset-2 hover:text-charcoal"
+                >
+                  {STORE_CONTACT.email}
+                </a>
+              </p>
+              <p>
+                Instagram:{' '}
+                <a
+                  href={STORE_CONTACT.instagramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-graphite underline underline-offset-2 hover:text-charcoal"
+                >
+                  {STORE_CONTACT.instagramHandle}
+                </a>
+              </p>
+            </div>
+            <div className="mt-8 text-center">
+              <a href={whatsappLink()} target="_blank" rel="noopener noreferrer">
+                <Button size="lg" className="inline-flex items-center gap-2">
+                  <MessageCircle className="w-4 h-4" strokeWidth={1.5} />
+                  WhatsApp
+                </Button>
+              </a>
+            </div>
           </AnimateIn>
         </section>
 
@@ -254,7 +287,7 @@ export function About() {
                   novamente.
                 </p>
                 <a
-                  href="https://wa.me/5535991240681"
+                  href={whatsappLink()}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex text-[11px] tracking-[0.15em] uppercase text-graphite border-b border-graphite/40 pb-0.5 hover:border-graphite transition-colors"
@@ -400,26 +433,37 @@ export function About() {
                 </p>
                 <p className="mb-4">Para solicitações ou dúvidas:</p>
                 <div className="border border-border bg-off-white/50 px-5 py-5 space-y-1 text-graphite">
-                  <p className="font-medium">Isadora Veríssimo de Araújo</p>
-                  <p>CNPJ: 62.289.838/0001-02</p>
+                  <p className="font-medium">{STORE_CONTACT.ownerName}</p>
+                  <p>CNPJ: {STORE_CONTACT.cnpj}</p>
                   <p>
                     Telefone/WhatsApp:{' '}
                     <a
-                      href="https://wa.me/5535991240681"
+                      href={whatsappLink()}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="underline underline-offset-2 hover:text-charcoal"
                     >
-                      (35) 99124-0681
+                      {STORE_CONTACT.phoneDisplay}
                     </a>
                   </p>
                   <p>
                     E-mail:{' '}
                     <a
-                      href="mailto:verissimopratass@gmail.com"
+                      href={`mailto:${STORE_CONTACT.email}`}
                       className="underline underline-offset-2 hover:text-charcoal"
                     >
-                      verissimopratass@gmail.com
+                      {STORE_CONTACT.email}
+                    </a>
+                  </p>
+                  <p>
+                    Instagram:{' '}
+                    <a
+                      href={STORE_CONTACT.instagramUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline underline-offset-2 hover:text-charcoal"
+                    >
+                      {STORE_CONTACT.instagramHandle}
                     </a>
                   </p>
                 </div>
