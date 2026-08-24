@@ -33,14 +33,14 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <div className="relative aspect-[3/4] bg-off-white overflow-hidden mb-4">
+      <div className="relative aspect-[3/4] bg-off-white overflow-hidden mb-3 sm:mb-4">
         <Link to={`/produto/${product.slug}`}>
           <img
             src={product.images[0]}
             alt={product.name}
             className={cn(
-              'absolute inset-0 w-full h-full object-cover transition-all duration-700',
-              hovered && hasSecondImage ? 'opacity-0 scale-105' : 'opacity-100 scale-100 group-hover:scale-105'
+              'absolute inset-0 w-full h-full object-cover transition-all duration-700 active:scale-105',
+              hovered && hasSecondImage ? 'opacity-0 scale-105' : 'opacity-100 scale-100 lg:group-hover:scale-105'
             )}
             loading="lazy"
           />
@@ -49,7 +49,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
               src={product.images[1]}
               alt={`${product.name} — vista alternativa`}
               className={cn(
-                'absolute inset-0 w-full h-full object-cover transition-all duration-700',
+                'absolute inset-0 w-full h-full object-cover transition-all duration-700 hidden lg:block',
                 hovered ? 'opacity-100 scale-105' : 'opacity-0 scale-100'
               )}
               loading="lazy"
@@ -58,7 +58,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
         </Link>
 
         {product.badge && (
-          <span className="absolute top-3 left-3 bg-graphite text-cream text-[9px] tracking-[0.15em] uppercase px-3 py-1.5">
+          <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-graphite text-cream text-[8px] sm:text-[9px] tracking-[0.15em] uppercase px-2 py-1 sm:px-3 sm:py-1.5">
             {product.badge === 'novidade'
               ? 'Novidade'
               : product.badge === 'oferta-especial'
@@ -69,7 +69,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
 
         <button
           onClick={() => toggleFavorite(product.id)}
-          className="absolute top-3 right-3 p-2 bg-cream/80 backdrop-blur-sm hover:bg-cream transition-colors"
+          className="absolute top-2 right-2 sm:top-3 sm:right-3 touch-target bg-cream/80 backdrop-blur-sm hover:bg-cream active:bg-cream transition-colors"
           aria-label={favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
         >
           <motion.div
@@ -97,40 +97,40 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
         </div>
       </div>
 
-      <div className="space-y-1.5">
+      <div className="space-y-1 sm:space-y-1.5">
         <Link to={`/produto/${product.slug}`}>
-          <h3 className="text-sm font-light text-graphite leading-snug hover:text-charcoal transition-colors line-clamp-2">
+          <h3 className="text-xs sm:text-sm font-light text-graphite leading-snug hover:text-charcoal transition-colors line-clamp-2">
             {product.name}
           </h3>
         </Link>
 
-        <div className="flex items-baseline gap-2 flex-wrap">
+        <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
           {product.salePrice ? (
             <>
-              <span className="text-sm text-muted line-through">
+              <span className="text-xs sm:text-sm text-muted line-through">
                 {formatPrice(product.price)}
               </span>
-              <span className="text-sm font-medium text-graphite">
+              <span className="text-xs sm:text-sm font-medium text-graphite">
                 {formatPrice(product.salePrice)}
               </span>
-              <span className="text-[10px] text-silver-dark">
+              <span className="text-[9px] sm:text-[10px] text-silver-dark">
                 -{calcDiscount(product.price, product.salePrice)}%
               </span>
             </>
           ) : (
-            <span className="text-sm font-medium text-graphite">
+            <span className="text-xs sm:text-sm font-medium text-graphite">
               {formatPrice(product.price)}
             </span>
           )}
         </div>
 
-        <p className="text-[11px] text-muted font-light hidden sm:block">
+        <p className="text-[10px] sm:text-[11px] text-muted font-light">
           {formatInstallments(currentPrice)}
         </p>
 
         <button
           onClick={() => addToCart(product)}
-          className="lg:hidden w-full mt-2 py-2.5 border border-border text-[10px] tracking-[0.2em] uppercase text-graphite hover:border-graphite transition-colors"
+          className="lg:hidden w-full mt-2 min-h-11 py-2.5 border border-border text-[10px] tracking-[0.2em] uppercase text-graphite active:border-graphite active:bg-off-white transition-colors"
         >
           Comprar
         </button>

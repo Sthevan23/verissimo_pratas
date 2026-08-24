@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion, type PanInfo } from 'framer-motion'
 import { ChevronLeft, ChevronRight, Star } from 'lucide-react'
 import { useState } from 'react'
 import { testimonials } from '../data/testimonials'
@@ -11,14 +11,19 @@ export function Testimonials() {
   const prev = () =>
     setCurrent((c) => (c - 1 + testimonials.length) % testimonials.length)
 
+  const handleDragEnd = (_: unknown, info: PanInfo) => {
+    if (info.offset.x < -50) next()
+    else if (info.offset.x > 50) prev()
+  }
+
   return (
-    <section className="py-20 lg:py-28">
+    <section className="py-14 sm:py-20 lg:py-28">
       <div className="container-brand">
-        <AnimateIn className="text-center mb-14">
+        <AnimateIn className="text-center mb-10 sm:mb-14">
           <p className="text-[11px] tracking-[0.3em] uppercase text-muted mb-3">
             Depoimentos
           </p>
-          <h2 className="heading-display text-3xl lg:text-4xl text-graphite">
+          <h2 className="heading-display text-2xl sm:text-3xl lg:text-4xl text-graphite">
             O que nossas clientes dizem
           </h2>
         </AnimateIn>
@@ -41,15 +46,20 @@ export function Testimonials() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -30 }}
               transition={{ duration: 0.4 }}
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.15}
+              onDragEnd={handleDragEnd}
+              className="touch-pan-y"
             >
               <TestimonialCard testimonial={testimonials[current]} />
             </motion.div>
           </AnimatePresence>
 
-          <div className="flex items-center justify-center gap-4 mt-6">
+          <div className="flex items-center justify-center gap-3 sm:gap-4 mt-6">
             <button
               onClick={prev}
-              className="p-2 border border-border hover:border-graphite transition-colors"
+              className="touch-target border border-border active:border-graphite transition-colors"
               aria-label="Anterior"
             >
               <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
@@ -59,16 +69,20 @@ export function Testimonials() {
                 <button
                   key={i}
                   onClick={() => setCurrent(i)}
-                  className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                    i === current ? 'bg-graphite' : 'bg-border'
-                  }`}
+                  className="touch-target p-2"
                   aria-label={`Depoimento ${i + 1}`}
-                />
+                >
+                  <span
+                    className={`block w-2 h-2 rounded-full transition-colors ${
+                      i === current ? 'bg-graphite' : 'bg-border'
+                    }`}
+                  />
+                </button>
               ))}
             </div>
             <button
               onClick={next}
-              className="p-2 border border-border hover:border-graphite transition-colors"
+              className="touch-target border border-border active:border-graphite transition-colors"
               aria-label="Próximo"
             >
               <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
@@ -86,7 +100,7 @@ function TestimonialCard({
   testimonial: (typeof testimonials)[0]
 }) {
   return (
-    <div className="bg-off-white/60 p-8 lg:p-10 h-full flex flex-col">
+    <div className="bg-off-white/60 p-6 sm:p-8 lg:p-10 h-full flex flex-col">
       <div className="flex gap-0.5 mb-4">
         {Array.from({ length: 5 }).map((_, i) => (
           <Star
@@ -100,7 +114,7 @@ function TestimonialCard({
           />
         ))}
       </div>
-      <p className="text-warm-gray font-light leading-relaxed flex-1 mb-6 italic">
+      <p className="text-sm sm:text-base text-warm-gray font-light leading-relaxed flex-1 mb-6 italic">
         "{testimonial.text}"
       </p>
       <div>

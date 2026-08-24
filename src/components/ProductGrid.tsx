@@ -17,9 +17,9 @@ export function ProductGrid({
   viewAllHref = '/produtos',
 }: ProductGridProps) {
   return (
-    <section className="py-20 lg:py-28">
+    <section className="py-14 sm:py-20 lg:py-28">
       <div className="container-brand">
-        <AnimateIn className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-12 lg:mb-14">
+        <AnimateIn className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10 sm:mb-12 lg:mb-14">
           <div>
             <p className="text-[11px] tracking-[0.3em] uppercase text-muted mb-3">
               Seleção especial
@@ -41,7 +41,7 @@ export function ProductGrid({
           </Link>
         </AnimateIn>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10 lg:gap-x-6 lg:gap-y-12">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-10 lg:gap-x-6 lg:gap-y-12">
           {products.map((product, i) => (
             <ProductCard key={product.id} product={product} index={i} />
           ))}

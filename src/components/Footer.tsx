@@ -24,14 +24,14 @@ const footerLinks = {
 
 export function Footer() {
   return (
-    <footer className="bg-graphite text-cream pt-16 pb-8">
+    <footer className="bg-graphite text-cream pt-12 sm:pt-16 pb-8 safe-bottom">
       <div className="container-brand">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-8 mb-14">
-          <div className="col-span-2 lg:col-span-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 lg:gap-8 mb-12 sm:mb-14">
+          <div className="sm:col-span-2 lg:col-span-1 text-center sm:text-left">
             <div className="mb-4">
               <Logo variant="dark" />
             </div>
-            <p className="text-sm text-silver-dark font-light leading-relaxed max-w-xs">
+            <p className="text-sm text-silver-dark font-light leading-relaxed max-w-xs mx-auto sm:mx-0">
               Joias em prata 925 com elegância atemporal. Garantia vitalícia e
               envio para todo o Brasil.
             </p>
@@ -42,7 +42,7 @@ export function Footer() {
           <FooterColumn title="Compra" links={footerLinks.compra} />
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pt-8 border-t border-charcoal">
+        <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-6 pt-8 border-t border-charcoal text-center sm:text-left">
           <p className="text-xs text-silver-dark font-light">
             © {new Date().getFullYear()} Verissimo Pratas 925. Todos os direitos reservados.
           </p>

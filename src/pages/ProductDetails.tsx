@@ -27,7 +27,7 @@ export function ProductDetails() {
 
   if (!product) {
     return (
-      <div className="container-brand py-32 text-center">
+      <div className="header-offset container-brand py-32 text-center">
         <h1 className="heading-display text-3xl mb-4">Produto não encontrado</h1>
         <Button onClick={() => navigate('/produtos')}>Ver produtos</Button>
       </div>
@@ -69,15 +69,19 @@ export function ProductDetails() {
         </script>
       </Helmet>
 
-      <div className="pt-28 lg:pt-32 pb-20">
+      <div className="header-offset pb-16 sm:pb-20">
         <div className="container-brand">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-16">
             {/* Gallery */}
             <AnimateIn direction="left">
               <div className="space-y-4">
                 <div
-                  className="relative aspect-square bg-off-white overflow-hidden cursor-zoom-in"
-                  onClick={() => setZoomed(!zoomed)}
+                  className="relative aspect-square bg-off-white overflow-hidden lg:cursor-zoom-in"
+                  onClick={() => {
+                    if (window.matchMedia('(min-width: 1024px)').matches) {
+                      setZoomed(!zoomed)
+                    }
+                  }}
                 >
                   <motion.img
                     key={selectedImage}
@@ -93,13 +97,16 @@ export function ProductDetails() {
                   />
                 </div>
                 {product.images.length > 1 && (
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
                     {product.images.map((img, i) => (
                       <button
                         key={i}
-                        onClick={() => setSelectedImage(i)}
+                        onClick={() => {
+                          setSelectedImage(i)
+                          setZoomed(false)
+                        }}
                         className={cn(
-                          'w-20 h-20 bg-off-white overflow-hidden border-2 transition-colors',
+                          'w-16 h-16 sm:w-20 sm:h-20 shrink-0 bg-off-white overflow-hidden border-2 transition-colors',
                           i === selectedImage ? 'border-graphite' : 'border-transparent'
                         )}
                       >
@@ -124,7 +131,7 @@ export function ProductDetails() {
                   </span>
                 )}
 
-                <h1 className="heading-display text-3xl lg:text-4xl text-graphite mb-3">
+                <h1 className="heading-display text-2xl sm:text-3xl lg:text-4xl text-graphite mb-3">
                   {product.name}
                 </h1>
 
@@ -225,10 +232,10 @@ export function ProductDetails() {
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3 mb-8">
+                <div className="flex flex-col sm:grid sm:grid-cols-[1fr_1fr_auto] gap-3 mb-8">
                   <Button
                     size="lg"
-                    className="flex-1"
+                    className="w-full"
                     onClick={handleAddToCart}
                     disabled={!product.inStock || (product.sizes && !selectedSize)}
                   >
@@ -237,7 +244,7 @@ export function ProductDetails() {
                   <Button
                     variant="secondary"
                     size="lg"
-                    className="flex-1"
+                    className="w-full"
                     onClick={handleAddToCart}
                     disabled={!product.inStock}
                   >
@@ -245,7 +252,7 @@ export function ProductDetails() {
                   </Button>
                   <button
                     onClick={() => toggleFavorite(product.id)}
-                    className="p-4 border border-border hover:border-graphite transition-colors shrink-0"
+                    className="touch-target border border-border hover:border-graphite active:border-graphite transition-colors self-center sm:self-auto"
                     aria-label="Favoritar"
                   >
                     <Heart
@@ -258,7 +265,7 @@ export function ProductDetails() {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 pt-6 border-t border-border">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 border-t border-border">
                   <InfoItem icon={Gem} label="Material" value={product.material} />
                   <InfoItem icon={Shield} label="Garantia" value={product.warranty} />
                   <InfoItem icon={Clock} label="Envio" value={product.shippingDays} />
@@ -284,7 +291,7 @@ export function ProductDetails() {
               <h2 className="heading-display text-2xl lg:text-3xl text-graphite mb-10 text-center">
                 Você também pode gostar
               </h2>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10 lg:gap-x-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-10 lg:gap-x-6">
                 {related.map((p, i) => (
                   <ProductCard key={p.id} product={p} index={i} />
                 ))}

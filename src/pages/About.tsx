@@ -14,7 +14,7 @@ export function About() {
         />
       </Helmet>
 
-      <div className="pt-28 lg:pt-32 pb-20">
+      <div className="header-offset pb-16 sm:pb-20">
         {/* Hero */}
         <section className="container-brand mb-20 lg:mb-28">
           <AnimateIn className="max-w-3xl mx-auto text-center">

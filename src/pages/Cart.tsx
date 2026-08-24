@@ -28,7 +28,7 @@ export function Cart() {
         <title>Carrinho — Verissimo Pratas 925</title>
       </Helmet>
 
-      <div className="pt-28 lg:pt-32 pb-20">
+      <div className="header-offset pb-16 sm:pb-20">
         <div className="container-brand max-w-4xl">
           <AnimateIn>
             <h1 className="heading-display text-3xl lg:text-4xl text-graphite mb-10 text-center">

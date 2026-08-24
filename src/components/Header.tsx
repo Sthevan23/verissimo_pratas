@@ -44,10 +44,10 @@ export function Header() {
   return (
     <>
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        className={`fixed top-0 left-0 right-0 z-50 safe-top transition-all duration-500 ${
           isScrolled
             ? 'bg-cream/90 backdrop-blur-md shadow-[0_1px_0_0_rgba(0,0,0,0.05)] py-3'
-            : 'bg-transparent py-5 lg:py-6'
+            : 'bg-cream/80 backdrop-blur-sm lg:bg-transparent py-4 lg:py-6'
         }`}
       >
         <div className="container-brand">
@@ -88,7 +88,7 @@ export function Header() {
               </Link>
               <button
                 onClick={openCart}
-                className="relative p-1.5 text-graphite hover:text-charcoal transition-colors"
+                className="relative touch-target text-graphite hover:text-charcoal transition-colors"
                 aria-label="Carrinho"
               >
                 <ShoppingBag className="w-[18px] h-[18px]" strokeWidth={1.5} />
@@ -96,7 +96,7 @@ export function Header() {
                   <motion.span
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="absolute -top-1 -right-1 w-4 h-4 bg-graphite text-cream text-[9px] flex items-center justify-center rounded-full"
+                    className="absolute top-1 right-1 w-4 h-4 bg-graphite text-cream text-[9px] flex items-center justify-center rounded-full"
                   >
                     {cartCount}
                   </motion.span>
@@ -106,35 +106,35 @@ export function Header() {
           </div>
 
           {/* Mobile */}
-          <div className="flex lg:hidden items-center justify-between">
+          <div className="grid lg:hidden grid-cols-[44px_1fr_88px] items-center gap-1 min-h-[44px]">
             <button
               onClick={() => setMobileOpen(true)}
-              className="p-2 -ml-2 text-graphite"
+              className="touch-target -ml-2 text-graphite"
               aria-label="Menu"
             >
               <Menu className="w-5 h-5" strokeWidth={1.5} />
             </button>
 
-            <div className="absolute left-1/2 -translate-x-1/2">
+            <div className="flex justify-center overflow-hidden px-1">
               <Logo compact />
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-end gap-0">
               <button
                 onClick={openSearch}
-                className="p-2 text-graphite"
+                className="touch-target text-graphite"
                 aria-label="Buscar"
               >
                 <Search className="w-5 h-5" strokeWidth={1.5} />
               </button>
               <button
                 onClick={openCart}
-                className="relative p-2 -mr-2 text-graphite"
+                className="relative touch-target -mr-2 text-graphite"
                 aria-label="Carrinho"
               >
                 <ShoppingBag className="w-5 h-5" strokeWidth={1.5} />
                 {cartCount > 0 && (
-                  <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-graphite text-cream text-[8px] flex items-center justify-center rounded-full">
+                  <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-graphite text-cream text-[8px] flex items-center justify-center rounded-full">
                     {cartCount}
                   </span>
                 )}
@@ -160,30 +160,64 @@ export function Header() {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'tween', duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-              className="fixed top-0 left-0 bottom-0 w-[80%] max-w-sm bg-cream z-[70] lg:hidden flex flex-col"
+              className="fixed top-0 left-0 bottom-0 w-[min(85vw,20rem)] bg-cream z-[70] lg:hidden flex flex-col safe-top safe-bottom"
             >
-              <div className="flex items-center justify-between p-6 border-b border-border">
+              <div className="flex items-center justify-between px-5 py-5 border-b border-border">
                 <Logo />
-                <button onClick={() => setMobileOpen(false)} aria-label="Fechar">
+                <button
+                  onClick={() => setMobileOpen(false)}
+                  className="touch-target text-graphite"
+                  aria-label="Fechar"
+                >
                   <X className="w-5 h-5" strokeWidth={1.5} />
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto py-6 px-6">
+
+              <div className="flex-1 overflow-y-auto py-4 px-5">
                 {navLinks.map((link, i) => (
                   <motion.div
                     key={link.href}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.05 }}
+                    transition={{ delay: i * 0.04 }}
                   >
                     <Link
                       to={link.href}
-                      className="block py-3.5 text-sm tracking-[0.12em] uppercase text-graphite border-b border-border/50"
+                      className="block py-4 text-sm tracking-[0.12em] uppercase text-graphite border-b border-border/50 active:bg-off-white"
                     >
                       {link.label}
                     </Link>
                   </motion.div>
                 ))}
+              </div>
+
+              <div className="border-t border-border px-5 py-5 grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => {
+                    setMobileOpen(false)
+                    openSearch()
+                  }}
+                  className="flex flex-col items-center gap-1.5 py-3 text-[10px] tracking-wider uppercase text-warm-gray active:bg-off-white"
+                >
+                  <Search className="w-5 h-5" strokeWidth={1.5} />
+                  Buscar
+                </button>
+                <Link
+                  to="/produtos"
+                  className="flex flex-col items-center gap-1.5 py-3 text-[10px] tracking-wider uppercase text-warm-gray active:bg-off-white relative"
+                >
+                  <Heart className="w-5 h-5" strokeWidth={1.5} />
+                  Favoritos
+                  {favorites.length > 0 && (
+                    <span className="absolute top-2 right-3 w-4 h-4 bg-graphite text-cream text-[8px] flex items-center justify-center rounded-full">
+                      {favorites.length}
+                    </span>
+                  )}
+                </Link>
+                <button className="flex flex-col items-center gap-1.5 py-3 text-[10px] tracking-wider uppercase text-warm-gray active:bg-off-white">
+                  <User className="w-5 h-5" strokeWidth={1.5} />
+                  Conta
+                </button>
               </div>
             </motion.nav>
           </>
@@ -205,7 +239,7 @@ function IconButton({
   return (
     <button
       onClick={onClick}
-      className="p-1.5 text-graphite hover:text-charcoal transition-colors"
+      className="touch-target text-graphite hover:text-charcoal transition-colors"
       aria-label={label}
     >
       {children}

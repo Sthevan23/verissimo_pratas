@@ -53,7 +53,7 @@ export function Products() {
         />
       </Helmet>
 
-      <div className="pt-28 lg:pt-32 pb-20">
+      <div className="header-offset pb-16 sm:pb-20">
         <div className="container-brand">
           <AnimateIn className="text-center mb-12 lg:mb-16">
             <p className="text-[11px] tracking-[0.3em] uppercase text-muted mb-3">
@@ -69,7 +69,7 @@ export function Products() {
               Nenhum produto encontrado.
             </p>
           ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10 lg:gap-x-6 lg:gap-y-12">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-10 lg:gap-x-6">
               {filtered.map((product, i) => (
                 <ProductCard key={product.id} product={product} index={i} />
               ))}

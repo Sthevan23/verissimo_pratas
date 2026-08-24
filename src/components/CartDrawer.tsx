@@ -39,17 +39,17 @@ export function CartDrawer() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'tween', duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-            className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-cream z-[90] flex flex-col shadow-2xl"
+            className="fixed top-0 right-0 bottom-0 w-full sm:max-w-md bg-cream z-[90] flex flex-col shadow-2xl safe-top safe-bottom"
           >
-            <div className="flex items-center justify-between p-6 border-b border-border">
+            <div className="flex items-center justify-between px-5 py-5 sm:p-6 border-b border-border">
               <div className="flex items-center gap-3">
                 <ShoppingBag className="w-5 h-5" strokeWidth={1.5} />
-                <h2 className="font-serif text-xl font-light">Carrinho</h2>
+                <h2 className="font-serif text-lg sm:text-xl font-light">Carrinho</h2>
                 {cart.length > 0 && (
                   <span className="text-xs text-muted">({cart.length})</span>
                 )}
               </div>
-              <button onClick={closeCart} aria-label="Fechar carrinho">
+              <button onClick={closeCart} className="touch-target" aria-label="Fechar carrinho">
                 <X className="w-5 h-5" strokeWidth={1.5} />
               </button>
             </div>
@@ -66,7 +66,7 @@ export function CartDrawer() {
               </div>
             ) : (
               <>
-                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                <div className="flex-1 overflow-y-auto px-5 py-5 sm:p-6 space-y-6">
                   {cart.map((item) => {
                     const price = item.product.salePrice ?? item.product.price
                     return (
@@ -104,25 +104,25 @@ export function CartDrawer() {
                                 onClick={() =>
                                   updateQuantity(item.product.id, item.quantity - 1)
                                 }
-                                className="p-1.5 hover:bg-off-white transition-colors"
+                                className="touch-target hover:bg-off-white active:bg-off-white transition-colors"
                                 aria-label="Diminuir quantidade"
                               >
-                                <Minus className="w-3 h-3" strokeWidth={1.5} />
+                                <Minus className="w-4 h-4" strokeWidth={1.5} />
                               </button>
-                              <span className="px-3 text-sm">{item.quantity}</span>
+                              <span className="px-3 text-sm min-w-[2rem] text-center">{item.quantity}</span>
                               <button
                                 onClick={() =>
                                   updateQuantity(item.product.id, item.quantity + 1)
                                 }
-                                className="p-1.5 hover:bg-off-white transition-colors"
+                                className="touch-target hover:bg-off-white active:bg-off-white transition-colors"
                                 aria-label="Aumentar quantidade"
                               >
-                                <Plus className="w-3 h-3" strokeWidth={1.5} />
+                                <Plus className="w-4 h-4" strokeWidth={1.5} />
                               </button>
                             </div>
                             <button
                               onClick={() => removeFromCart(item.product.id)}
-                              className="p-1.5 text-muted hover:text-graphite transition-colors"
+                              className="touch-target text-muted hover:text-graphite active:text-graphite transition-colors"
                               aria-label="Remover item"
                             >
                               <Trash2 className="w-4 h-4" strokeWidth={1.5} />
@@ -134,18 +134,18 @@ export function CartDrawer() {
                   })}
                 </div>
 
-                <div className="border-t border-border p-6 space-y-4">
-                  <div className="flex gap-2">
+                <div className="border-t border-border px-5 py-5 sm:p-6 space-y-4 safe-bottom">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <input
                       type="text"
                       value={couponCode}
                       onChange={(e) => setCouponCode(e.target.value)}
                       placeholder="Cupom de desconto"
-                      className="flex-1 px-4 py-2.5 border border-border text-sm font-light focus:outline-none focus:border-graphite"
+                      className="flex-1 px-4 py-3 border border-border text-sm font-light focus:outline-none focus:border-graphite min-h-11"
                     />
                     <button
                       onClick={applyCoupon}
-                      className="px-4 py-2.5 border border-graphite text-[10px] tracking-widest uppercase hover:bg-graphite hover:text-cream transition-colors"
+                      className="px-5 py-3 min-h-11 border border-graphite text-[10px] tracking-widest uppercase hover:bg-graphite hover:text-cream active:bg-graphite active:text-cream transition-colors shrink-0"
                     >
                       Aplicar
                     </button>
