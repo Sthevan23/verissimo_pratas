@@ -3,7 +3,7 @@
 @theme {
   --font-serif: "Cormorant Garamond", Georgia, serif;
   --font-sans: "Jost", system-ui, sans-serif;
-  --font-admin: "Outfit", "Jost", system-ui, sans-serif;
+  --font-admin: "Jost", system-ui, sans-serif;
 
   --color-cream: #FAFAF8;
   --color-off-white: #F5F3EF;
