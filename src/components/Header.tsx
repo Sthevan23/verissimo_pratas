@@ -55,8 +55,30 @@ const navLinks: NavItem[] = [
       { label: 'Pulseiras', href: '/produtos?categoria=berloques-pulseiras' },
     ],
   },
+  {
+    label: 'Personalizados (encomenda)',
+    href: '/produtos?categoria=personalizados',
+    children: [
+      { label: 'Ver tudo (encomenda)', href: '/produtos?categoria=personalizados', subtle: true },
+      { label: 'Anéis', href: '/produtos?categoria=personalizados-aneis' },
+      { label: 'Colares', href: '/produtos?categoria=personalizados-colares' },
+      { label: 'Pulseiras', href: '/produtos?categoria=personalizados-pulseiras' },
+      { label: 'Berloques', href: '/produtos?categoria=personalizados-berloques' },
+      { label: 'Chaveiros', href: '/produtos?categoria=personalizados-chaveiros' },
+    ],
+  },
   { label: 'Piercings', href: '/produtos?categoria=piercings' },
   { label: 'Tornozeleira', href: '/produtos?categoria=tornozeleiras' },
+  {
+    label: 'Masculinos',
+    href: '/produtos?categoria=masculinos',
+    children: [
+      { label: 'Ver tudo em Masculinos', href: '/produtos?categoria=masculinos', subtle: true },
+      { label: 'Corrente', href: '/produtos?categoria=masculinos-corrente' },
+      { label: 'Pulseira', href: '/produtos?categoria=masculinos-pulseira' },
+      { label: 'Pingente', href: '/produtos?categoria=masculinos-pingente' },
+    ],
+  },
   { label: 'Acessórios', href: '/produtos?categoria=acessorios' },
   { label: 'Sobre nós', href: '/sobre' },
 ]

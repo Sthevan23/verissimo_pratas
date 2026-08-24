@@ -265,11 +265,21 @@ INSERT INTO `categories` (`id`, `name`, `slug`, `sort_order`) VALUES
 ('cat-pulseiras-infantil',    'Infantil',       'pulseiras-infantil',   10),
 ('cat-berloques',             'Berloques',      'berloques',            11),
 ('cat-berloques-pulseiras',   'Pulseiras',      'berloques-pulseiras',  12),
-('cat-piercings',             'Piercings',      'piercings',            13),
-('cat-tornozeleiras',         'Tornozeleiras',  'tornozeleiras',         14),
-('cat-acessorios',            'Acessórios',     'acessorios',           15),
-('cat-novidades',             'Novidades',      'novidades',            16),
-('cat-promocoes',             'Promoções',      'promocoes',            17);
+('cat-personalizados',        'Personalizados', 'personalizados',       13),
+('cat-personalizados-aneis',  'Anéis',          'personalizados-aneis', 14),
+('cat-personalizados-colares','Colares',        'personalizados-colares', 15),
+('cat-personalizados-pulseiras','Pulseiras',    'personalizados-pulseiras', 16),
+('cat-personalizados-berloques','Berloques',    'personalizados-berloques', 17),
+('cat-personalizados-chaveiros','Chaveiros',    'personalizados-chaveiros', 18),
+('cat-piercings',             'Piercings',      'piercings',            19),
+('cat-tornozeleiras',         'Tornozeleiras',  'tornozeleiras',         20),
+('cat-masculinos',            'Masculinos',     'masculinos',           21),
+('cat-masculinos-corrente',   'Corrente',       'masculinos-corrente',  22),
+('cat-masculinos-pulseira',   'Pulseira',       'masculinos-pulseira',  23),
+('cat-masculinos-pingente',   'Pingente',       'masculinos-pingente',  24),
+('cat-acessorios',            'Acessórios',     'acessorios',           25),
+('cat-novidades',             'Novidades',      'novidades',            26),
+('cat-promocoes',             'Promoções',      'promocoes',            27);
 
 INSERT INTO `products` (
   `id`, `name`, `description`, `price`, `price_from`, `category_id`, `image`,

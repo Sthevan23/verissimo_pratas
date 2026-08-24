@@ -55,6 +55,62 @@ const BERLOQUES_TIPOS = [
   },
 ] as const
 
+const PERSONALIZADOS_TIPOS = [
+  {
+    slug: 'personalizados',
+    title: 'Ver tudo',
+    description: 'Toda a linha sob encomenda',
+  },
+  {
+    slug: 'personalizados-aneis',
+    title: 'Anéis',
+    description: 'Anéis personalizados',
+  },
+  {
+    slug: 'personalizados-colares',
+    title: 'Colares',
+    description: 'Colares personalizados',
+  },
+  {
+    slug: 'personalizados-pulseiras',
+    title: 'Pulseiras',
+    description: 'Pulseiras personalizadas',
+  },
+  {
+    slug: 'personalizados-berloques',
+    title: 'Berloques',
+    description: 'Berloques personalizados',
+  },
+  {
+    slug: 'personalizados-chaveiros',
+    title: 'Chaveiros',
+    description: 'Chaveiros personalizados',
+  },
+] as const
+
+const MASCULINOS_TIPOS = [
+  {
+    slug: 'masculinos',
+    title: 'Ver tudo',
+    description: 'Toda a linha masculina',
+  },
+  {
+    slug: 'masculinos-corrente',
+    title: 'Corrente',
+    description: 'Correntes masculinas',
+  },
+  {
+    slug: 'masculinos-pulseira',
+    title: 'Pulseira',
+    description: 'Pulseiras masculinas',
+  },
+  {
+    slug: 'masculinos-pingente',
+    title: 'Pingente',
+    description: 'Pingentes masculinos',
+  },
+] as const
+
 function isTrioProduct(name: string) {
   return /trio/i.test(name)
 }
@@ -94,6 +150,18 @@ function isBerloquesCategory(cat: string) {
   return cat === 'berloques' || cat === 'berloques-pulseiras'
 }
 
+function isPersonalizadosCategory(cat: string) {
+  return cat === 'personalizados' || cat.startsWith('personalizados-')
+}
+
+function isMasculinosCategory(cat: string) {
+  return (
+    cat === 'masculinos' ||
+    cat.startsWith('masculinos-') ||
+    cat === 'linha-masculina'
+  )
+}
+
 export function Products() {
   const [searchParams] = useSearchParams()
   const category = searchParams.get('categoria')
@@ -109,6 +177,15 @@ export function Products() {
     category === 'pulseiras-infantil'
   const isBerloquesFamily =
     category === 'berloques' || category === 'berloques-pulseiras'
+  const isPersonalizadosFamily = !!category && isPersonalizadosCategory(category)
+  const isMasculinosFamily =
+    !!category &&
+    (category === 'masculinos' ||
+      category === 'masculinos-corrente' ||
+      category === 'masculinos-pulseira' ||
+      category === 'masculinos-pingente' ||
+      category === 'linha-masculina')
+
   const familyHub = isBrincosFamily
     ? { label: 'Brincos', tipos: BRINCOS_TIPOS, hint: 'Escolha o formato certo para a quantidade de furos.' }
     : isPulseirasFamily
@@ -119,7 +196,19 @@ export function Products() {
             tipos: BERLOQUES_TIPOS,
             hint: 'Berloques avulsos ou pulseiras para montar do seu jeito.',
           }
-        : null
+        : isPersonalizadosFamily
+          ? {
+              label: 'Personalizados',
+              tipos: PERSONALIZADOS_TIPOS,
+              hint: 'Peças sob encomenda — personalize do seu jeito.',
+            }
+          : isMasculinosFamily
+            ? {
+                label: 'Masculinos',
+                tipos: MASCULINOS_TIPOS,
+                hint: 'Corrente, pulseira e pingente da linha masculina.',
+              }
+            : null
 
   const filtered = useMemo(() => {
     let result = [...products]
@@ -127,7 +216,6 @@ export function Products() {
       if (category === 'novidades') {
         result = result.filter((p) => p.isNew)
       } else if (category === 'brincos') {
-        // Ver tudo: família brincos (inclui nomes legado com dupla/trio)
         result = result.filter(
           (p) =>
             isBrincosCategory(p.category) ||
@@ -174,6 +262,10 @@ export function Products() {
             (p.category === 'berloques' &&
               isPulseiraBerloqueProduct(p.name, p.description))
         )
+      } else if (category === 'personalizados') {
+        result = result.filter((p) => isPersonalizadosCategory(p.category))
+      } else if (category === 'masculinos' || category === 'linha-masculina') {
+        result = result.filter((p) => isMasculinosCategory(p.category))
       } else {
         result = result.filter((p) => p.category === category)
       }
@@ -298,6 +390,20 @@ export function Products() {
                   {' '}
                   Cadastre produtos em <strong>Berloques</strong> ou{' '}
                   <strong>Pulseiras</strong> (para berloques) no painel.
+                </>
+              )}
+              {isPersonalizadosFamily && (
+                <>
+                  {' '}
+                  Cadastre peças de <strong>encomenda</strong> no painel
+                  (Anéis, Colares, Pulseiras, Berloques ou Chaveiros).
+                </>
+              )}
+              {isMasculinosFamily && (
+                <>
+                  {' '}
+                  Cadastre produtos em <strong>Masculinos</strong> — Corrente,
+                  Pulseira ou Pingente — no painel.
                 </>
               )}
             </p>
