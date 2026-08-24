@@ -45,7 +45,7 @@ export function AdminDashboard() {
       <Helmet><title>Dashboard — Verissimo Admin</title></Helmet>
 
       <div className="mb-8">
-        <h1 className="font-serif text-2xl sm:text-3xl font-light text-graphite">
+        <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-graphite">
           {greeting()}, {session?.name?.split(' ')[0] ?? 'Verissimo'}.
         </h1>
         <p className="text-sm text-muted font-light mt-1">Acompanhe o desempenho da sua loja.</p>

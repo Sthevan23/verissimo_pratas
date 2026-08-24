@@ -16,10 +16,16 @@
   }
 
   .admin-num {
-    font-family: var(--font-admin);
+    font-family: "Outfit", "Jost", system-ui, sans-serif !important;
+    font-style: normal !important;
     font-variant-numeric: tabular-nums;
-    font-weight: 500;
+    font-weight: 500 !important;
     letter-spacing: -0.02em;
+  }
+
+  .admin-shell .admin-num,
+  .admin-card .admin-num {
+    font-family: "Outfit", "Jost", system-ui, sans-serif !important;
   }
 
   .admin-card {
