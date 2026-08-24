@@ -32,11 +32,7 @@ export function Home() {
             url: 'https://sthevandev.com.br',
             email: STORE_CONTACT.email,
             telephone: STORE_CONTACT.phoneDisplay,
-            sameAs: [
-              STORE_CONTACT.instagramUrl,
-              'https://www.facebook.com/verissimopratas',
-              'https://www.tiktok.com/@verissimopratas',
-            ],
+            sameAs: [STORE_CONTACT.instagramUrl],
           })}
         </script>
       </Helmet>
