@@ -13,14 +13,18 @@ export function BenefitsBar() {
     <section className="border-b border-border bg-off-white/50 header-offset">
       <div className="container-brand py-3 sm:py-3.5">
         <AnimateIn>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-3 gap-y-3 sm:gap-4 lg:gap-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-2.5 sm:gap-4 lg:gap-6">
             {benefits.map(({ icon: Icon, text }) => (
               <div
                 key={text}
-                className="flex items-start sm:items-center justify-center gap-2 sm:gap-2.5 text-center sm:text-center px-1"
+                className="flex items-center gap-2 min-h-[2rem]"
               >
-                <Icon className="w-4 h-4 text-silver-dark shrink-0 mt-0.5 sm:mt-0" strokeWidth={1.5} />
-                <span className="text-[10px] sm:text-[11px] lg:text-xs tracking-wide text-warm-gray font-light leading-snug">
+                <Icon
+                  className="w-4 h-4 text-silver-dark shrink-0"
+                  strokeWidth={1.5}
+                  aria-hidden
+                />
+                <span className="text-[10px] sm:text-[11px] lg:text-xs tracking-wide text-warm-gray font-light leading-tight text-left">
                   {text}
                 </span>
               </div>

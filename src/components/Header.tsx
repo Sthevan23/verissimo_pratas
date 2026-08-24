@@ -7,7 +7,6 @@ import {
   Menu,
   Search,
   ShoppingBag,
-  User,
   X,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -116,9 +115,6 @@ export function Header() {
               <div className="flex items-center gap-4">
                 <IconButton onClick={openSearch} label="Buscar">
                   <Search className="w-[18px] h-[18px]" strokeWidth={1.5} />
-                </IconButton>
-                <IconButton label="Conta">
-                  <User className="w-[18px] h-[18px]" strokeWidth={1.5} />
                 </IconButton>
                 <Link to="/produtos" className="relative">
                   <IconButton label="Favoritos">
@@ -314,7 +310,7 @@ export function Header() {
                     )}
                   </div>
 
-                  <div className="border-t border-border px-5 py-5 grid grid-cols-3 gap-2 shrink-0">
+                  <div className="border-t border-border px-5 py-5 grid grid-cols-2 gap-2 shrink-0">
                     <button
                       onClick={() => {
                         closeMobile()
@@ -333,15 +329,11 @@ export function Header() {
                       <Heart className="w-5 h-5" strokeWidth={1.5} />
                       Favoritos
                       {favorites.length > 0 && (
-                        <span className="absolute top-2 right-3 w-4 h-4 bg-graphite text-cream text-[8px] flex items-center justify-center rounded-full">
+                        <span className="absolute top-2 right-1/2 translate-x-4 w-4 h-4 bg-graphite text-cream text-[8px] flex items-center justify-center rounded-full">
                           {favorites.length}
                         </span>
                       )}
                     </Link>
-                    <button className="flex flex-col items-center gap-1.5 py-3 text-[10px] tracking-wider uppercase text-warm-gray active:bg-off-white">
-                      <User className="w-5 h-5" strokeWidth={1.5} />
-                      Conta
-                    </button>
                   </div>
                 </div>
 
