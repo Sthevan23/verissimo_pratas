@@ -9,8 +9,8 @@ import { products } from '../data/products'
 const BRINCOS_TIPOS = [
   {
     slug: 'brincos',
-    title: 'Unitários',
-    description: 'Brincos avulsos para combinar do seu jeito',
+    title: 'Ver tudo',
+    description: 'Todos os brincos em um só lugar',
   },
   {
     slug: 'brincos-duplas',
@@ -32,6 +32,10 @@ function isDuplaProduct(name: string) {
   return /dupla/i.test(name)
 }
 
+function isBrincosCategory(cat: string) {
+  return cat === 'brincos' || cat === 'brincos-duplas' || cat === 'brincos-trios'
+}
+
 export function Products() {
   const [searchParams] = useSearchParams()
   const category = searchParams.get('categoria')
@@ -48,12 +52,12 @@ export function Products() {
       if (category === 'novidades') {
         result = result.filter((p) => p.isNew)
       } else if (category === 'brincos') {
-        // Unitários: brincos que NÃO são dupla nem trio
+        // Ver tudo: família brincos (inclui nomes legado com dupla/trio)
         result = result.filter(
           (p) =>
-            p.category === 'brincos' &&
-            !isTrioProduct(p.name) &&
-            !isDuplaProduct(p.name)
+            isBrincosCategory(p.category) ||
+            isTrioProduct(p.name) ||
+            isDuplaProduct(p.name)
         )
       } else if (category === 'brincos-trios') {
         result = result.filter(
@@ -168,7 +172,7 @@ export function Products() {
               {isBrincosFamily && (
                 <>
                   {' '}
-                  Cadastre produtos em <strong>Unitários</strong>, <strong>Duplas</strong> ou{' '}
+                  Cadastre produtos em <strong>Brincos</strong>, <strong>Duplas</strong> ou{' '}
                   <strong>Trios</strong> no painel.
                 </>
               )}

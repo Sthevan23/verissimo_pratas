@@ -11,8 +11,8 @@ export const categories: Category[] = [
   },
   {
     slug: 'brincos',
-    name: 'Brincos unitários',
-    description: 'Brincos unitários em prata 925 — ideais para quem monta o próprio look',
+    name: 'Brincos',
+    description: 'Todos os brincos em prata 925 — unitários, duplas e trios',
     image: `${CDN}/products/img_7459-jpg-ae93f851c77204047a17840546062480-480-0.webp`,
   },
   {
@@ -91,7 +91,7 @@ export const categories: Category[] = [
 
 export const categoryLabels: Record<string, string> = {
   aneis: 'Anéis',
-  brincos: 'Brincos unitários',
+  brincos: 'Brincos',
   'brincos-trios': 'Trios',
   'brincos-duplas': 'Duplas',
   colares: 'Colares',

@@ -16,7 +16,7 @@ import { useApp } from '../context/AppContext'
 import { useScrollPosition } from '../hooks/useScrollPosition'
 import { Logo } from './Logo'
 
-type NavChild = { label: string; href: string }
+type NavChild = { label: string; href: string; subtle?: boolean }
 type NavItem = {
   label: string
   href: string
@@ -30,7 +30,7 @@ const navLinks: NavItem[] = [
     label: 'Brincos',
     href: '/produtos?categoria=brincos',
     children: [
-      { label: 'Unitários', href: '/produtos?categoria=brincos' },
+      { label: 'Ver tudo em Brincos', href: '/produtos?categoria=brincos', subtle: true },
       { label: 'Duplas', href: '/produtos?categoria=brincos-duplas' },
       { label: 'Trios', href: '/produtos?categoria=brincos-trios' },
     ],
@@ -172,7 +172,11 @@ export function Header() {
                                 key={child.href + child.label}
                                 to={child.href}
                                 onClick={() => setDesktopOpen(null)}
-                                className="block px-4 py-3 text-[10px] tracking-[0.12em] uppercase text-warm-gray hover:text-graphite hover:bg-off-white transition-colors border-b border-border/40 last:border-0"
+                                className={`block px-4 py-3 tracking-[0.12em] uppercase transition-colors border-b border-border/40 last:border-0 ${
+                                  child.subtle
+                                    ? 'text-[10px] text-muted hover:text-graphite hover:bg-off-white'
+                                    : 'text-[11px] text-graphite hover:bg-off-white font-medium'
+                                }`}
                               >
                                 {child.label}
                               </Link>
@@ -326,7 +330,7 @@ export function Header() {
                   </div>
                 </div>
 
-                {/* Painel de opções (ex.: Brincos → Unitários / Duplas / Trios) */}
+                {/* Painel de opções (ex.: Brincos → Ver tudo / Duplas / Trios) */}
                 <div
                   className={`absolute inset-0 flex flex-col bg-cream transition-transform duration-300 ease-out ${
                     submenu ? 'translate-x-0' : 'translate-x-full'
@@ -341,9 +345,16 @@ export function Header() {
                     >
                       <ChevronLeft className="w-5 h-5" strokeWidth={1.5} />
                     </button>
-                    <p className="flex-1 text-center text-sm tracking-[0.15em] uppercase text-graphite pr-11">
+                    <p className="flex-1 text-center text-sm tracking-[0.15em] uppercase text-graphite">
                       {submenu?.label}
                     </p>
+                    <button
+                      onClick={closeMobile}
+                      className="touch-target text-graphite"
+                      aria-label="Fechar"
+                    >
+                      <X className="w-5 h-5" strokeWidth={1.5} />
+                    </button>
                   </div>
 
                   <div className="flex-1 overflow-y-auto px-5 py-2">
@@ -352,7 +363,11 @@ export function Header() {
                         key={child.href + child.label}
                         to={child.href}
                         onClick={closeMobile}
-                        className="flex items-center justify-between py-4 text-sm tracking-[0.12em] uppercase text-graphite border-b border-border/50 active:bg-off-white"
+                        className={`flex items-center justify-between py-4 tracking-[0.12em] uppercase border-b border-border/50 active:bg-off-white ${
+                          child.subtle
+                            ? 'text-xs text-muted'
+                            : 'text-sm text-graphite font-medium'
+                        }`}
                       >
                         {child.label}
                         <ChevronRight className="w-4 h-4 text-muted" strokeWidth={1.5} />
