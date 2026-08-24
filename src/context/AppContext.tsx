@@ -6,8 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { categories } from '../data/categories'
-import { searchProducts } from '../data/products'
+import { getStoreCategories, searchStoreProducts } from '../services/storeService'
 import type { CartItem, Product, SearchResult } from '../types'
 
 interface Toast {
@@ -151,7 +150,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const results: SearchResult[] = []
 
-    categories.forEach((cat) => {
+    getStoreCategories().forEach((cat) => {
       if (
         cat.name.toLowerCase().includes(q) ||
         cat.slug.includes(q)
@@ -166,7 +165,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     })
 
-    const matchedProducts = searchProducts(q)
+    const matchedProducts = searchStoreProducts(q)
     matchedProducts.forEach((p) => {
       results.push({
         type: 'product',

@@ -1,0 +1,24 @@
+# Verissimo Pratas — React SPA (loja + /admin) — Hostinger
+
+DirectoryIndex index.html
+
+Options -MultiViews
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # API PHP
+  RewriteRule ^api/ - [L]
+
+  # Arquivos e pastas reais
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # React Router: /admin/login, /produtos, etc.
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# Fallback Hostinger quando mod_rewrite não aplica
+ErrorDocument 404 /index.html

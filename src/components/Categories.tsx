@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { categories } from '../data/categories'
+import { homeCategories } from '../data/categories'
 import { AnimateIn } from './ui/AnimateIn'
 
 export function Categories() {
@@ -16,7 +16,7 @@ export function Categories() {
         </AnimateIn>
 
         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3 lg:gap-5">
-          {categories.map((cat, i) => (
+          {homeCategories.map((cat, i) => (
             <AnimateIn key={cat.slug} delay={i * 0.08}>
               <Link
                 to={`/produtos?categoria=${cat.slug}`}

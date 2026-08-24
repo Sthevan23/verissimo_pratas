@@ -1,0 +1,58 @@
+@import "tailwindcss";
+@reference "./index.css";
+
+@layer utilities {
+  .admin-shell {
+    font-family: var(--font-admin);
+    font-size: 16px;
+    line-height: 1.55;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .admin-shell .font-serif {
+    font-family: var(--font-serif);
+  }
+
+  .admin-num {
+    font-family: var(--font-admin);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+
+  .admin-card {
+    @apply bg-white border border-border shadow-[0_1px_3px_rgba(0,0,0,0.04)] rounded-sm;
+  }
+
+  .admin-input {
+    @apply w-full px-4 py-3 bg-off-white/50 border border-border text-[15px] font-normal text-graphite placeholder:text-muted focus:outline-none focus:border-silver-dark transition-colors;
+  }
+
+  .admin-label {
+    @apply block text-xs tracking-[0.12em] uppercase text-muted mb-1.5 font-medium;
+  }
+
+  .admin-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-graphite text-cream text-[13px] tracking-widest uppercase font-medium hover:bg-charcoal transition-colors disabled:opacity-50;
+  }
+
+  .admin-btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 border border-border text-graphite text-[13px] tracking-widest uppercase font-normal hover:border-graphite transition-colors;
+  }
+
+  .admin-table-th {
+    @apply text-left text-[11px] tracking-[0.15em] uppercase text-muted font-medium px-4 py-3.5 border-b border-border bg-off-white/40;
+  }
+
+  .admin-table-td {
+    @apply px-4 py-4 text-[15px] font-normal text-graphite border-b border-border;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
