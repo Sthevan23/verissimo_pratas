@@ -1,6 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Heart,
   Menu,
   Search,
@@ -8,16 +10,17 @@ import {
   User,
   X,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { useScrollPosition } from '../hooks/useScrollPosition'
 import { Logo } from './Logo'
 
+type NavChild = { label: string; href: string }
 type NavItem = {
   label: string
   href: string
-  children?: { label: string; href: string }[]
+  children?: NavChild[]
 }
 
 const navLinks: NavItem[] = [
@@ -47,12 +50,15 @@ export function Header() {
   const isScrolled = useScrollPosition(30)
   const { cartCount, openCart, openSearch, favorites } = useApp()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [brincosOpen, setBrincosOpen] = useState(false)
+  const [submenu, setSubmenu] = useState<NavItem | null>(null)
+  const [desktopOpen, setDesktopOpen] = useState<string | null>(null)
+  const desktopRef = useRef<HTMLDivElement>(null)
   const location = useLocation()
 
   useEffect(() => {
     setMobileOpen(false)
-    setBrincosOpen(false)
+    setSubmenu(null)
+    setDesktopOpen(null)
   }, [location.pathname, location.search])
 
   useEffect(() => {
@@ -61,6 +67,22 @@ export function Header() {
       document.body.style.overflow = ''
     }
   }, [mobileOpen])
+
+  useEffect(() => {
+    if (!desktopOpen) return
+    const onClick = (e: MouseEvent) => {
+      if (desktopRef.current && !desktopRef.current.contains(e.target as Node)) {
+        setDesktopOpen(null)
+      }
+    }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [desktopOpen])
+
+  const closeMobile = () => {
+    setMobileOpen(false)
+    setSubmenu(null)
+  }
 
   return (
     <>
@@ -78,30 +100,53 @@ export function Header() {
               <Logo />
             </div>
 
-            <nav className="flex items-center justify-center flex-wrap gap-x-4 gap-y-2 xl:gap-x-5">
+            <nav
+              ref={desktopRef}
+              className="flex items-center justify-center flex-wrap gap-x-4 gap-y-2 xl:gap-x-5"
+            >
               {navLinks.map((link) =>
                 link.children ? (
-                  <div key={link.label} className="relative group">
-                    <Link
-                      to={link.href}
+                  <div key={link.label} className="relative">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDesktopOpen((cur) => (cur === link.label ? null : link.label))
+                      }
                       className="inline-flex items-center gap-1 text-[10px] xl:text-[11px] tracking-[0.12em] uppercase text-warm-gray hover:text-graphite transition-colors duration-300 whitespace-nowrap"
+                      aria-expanded={desktopOpen === link.label}
                     >
                       {link.label}
-                      <ChevronDown className="w-3 h-3 opacity-60" strokeWidth={1.5} />
-                    </Link>
-                    <div className="invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 absolute top-full left-1/2 -translate-x-1/2 pt-3 z-50">
-                      <div className="bg-cream border border-border shadow-[0_8px_24px_rgba(0,0,0,0.06)] min-w-[11rem] py-2">
-                        {link.children.map((child) => (
-                          <Link
-                            key={child.href}
-                            to={child.href}
-                            className="block px-4 py-2.5 text-[10px] tracking-[0.12em] uppercase text-warm-gray hover:text-graphite hover:bg-off-white transition-colors"
-                          >
-                            {child.label}
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
+                      <ChevronDown
+                        className={`w-3 h-3 opacity-60 transition-transform ${
+                          desktopOpen === link.label ? 'rotate-180' : ''
+                        }`}
+                        strokeWidth={1.5}
+                      />
+                    </button>
+                    <AnimatePresence>
+                      {desktopOpen === link.label && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 6 }}
+                          transition={{ duration: 0.18 }}
+                          className="absolute top-full left-1/2 -translate-x-1/2 pt-3 z-50"
+                        >
+                          <div className="bg-cream border border-border shadow-[0_8px_24px_rgba(0,0,0,0.06)] min-w-[12rem] py-1">
+                            {link.children.map((child) => (
+                              <Link
+                                key={child.href + child.label}
+                                to={child.href}
+                                onClick={() => setDesktopOpen(null)}
+                                className="block px-4 py-3 text-[10px] tracking-[0.12em] uppercase text-warm-gray hover:text-graphite hover:bg-off-white transition-colors border-b border-border/40 last:border-0"
+                              >
+                                {child.label}
+                              </Link>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 ) : (
                   <Link
@@ -151,7 +196,7 @@ export function Header() {
             </div>
           </div>
 
-          {/* Mobile */}
+          {/* Mobile top bar */}
           <div className="grid lg:hidden grid-cols-[44px_1fr_88px] items-center gap-1 min-h-[44px]">
             <button
               onClick={() => setMobileOpen(true)}
@@ -190,7 +235,7 @@ export function Header() {
         </div>
       </header>
 
-      {/* Mobile menu */}
+      {/* Mobile drawer — menu principal + submenu ao clicar */}
       <AnimatePresence>
         {mobileOpen && (
           <>
@@ -199,110 +244,123 @@ export function Header() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 bg-graphite/40 z-[60] lg:hidden"
-              onClick={() => setMobileOpen(false)}
+              onClick={closeMobile}
             />
             <motion.nav
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
-              transition={{ type: 'tween', duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-              className="fixed top-0 left-0 bottom-0 w-[min(85vw,20rem)] bg-cream z-[70] lg:hidden flex flex-col safe-top safe-bottom"
+              transition={{ type: 'tween', duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+              className="fixed top-0 left-0 bottom-0 w-[min(88vw,21rem)] bg-cream z-[70] lg:hidden flex flex-col safe-top safe-bottom overflow-hidden"
             >
-              <div className="flex items-center justify-between px-5 py-5 border-b border-border">
-                <Logo />
-                <button
-                  onClick={() => setMobileOpen(false)}
-                  className="touch-target text-graphite"
-                  aria-label="Fechar"
+              <div className="relative flex-1 flex flex-col min-h-0">
+                {/* Painel principal */}
+                <div
+                  className={`absolute inset-0 flex flex-col transition-transform duration-300 ease-out ${
+                    submenu ? '-translate-x-full' : 'translate-x-0'
+                  }`}
                 >
-                  <X className="w-5 h-5" strokeWidth={1.5} />
-                </button>
-              </div>
+                  <div className="flex items-center justify-between px-5 py-5 border-b border-border shrink-0">
+                    <Logo />
+                    <button
+                      onClick={closeMobile}
+                      className="touch-target text-graphite"
+                      aria-label="Fechar"
+                    >
+                      <X className="w-5 h-5" strokeWidth={1.5} />
+                    </button>
+                  </div>
 
-              <div className="flex-1 overflow-y-auto py-4 px-5">
-                {navLinks.map((link, i) => (
-                  <motion.div
-                    key={link.label}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.04 }}
-                  >
-                    {link.children ? (
-                      <div className="border-b border-border/50">
+                  <div className="flex-1 overflow-y-auto py-2 px-5">
+                    {navLinks.map((link) =>
+                      link.children ? (
                         <button
+                          key={link.label}
                           type="button"
-                          onClick={() => setBrincosOpen((o) => !o)}
-                          className="flex w-full items-center justify-between py-4 text-sm tracking-[0.12em] uppercase text-graphite active:bg-off-white"
-                          aria-expanded={brincosOpen}
+                          onClick={() => setSubmenu(link)}
+                          className="flex w-full items-center justify-between py-4 text-sm tracking-[0.12em] uppercase text-graphite border-b border-border/50 active:bg-off-white"
                         >
                           {link.label}
-                          <ChevronDown
-                            className={`w-4 h-4 transition-transform ${brincosOpen ? 'rotate-180' : ''}`}
-                            strokeWidth={1.5}
-                          />
+                          <ChevronRight className="w-4 h-4 text-muted" strokeWidth={1.5} />
                         </button>
-                        <AnimatePresence>
-                          {brincosOpen && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: 'auto', opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              className="overflow-hidden"
-                            >
-                              <div className="pb-3 pl-3 space-y-1">
-                                {link.children.map((child) => (
-                                  <Link
-                                    key={child.href}
-                                    to={child.href}
-                                    className="block py-2.5 text-xs tracking-[0.12em] uppercase text-warm-gray active:bg-off-white"
-                                  >
-                                    {child.label}
-                                  </Link>
-                                ))}
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    ) : (
-                      <Link
-                        to={link.href}
-                        className="block py-4 text-sm tracking-[0.12em] uppercase text-graphite border-b border-border/50 active:bg-off-white"
-                      >
-                        {link.label}
-                      </Link>
+                      ) : (
+                        <Link
+                          key={link.href}
+                          to={link.href}
+                          onClick={closeMobile}
+                          className="block py-4 text-sm tracking-[0.12em] uppercase text-graphite border-b border-border/50 active:bg-off-white"
+                        >
+                          {link.label}
+                        </Link>
+                      )
                     )}
-                  </motion.div>
-                ))}
-              </div>
+                  </div>
 
-              <div className="border-t border-border px-5 py-5 grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => {
-                    setMobileOpen(false)
-                    openSearch()
-                  }}
-                  className="flex flex-col items-center gap-1.5 py-3 text-[10px] tracking-wider uppercase text-warm-gray active:bg-off-white"
+                  <div className="border-t border-border px-5 py-5 grid grid-cols-3 gap-2 shrink-0">
+                    <button
+                      onClick={() => {
+                        closeMobile()
+                        openSearch()
+                      }}
+                      className="flex flex-col items-center gap-1.5 py-3 text-[10px] tracking-wider uppercase text-warm-gray active:bg-off-white"
+                    >
+                      <Search className="w-5 h-5" strokeWidth={1.5} />
+                      Buscar
+                    </button>
+                    <Link
+                      to="/produtos"
+                      onClick={closeMobile}
+                      className="flex flex-col items-center gap-1.5 py-3 text-[10px] tracking-wider uppercase text-warm-gray active:bg-off-white relative"
+                    >
+                      <Heart className="w-5 h-5" strokeWidth={1.5} />
+                      Favoritos
+                      {favorites.length > 0 && (
+                        <span className="absolute top-2 right-3 w-4 h-4 bg-graphite text-cream text-[8px] flex items-center justify-center rounded-full">
+                          {favorites.length}
+                        </span>
+                      )}
+                    </Link>
+                    <button className="flex flex-col items-center gap-1.5 py-3 text-[10px] tracking-wider uppercase text-warm-gray active:bg-off-white">
+                      <User className="w-5 h-5" strokeWidth={1.5} />
+                      Conta
+                    </button>
+                  </div>
+                </div>
+
+                {/* Painel de opções (ex.: Brincos → Unitários / Duplas / Trios) */}
+                <div
+                  className={`absolute inset-0 flex flex-col bg-cream transition-transform duration-300 ease-out ${
+                    submenu ? 'translate-x-0' : 'translate-x-full'
+                  }`}
                 >
-                  <Search className="w-5 h-5" strokeWidth={1.5} />
-                  Buscar
-                </button>
-                <Link
-                  to="/produtos"
-                  className="flex flex-col items-center gap-1.5 py-3 text-[10px] tracking-wider uppercase text-warm-gray active:bg-off-white relative"
-                >
-                  <Heart className="w-5 h-5" strokeWidth={1.5} />
-                  Favoritos
-                  {favorites.length > 0 && (
-                    <span className="absolute top-2 right-3 w-4 h-4 bg-graphite text-cream text-[8px] flex items-center justify-center rounded-full">
-                      {favorites.length}
-                    </span>
-                  )}
-                </Link>
-                <button className="flex flex-col items-center gap-1.5 py-3 text-[10px] tracking-wider uppercase text-warm-gray active:bg-off-white">
-                  <User className="w-5 h-5" strokeWidth={1.5} />
-                  Conta
-                </button>
+                  <div className="flex items-center gap-1 px-3 py-4 border-b border-border shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setSubmenu(null)}
+                      className="touch-target text-graphite flex items-center gap-1"
+                      aria-label="Voltar"
+                    >
+                      <ChevronLeft className="w-5 h-5" strokeWidth={1.5} />
+                    </button>
+                    <p className="flex-1 text-center text-sm tracking-[0.15em] uppercase text-graphite pr-11">
+                      {submenu?.label}
+                    </p>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto px-5 py-2">
+                    {submenu?.children?.map((child) => (
+                      <Link
+                        key={child.href + child.label}
+                        to={child.href}
+                        onClick={closeMobile}
+                        className="flex items-center justify-between py-4 text-sm tracking-[0.12em] uppercase text-graphite border-b border-border/50 active:bg-off-white"
+                      >
+                        {child.label}
+                        <ChevronRight className="w-4 h-4 text-muted" strokeWidth={1.5} />
+                      </Link>
+                    ))}
+                  </div>
+                </div>
               </div>
             </motion.nav>
           </>
