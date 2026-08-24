@@ -1,5 +1,6 @@
 import { InstagramIcon } from './ui/SocialIcons'
 import { AnimateIn } from './ui/AnimateIn'
+import { STORE_CONTACT } from '../data/contact'
 
 const instagramImages = [
   'https://dcdn-us.mitiendanube.com/stores/003/936/343/products/img_7459-jpg-ae93f851c77204047a17840546062480-480-0.webp',
@@ -22,13 +23,13 @@ export function InstagramFeed() {
             Siga a Verissimo
           </h2>
           <a
-            href="https://instagram.com/verissimopratos"
+            href={STORE_CONTACT.instagramUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 text-sm text-warm-gray hover:text-graphite transition-colors link-underline"
           >
             <InstagramIcon className="w-4 h-4" />
-            @verissimopratos
+            {STORE_CONTACT.instagramHandle}
           </a>
         </AnimateIn>
 
@@ -36,7 +37,7 @@ export function InstagramFeed() {
           {instagramImages.map((img, i) => (
             <AnimateIn key={i} delay={i * 0.05}>
               <a
-                href="https://instagram.com/verissimopratos"
+                href={STORE_CONTACT.instagramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group relative block aspect-square overflow-hidden bg-off-white"
@@ -48,7 +49,7 @@ export function InstagramFeed() {
                   loading="lazy"
                 />
                 <div className="absolute inset-0 bg-graphite/0 group-hover:bg-graphite/30 transition-colors duration-500 flex items-center justify-center">
-                  <InstagramIcon className="w-6 h-6 text-cream opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <InstagramIcon className="w-6 h-6 text-cream opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
               </a>
             </AnimateIn>
