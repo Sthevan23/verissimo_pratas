@@ -1,0 +1,63 @@
+export type CategorySlug =
+  | 'aneis'
+  | 'brincos'
+  | 'colares'
+  | 'pulseiras'
+  | 'berloques'
+  | 'conjuntos'
+  | 'novidades'
+  | 'relogios'
+  | 'linha-masculina'
+
+export interface Product {
+  id: string
+  slug: string
+  name: string
+  description: string
+  price: number
+  salePrice?: number
+  images: string[]
+  category: CategorySlug
+  badge?: 'novidade' | 'promocao' | 'oferta-especial'
+  rating: number
+  reviewCount: number
+  inStock: boolean
+  material: string
+  warranty: string
+  care: string
+  shippingDays: string
+  sizes?: string[]
+  isNew?: boolean
+  isFeatured?: boolean
+  isOnSale?: boolean
+}
+
+export interface Category {
+  slug: CategorySlug
+  name: string
+  image: string
+  description: string
+}
+
+export interface CartItem {
+  product: Product
+  quantity: number
+  selectedSize?: string
+}
+
+export interface Testimonial {
+  id: string
+  name: string
+  rating: number
+  text: string
+  location?: string
+}
+
+export interface SearchResult {
+  type: 'product' | 'category' | 'suggestion'
+  id: string
+  label: string
+  href: string
+  image?: string
+  price?: number
+}

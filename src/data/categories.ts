@@ -1,0 +1,60 @@
+import type { Category } from '../types'
+
+const CDN = 'https://dcdn-us.mitiendanube.com/stores/003/936/343'
+
+export const categories: Category[] = [
+  {
+    slug: 'aneis',
+    name: 'Anéis',
+    description: 'Solitários, aparadores e alianças em prata 925',
+    image: `${CDN}/products/img_7372-jpg-1625f9af83ae02340c17840446565786-480-0.webp`,
+  },
+  {
+    slug: 'brincos',
+    name: 'Brincos',
+    description: 'Argolas, trios e pontos de luz cravejados',
+    image: `${CDN}/products/img_7459-jpg-ae93f851c77204047a17840546062480-480-0.webp`,
+  },
+  {
+    slug: 'colares',
+    name: 'Colares',
+    description: 'Colares, chokers e escapulários delicados',
+    image: `${CDN}/products/img_4817-jpg-bc43e9cb0a124925e817801724891973-480-0.webp`,
+  },
+  {
+    slug: 'pulseiras',
+    name: 'Pulseiras',
+    description: 'Pulseiras clássicas e contemporâneas',
+    image: `${CDN}/products/img_7549-240e76c14ba192830017842945307545-480-0.webp`,
+  },
+  {
+    slug: 'berloques',
+    name: 'Berloques',
+    description: 'Personalize sua pulseira com charme',
+    image: `${CDN}/products/img_4633-9c3c043dc188f7692c17807857126302-480-0.webp`,
+  },
+  {
+    slug: 'conjuntos',
+    name: 'Conjuntos',
+    description: 'Harmonia perfeita em colar e pulseira',
+    image: `${CDN}/products/img_4633-9c3c043dc188f7692c17807857126302-480-0.webp`,
+  },
+  {
+    slug: 'novidades',
+    name: 'Novidades',
+    description: 'As últimas peças que acabaram de chegar',
+    image: `${CDN}/products/img_1216-jpg-d16ce5b4c77552954417798372394070-480-0.webp`,
+  },
+]
+
+export const categoryLabels: Record<string, string> = {
+  aneis: 'Anéis',
+  brincos: 'Brincos',
+  colares: 'Colares',
+  pulseiras: 'Pulseiras',
+  berloques: 'Berloques',
+  conjuntos: 'Conjuntos',
+  novidades: 'Novidades',
+  relogios: 'Relógios',
+  'linha-masculina': 'Linha Masculina',
+}

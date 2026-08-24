@@ -1,0 +1,54 @@
+import { Helmet } from 'react-helmet-async'
+import { BenefitsBar } from '../components/BenefitsBar'
+import { Hero } from '../components/Hero'
+import { Categories } from '../components/Categories'
+import { ProductGrid } from '../components/ProductGrid'
+import { FeaturedCollection } from '../components/FeaturedCollection'
+import { Promotions } from '../components/Promotions'
+import { AboutSection } from '../components/AboutSection'
+import { ShoppingExperience } from '../components/ShoppingExperience'
+import { Testimonials } from '../components/Testimonials'
+import { InstagramFeed } from '../components/Instagram'
+import { Newsletter } from '../components/Newsletter'
+import { getFeaturedProducts } from '../data/products'
+
+export function Home() {
+  const featured = getFeaturedProducts()
+
+  return (
+    <>
+      <Helmet>
+        <title>Verissimo Pratas 925 — Elegância que permanece</title>
+        <meta
+          name="description"
+          content="Joias em prata 925 com elegância atemporal. Anéis, brincos, colares, pulseiras e berloques. Garantia vitalícia e envio para todo o Brasil."
+        />
+        <script type="application/ld+json">
+          {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Organization',
+            name: 'Verissimo Pratas 925',
+            url: 'https://www.verissimopratos.com.br',
+            sameAs: [
+              'https://www.facebook.com/verissimopratos',
+              'https://instagram.com/verissimopratos',
+              'https://www.tiktok.com/@verissimopratos',
+            ],
+          })}
+        </script>
+      </Helmet>
+
+      <BenefitsBar />
+      <Hero />
+      <Categories />
+      <ProductGrid products={featured} />
+      <FeaturedCollection />
+      <Promotions />
+      <AboutSection />
+      <ShoppingExperience />
+      <Testimonials />
+      <InstagramFeed />
+      <Newsletter />
+    </>
+  )
+}
