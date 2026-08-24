@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build && node scripts/postbuild.mjs",
+    "dev": "node scripts/ensure-dev.mjs && vite",
+    "build": "node scripts/postbuild.mjs",
     "lint": "oxlint",
     "preview": "vite preview"
   },
