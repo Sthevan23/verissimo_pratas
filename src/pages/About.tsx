@@ -146,7 +146,7 @@ export function About() {
               Estamos prontas para ajudar você a encontrar a peça perfeita.
             </p>
             <a
-              href="https://wa.me/5519995626888"
+              href="https://wa.me/5535991240681"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -254,7 +254,7 @@ export function About() {
                   novamente.
                 </p>
                 <a
-                  href="https://wa.me/5519995626888"
+                  href="https://wa.me/5535991240681"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex text-[11px] tracking-[0.15em] uppercase text-graphite border-b border-graphite/40 pb-0.5 hover:border-graphite transition-colors"
@@ -319,11 +319,124 @@ export function About() {
           )}
         </section>
 
+        <section
+          id="privacidade"
+          className="container-brand max-w-3xl mb-16 lg:mb-24 scroll-mt-32 border-t border-border pt-12 lg:pt-16"
+        >
+          <AnimateIn>
+            <p className="text-[11px] tracking-[0.3em] uppercase text-muted mb-3 text-center">
+              Última atualização: 24 de agosto de 2026
+            </p>
+            <h2 className="heading-display text-3xl lg:text-4xl text-graphite mb-8 text-center overflow-visible">
+              Política de Privacidade
+            </h2>
+
+            <div className="space-y-8 text-warm-gray font-light leading-relaxed">
+              <p>
+                A Isadora Veríssimo de Araújo, CNPJ 62.289.838/0001-02, valoriza a
+                privacidade e a segurança dos dados de nossas clientes e está
+                comprometida com a proteção das informações pessoais, conforme a
+                Lei Geral de Proteção de Dados (LGPD).
+              </p>
+
+              <div>
+                <h3 className="font-serif text-xl text-graphite font-light mb-3">
+                  1. Dados coletados
+                </h3>
+                <p>
+                  Podemos coletar informações necessárias para realizar compras,
+                  entregas e atendimentos, como nome, CPF, telefone, e-mail,
+                  endereço e dados relacionados ao pedido e pagamento.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-serif text-xl text-graphite font-light mb-3">
+                  2. Como utilizamos seus dados
+                </h3>
+                <p className="mb-3">Seus dados são utilizados exclusivamente para:</p>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li>Processar pedidos e pagamentos</li>
+                  <li>Realizar entregas</li>
+                  <li>Emitir notas fiscais</li>
+                  <li>Prestar atendimento e suporte</li>
+                  <li>Realizar trocas, garantias e assistência</li>
+                  <li>Cumprir obrigações legais</li>
+                  <li>Enviar comunicações, quando autorizado</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="font-serif text-xl text-graphite font-light mb-3">
+                  3. Compartilhamento
+                </h3>
+                <p className="mb-3">
+                  Seus dados poderão ser compartilhados apenas quando necessário
+                  com serviços de pagamento, entrega, plataformas utilizadas pela
+                  loja e órgãos públicos, quando exigido por lei.
+                </p>
+                <p>Não vendemos ou comercializamos seus dados pessoais.</p>
+              </div>
+
+              <div>
+                <h3 className="font-serif text-xl text-graphite font-light mb-3">
+                  4. Segurança
+                </h3>
+                <p>
+                  Adotamos medidas para proteger suas informações contra acesso,
+                  alteração ou uso indevido. Seus dados são mantidos apenas pelo
+                  período necessário ou exigido pela legislação.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-serif text-xl text-graphite font-light mb-3">
+                  5. Seus direitos
+                </h3>
+                <p className="mb-3">
+                  Você pode solicitar acesso, correção, atualização ou exclusão
+                  dos seus dados, quando aplicável, além de outros direitos
+                  previstos na LGPD.
+                </p>
+                <p className="mb-4">Para solicitações ou dúvidas:</p>
+                <div className="border border-border bg-off-white/50 px-5 py-5 space-y-1 text-graphite">
+                  <p className="font-medium">Isadora Veríssimo de Araújo</p>
+                  <p>CNPJ: 62.289.838/0001-02</p>
+                  <p>
+                    Telefone/WhatsApp:{' '}
+                    <a
+                      href="https://wa.me/5535991240681"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline underline-offset-2 hover:text-charcoal"
+                    >
+                      (35) 99124-0681
+                    </a>
+                  </p>
+                  <p>
+                    E-mail:{' '}
+                    <a
+                      href="mailto:verissimopratass@gmail.com"
+                      className="underline underline-offset-2 hover:text-charcoal"
+                    >
+                      verissimopratass@gmail.com
+                    </a>
+                  </p>
+                </div>
+              </div>
+
+              <p>
+                Esta política poderá ser atualizada sempre que necessário para
+                acompanhar mudanças em nossos serviços ou na legislação.
+              </p>
+            </div>
+          </AnimateIn>
+        </section>
+
         <div id="trocas" className="scroll-mt-32" />
         <div id="cuidados" className="scroll-mt-32" />
         <div id="pagamento" className="scroll-mt-32" />
         <div id="entrega" className="scroll-mt-32" />
-        <div id="privacidade" className="scroll-mt-32" />
         <div id="termos" className="scroll-mt-32" />
       </div>
     </>

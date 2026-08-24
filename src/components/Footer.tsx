@@ -9,8 +9,8 @@ const footerLinks = {
     { label: 'Contato', href: '/sobre#contato' },
   ],
   atendimento: [
-    { label: 'Fale conosco', href: 'https://wa.me/5519995626888', external: true },
-    { label: 'WhatsApp', href: 'https://wa.me/5519995626888', external: true },
+    { label: 'Fale conosco', href: 'https://wa.me/5535991240681', external: true },
+    { label: 'WhatsApp', href: 'https://wa.me/5535991240681', external: true },
     { label: 'Garantia e cuidados', href: '/sobre#garantia' },
     { label: 'Trocas e devoluções', href: '/sobre#trocas' },
     { label: 'Perguntas frequentes', href: '/sobre#faq' },
