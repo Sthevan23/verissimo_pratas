@@ -175,6 +175,98 @@ export function About() {
         </section>
 
         <section
+          id="garantia"
+          className="container-brand max-w-3xl mb-16 lg:mb-24 scroll-mt-32"
+        >
+          <AnimateIn>
+            <p className="text-[11px] tracking-[0.3em] uppercase text-muted mb-3 text-center">
+              Informações importantes
+            </p>
+            <h2 className="heading-display text-3xl lg:text-4xl text-graphite mb-10 text-center overflow-visible">
+              Garantia e cuidados
+            </h2>
+
+            <div className="space-y-10 text-warm-gray font-light leading-relaxed">
+              <div>
+                <h3 className="font-serif text-xl text-graphite font-light mb-3">
+                  Nossa garantia
+                </h3>
+                <p className="mb-3">
+                  Todas as nossas peças são confeccionadas em Prata 925 e possuem
+                  garantia vitalícia quanto à autenticidade do material.
+                </p>
+                <p>
+                  Além disso, nossa garantia cobre defeitos de fabricação
+                  identificados em até 7 dias após a compra.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-serif text-xl text-graphite font-light mb-3">
+                  A prata 925 pode escurecer?
+                </h3>
+                <p className="mb-3">Sim. E isso é completamente normal.</p>
+                <p className="mb-3">
+                  A Prata 925 é uma liga composta principalmente por prata, e,
+                  por ser um metal que reage com o ambiente, pode apresentar
+                  escurecimento ao longo do tempo. O contato com umidade, suor,
+                  produtos químicos, poluição e substâncias que contêm enxofre
+                  pode acelerar esse processo.
+                </p>
+                <p className="mb-3">
+                  Esse escurecimento acontece na superfície da peça, formando
+                  uma camada que altera temporariamente sua aparência. Por isso,
+                  uma Prata 925 escurecida não significa que a peça seja falsa,
+                  que perdeu sua qualidade ou que deixou de ser prata.
+                </p>
+                <p className="mb-3">
+                  Com a limpeza e os cuidados corretos, o brilho pode ser
+                  recuperado.
+                </p>
+                <p>
+                  Por isso, não se preocupe caso sua peça escureça com o uso: a
+                  oxidação é um processo natural da prata e faz parte dos
+                  cuidados necessários para manter sua joia sempre bonita.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-serif text-xl text-graphite font-light mb-3">
+                  O que a nossa garantia não cobre
+                </h3>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li>Soldas ou alterações realizadas na peça</li>
+                  <li>Perda de pedras</li>
+                  <li>
+                    Peças quebradas, amassadas ou riscadas decorrentes do uso
+                  </li>
+                  <li>Oxidação natural da Prata 925</li>
+                </ul>
+              </div>
+
+              <div className="border border-border bg-off-white/50 px-5 py-6 sm:px-6">
+                <h3 className="font-serif text-xl text-graphite font-light mb-3">
+                  Precisou de limpeza ou conserto?
+                </h3>
+                <p className="mb-4">
+                  Conte com a nossa assistência. Oferecemos limpeza e assistência
+                  para consertos das peças, sempre buscando deixar sua joia linda
+                  novamente.
+                </p>
+                <a
+                  href="https://wa.me/5519995626888"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex text-[11px] tracking-[0.15em] uppercase text-graphite border-b border-graphite/40 pb-0.5 hover:border-graphite transition-colors"
+                >
+                  Falar no WhatsApp
+                </a>
+              </div>
+            </div>
+          </AnimateIn>
+        </section>
+
+        <section
           id="historia"
           ref={storyRef}
           className="container-brand max-w-3xl scroll-mt-32 border-t border-border pt-12 lg:pt-16"
@@ -228,6 +320,7 @@ export function About() {
         </section>
 
         <div id="trocas" className="scroll-mt-32" />
+        <div id="cuidados" className="scroll-mt-32" />
         <div id="pagamento" className="scroll-mt-32" />
         <div id="entrega" className="scroll-mt-32" />
         <div id="privacidade" className="scroll-mt-32" />
@@ -241,6 +334,10 @@ const faqItems = [
   {
     q: 'As peças são de prata 925?',
     a: 'Sim, todas as joias Verissimo são fabricadas em prata 925 autêntica e acompanham certificado de garantia vitalícia.',
+  },
+  {
+    q: 'A prata 925 pode escurecer?',
+    a: 'Sim, e isso é normal. A oxidação é um processo natural da prata. Com limpeza e cuidados corretos, o brilho pode ser recuperado. Veja mais em Garantia e cuidados.',
   },
   {
     q: 'Qual o prazo de envio?',
