@@ -7,6 +7,8 @@ export type CategorySlug =
   | 'correntes'
   | 'pingentes'
   | 'pulseiras'
+  | 'pulseiras-braceletes'
+  | 'pulseiras-infantil'
   | 'berloques'
   | 'piercings'
   | 'tornozeleiras'

@@ -38,7 +38,15 @@ const navLinks: NavItem[] = [
   { label: 'Colares', href: '/produtos?categoria=colares' },
   { label: 'Correntes', href: '/produtos?categoria=correntes' },
   { label: 'Pingentes', href: '/produtos?categoria=pingentes' },
-  { label: 'Pulseiras', href: '/produtos?categoria=pulseiras' },
+  {
+    label: 'Pulseiras',
+    href: '/produtos?categoria=pulseiras',
+    children: [
+      { label: 'Ver tudo em Pulseiras', href: '/produtos?categoria=pulseiras', subtle: true },
+      { label: 'Braceletes', href: '/produtos?categoria=pulseiras-braceletes' },
+      { label: 'Infantil', href: '/produtos?categoria=pulseiras-infantil' },
+    ],
+  },
   { label: 'Berloques', href: '/produtos?categoria=berloques' },
   { label: 'Piercings', href: '/produtos?categoria=piercings' },
   { label: 'Tornozeleira', href: '/produtos?categoria=tornozeleiras' },

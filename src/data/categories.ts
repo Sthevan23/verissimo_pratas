@@ -48,7 +48,19 @@ export const categories: Category[] = [
   {
     slug: 'pulseiras',
     name: 'Pulseiras',
-    description: 'Pulseiras clássicas e contemporâneas',
+    description: 'Todas as pulseiras em prata 925 — clássicas, braceletes e infantil',
+    image: `${CDN}/products/img_7549-240e76c14ba192830017842945307545-480-0.webp`,
+  },
+  {
+    slug: 'pulseiras-braceletes',
+    name: 'Braceletes',
+    description: 'Braceletes em prata 925',
+    image: `${CDN}/products/img_7549-240e76c14ba192830017842945307545-480-0.webp`,
+  },
+  {
+    slug: 'pulseiras-infantil',
+    name: 'Infantil',
+    description: 'Pulseiras infantis em prata 925',
     image: `${CDN}/products/img_7549-240e76c14ba192830017842945307545-480-0.webp`,
   },
   {
@@ -98,6 +110,8 @@ export const categoryLabels: Record<string, string> = {
   correntes: 'Correntes',
   pingentes: 'Pingentes',
   pulseiras: 'Pulseiras',
+  'pulseiras-braceletes': 'Braceletes',
+  'pulseiras-infantil': 'Infantil',
   berloques: 'Berloques',
   piercings: 'Piercings',
   tornozeleiras: 'Tornozeleiras',
@@ -110,5 +124,15 @@ export const categoryLabels: Record<string, string> = {
 
 /** Categorias exibidas na home (sem subcategorias de brincos) */
 export const homeCategories = categories
-  .filter((c) => !['brincos-trios', 'brincos-duplas', 'conjuntos', 'novidades'].includes(c.slug))
+  .filter(
+    (c) =>
+      ![
+        'brincos-trios',
+        'brincos-duplas',
+        'pulseiras-braceletes',
+        'pulseiras-infantil',
+        'conjuntos',
+        'novidades',
+      ].includes(c.slug)
+  )
   .map((c) => (c.slug === 'brincos' ? { ...c, name: 'Brincos' } : c))

@@ -24,6 +24,24 @@ const BRINCOS_TIPOS = [
   },
 ] as const
 
+const PULSEIRAS_TIPOS = [
+  {
+    slug: 'pulseiras',
+    title: 'Ver tudo',
+    description: 'Todas as pulseiras em um só lugar',
+  },
+  {
+    slug: 'pulseiras-braceletes',
+    title: 'Braceletes',
+    description: 'Braceletes em prata 925',
+  },
+  {
+    slug: 'pulseiras-infantil',
+    title: 'Infantil',
+    description: 'Peças delicadas para os pequenos',
+  },
+] as const
+
 function isTrioProduct(name: string) {
   return /trio/i.test(name)
 }
@@ -32,8 +50,24 @@ function isDuplaProduct(name: string) {
   return /dupla/i.test(name)
 }
 
+function isBraceleteProduct(name: string) {
+  return /bracelet/i.test(name)
+}
+
+function isInfantilProduct(name: string) {
+  return /infantil|crian[cç]a|baby|kids/i.test(name)
+}
+
 function isBrincosCategory(cat: string) {
   return cat === 'brincos' || cat === 'brincos-duplas' || cat === 'brincos-trios'
+}
+
+function isPulseirasCategory(cat: string) {
+  return (
+    cat === 'pulseiras' ||
+    cat === 'pulseiras-braceletes' ||
+    cat === 'pulseiras-infantil'
+  )
 }
 
 export function Products() {
@@ -45,6 +79,15 @@ export function Products() {
     category === 'brincos' ||
     category === 'brincos-duplas' ||
     category === 'brincos-trios'
+  const isPulseirasFamily =
+    category === 'pulseiras' ||
+    category === 'pulseiras-braceletes' ||
+    category === 'pulseiras-infantil'
+  const familyHub = isBrincosFamily
+    ? { label: 'Brincos', tipos: BRINCOS_TIPOS, hint: 'Escolha o formato certo para a quantidade de furos.' }
+    : isPulseirasFamily
+      ? { label: 'Pulseiras', tipos: PULSEIRAS_TIPOS, hint: 'Escolha entre pulseiras, braceletes ou linha infantil.' }
+      : null
 
   const filtered = useMemo(() => {
     let result = [...products]
@@ -70,6 +113,25 @@ export function Products() {
           (p) =>
             p.category === 'brincos-duplas' ||
             (p.category === 'brincos' && isDuplaProduct(p.name))
+        )
+      } else if (category === 'pulseiras') {
+        result = result.filter(
+          (p) =>
+            isPulseirasCategory(p.category) ||
+            isBraceleteProduct(p.name) ||
+            isInfantilProduct(p.name)
+        )
+      } else if (category === 'pulseiras-braceletes') {
+        result = result.filter(
+          (p) =>
+            p.category === 'pulseiras-braceletes' ||
+            (p.category === 'pulseiras' && isBraceleteProduct(p.name))
+        )
+      } else if (category === 'pulseiras-infantil') {
+        result = result.filter(
+          (p) =>
+            p.category === 'pulseiras-infantil' ||
+            (p.category === 'pulseiras' && isInfantilProduct(p.name))
         )
       } else {
         result = result.filter((p) => p.category === category)
@@ -111,22 +173,23 @@ export function Products() {
         <div className="container-brand">
           <AnimateIn className="text-center mb-10 lg:mb-12">
             <p className="text-[11px] tracking-[0.3em] uppercase text-muted mb-3">
-              {isBrincosFamily ? 'Brincos' : `${filtered.length} ${filtered.length === 1 ? 'peça' : 'peças'}`}
+              {familyHub
+                ? familyHub.label
+                : `${filtered.length} ${filtered.length === 1 ? 'peça' : 'peças'}`}
             </p>
             <h1 className="heading-display text-3xl lg:text-5xl text-graphite">
               {title}
             </h1>
-            {isBrincosFamily && (
+            {familyHub && (
               <p className="mt-3 text-sm text-warm-gray font-light max-w-md mx-auto">
-                Escolha o formato certo para a quantidade de furos.
+                {familyHub.hint}
               </p>
             )}
           </AnimateIn>
 
-          {/* Hub de tipos de brincos — estilo coleção com subopções */}
-          {isBrincosFamily && (
+          {familyHub && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-12 lg:mb-16">
-              {BRINCOS_TIPOS.map((tipo) => {
+              {familyHub.tipos.map((tipo) => {
                 const active = category === tipo.slug
                 return (
                   <Link
@@ -154,13 +217,13 @@ export function Products() {
             </div>
           )}
 
-          {!isBrincosFamily && (
+          {!familyHub && (
             <p className="text-center text-[11px] tracking-[0.3em] uppercase text-muted mb-10 -mt-6">
               {filtered.length} {filtered.length === 1 ? 'peça' : 'peças'}
             </p>
           )}
 
-          {isBrincosFamily && (
+          {familyHub && (
             <p className="text-center text-[11px] tracking-[0.3em] uppercase text-muted mb-8">
               {filtered.length} {filtered.length === 1 ? 'peça' : 'peças'}
             </p>
@@ -174,6 +237,13 @@ export function Products() {
                   {' '}
                   Cadastre produtos em <strong>Brincos</strong>, <strong>Duplas</strong> ou{' '}
                   <strong>Trios</strong> no painel.
+                </>
+              )}
+              {isPulseirasFamily && (
+                <>
+                  {' '}
+                  Cadastre produtos em <strong>Pulseiras</strong>, <strong>Braceletes</strong> ou{' '}
+                  <strong>Infantil</strong> no painel.
                 </>
               )}
             </p>

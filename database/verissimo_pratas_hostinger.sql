@@ -252,21 +252,23 @@ INSERT INTO `settings` (
 );
 
 INSERT INTO `categories` (`id`, `name`, `slug`, `sort_order`) VALUES
-('cat-aneis',           'Anéis',          'aneis',           0),
-('cat-brincos',         'Brincos unitários', 'brincos',         1),
-('cat-brincos-duplas',  'Duplas',            'brincos-duplas',  2),
-('cat-brincos-trios',   'Trios',             'brincos-trios',   3),
-('cat-colares',         'Colares',        'colares',         4),
-('cat-correntes',       'Correntes',      'correntes',       5),
-('cat-pingentes',       'Pingentes',      'pingentes',       6),
-('cat-pulseiras',       'Pulseiras',      'pulseiras',       7),
-('cat-berloques',       'Berloques',      'berloques',       8),
-('cat-piercings',       'Piercings',      'piercings',       9),
-('cat-tornozeleiras',   'Tornozeleiras',     'tornozeleiras',  10),
-('cat-acessorios',      'Acessórios',       'acessorios',     11),
-('cat-conjuntos',       'Conjuntos',        'conjuntos',      12),
-('cat-novidades',       'Novidades',        'novidades',      13),
-('cat-promocoes',       'Promoções',        'promocoes',      14);
+('cat-aneis',                 'Anéis',          'aneis',                 0),
+('cat-brincos',               'Brincos',        'brincos',               1),
+('cat-brincos-duplas',        'Duplas',         'brincos-duplas',        2),
+('cat-brincos-trios',         'Trios',          'brincos-trios',         3),
+('cat-colares',               'Colares',        'colares',               4),
+('cat-correntes',             'Correntes',      'correntes',             5),
+('cat-pingentes',             'Pingentes',      'pingentes',             6),
+('cat-pulseiras',             'Pulseiras',      'pulseiras',             7),
+('cat-pulseiras-braceletes',  'Braceletes',     'pulseiras-braceletes',  8),
+('cat-pulseiras-infantil',    'Infantil',       'pulseiras-infantil',    9),
+('cat-berloques',             'Berloques',      'berloques',            10),
+('cat-piercings',             'Piercings',      'piercings',            11),
+('cat-tornozeleiras',         'Tornozeleiras',  'tornozeleiras',         12),
+('cat-acessorios',            'Acessórios',     'acessorios',           13),
+('cat-conjuntos',             'Conjuntos',      'conjuntos',            14),
+('cat-novidades',             'Novidades',      'novidades',            15),
+('cat-promocoes',             'Promoções',      'promocoes',            16);
 
 INSERT INTO `products` (
   `id`, `name`, `description`, `price`, `price_from`, `category_id`, `image`,
