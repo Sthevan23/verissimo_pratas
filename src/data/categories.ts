@@ -94,30 +94,6 @@ export const categories: Category[] = [
     image: `${CDN}/products/img_7549-240e76c14ba192830017842945307545-480-0.webp`,
   },
   {
-    slug: 'masculinos',
-    name: 'Masculinos',
-    description: 'Linha masculina em prata 925 — colares, pulseiras e pingentes',
-    image: `${CDN}/products/img_4817-jpg-bc43e9cb0a124925e817801724891973-480-0.webp`,
-  },
-  {
-    slug: 'masculinos-colares',
-    name: 'Colares masculinos',
-    description: 'Colares da linha masculina em prata 925',
-    image: `${CDN}/products/img_4817-jpg-bc43e9cb0a124925e817801724891973-480-0.webp`,
-  },
-  {
-    slug: 'masculinos-pulseiras',
-    name: 'Pulseiras masculinas',
-    description: 'Pulseiras da linha masculina em prata 925',
-    image: `${CDN}/products/img_7549-240e76c14ba192830017842945307545-480-0.webp`,
-  },
-  {
-    slug: 'masculinos-pingentes',
-    name: 'Pingentes masculinos',
-    description: 'Pingentes da linha masculina em prata 925',
-    image: `${CDN}/products/img_4633-9c3c043dc188f7692c17807857126302-480-0.webp`,
-  },
-  {
     slug: 'acessorios',
     name: 'Acessórios',
     description: 'Porta-joias, organizadores e complementos para sua coleção',
@@ -147,14 +123,10 @@ export const categoryLabels: Record<string, string> = {
   'berloques-pulseiras': 'Pulseiras',
   piercings: 'Piercings',
   tornozeleiras: 'Tornozeleiras',
-  masculinos: 'Masculinos',
-  'masculinos-colares': 'Colares',
-  'masculinos-pulseiras': 'Pulseiras',
-  'masculinos-pingentes': 'Pingentes',
   acessorios: 'Acessórios',
   novidades: 'Novidades',
   relogios: 'Relógios',
-  'linha-masculina': 'Masculinos',
+  'linha-masculina': 'Linha Masculina',
 }
 
 /** Categorias exibidas na home (sem subcategorias de menu) */
@@ -167,9 +139,6 @@ export const homeCategories = categories
         'pulseiras-braceletes',
         'pulseiras-infantil',
         'berloques-pulseiras',
-        'masculinos-colares',
-        'masculinos-pulseiras',
-        'masculinos-pingentes',
         'novidades',
       ].includes(c.slug)
   )

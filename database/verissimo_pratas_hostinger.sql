@@ -267,13 +267,9 @@ INSERT INTO `categories` (`id`, `name`, `slug`, `sort_order`) VALUES
 ('cat-berloques-pulseiras',   'Pulseiras',      'berloques-pulseiras',  12),
 ('cat-piercings',             'Piercings',      'piercings',            13),
 ('cat-tornozeleiras',         'Tornozeleiras',  'tornozeleiras',         14),
-('cat-masculinos',            'Masculinos',     'masculinos',           15),
-('cat-masculinos-colares',    'Colares',        'masculinos-colares',   16),
-('cat-masculinos-pulseiras',  'Pulseiras',      'masculinos-pulseiras', 17),
-('cat-masculinos-pingentes',  'Pingentes',      'masculinos-pingentes', 18),
-('cat-acessorios',            'Acessórios',     'acessorios',           19),
-('cat-novidades',             'Novidades',      'novidades',            20),
-('cat-promocoes',             'Promoções',      'promocoes',            21);
+('cat-acessorios',            'Acessórios',     'acessorios',           15),
+('cat-novidades',             'Novidades',      'novidades',            16),
+('cat-promocoes',             'Promoções',      'promocoes',            17);
 
 INSERT INTO `products` (
   `id`, `name`, `description`, `price`, `price_from`, `category_id`, `image`,

@@ -57,16 +57,6 @@ const navLinks: NavItem[] = [
   },
   { label: 'Piercings', href: '/produtos?categoria=piercings' },
   { label: 'Tornozeleira', href: '/produtos?categoria=tornozeleiras' },
-  {
-    label: 'Masculinos',
-    href: '/produtos?categoria=masculinos',
-    children: [
-      { label: 'Ver tudo em Masculinos', href: '/produtos?categoria=masculinos', subtle: true },
-      { label: 'Colares', href: '/produtos?categoria=masculinos-colares' },
-      { label: 'Pulseiras', href: '/produtos?categoria=masculinos-pulseiras' },
-      { label: 'Pingentes', href: '/produtos?categoria=masculinos-pingentes' },
-    ],
-  },
   { label: 'Acessórios', href: '/produtos?categoria=acessorios' },
   { label: 'Sobre nós', href: '/sobre' },
 ]

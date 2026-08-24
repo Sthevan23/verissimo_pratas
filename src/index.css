@@ -25,7 +25,8 @@
 
   @media (min-width: 1024px) {
     :root {
-      --header-height: 7.5rem;
+      /* logo + faixa de categorias (desktop) — evita título cortado pelo header fixo */
+      --header-height: 9.25rem;
     }
   }
 
@@ -78,6 +79,8 @@
 
   .heading-display {
     @apply font-serif font-light tracking-wide;
+    line-height: 1.2;
+    padding-block: 0.12em;
   }
 
   .link-underline {
