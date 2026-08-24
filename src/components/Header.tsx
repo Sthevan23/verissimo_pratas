@@ -47,7 +47,14 @@ const navLinks: NavItem[] = [
       { label: 'Infantil', href: '/produtos?categoria=pulseiras-infantil' },
     ],
   },
-  { label: 'Berloques', href: '/produtos?categoria=berloques' },
+  {
+    label: 'Berloques',
+    href: '/produtos?categoria=berloques',
+    children: [
+      { label: 'Ver tudo em Berloques', href: '/produtos?categoria=berloques', subtle: true },
+      { label: 'Pulseiras', href: '/produtos?categoria=berloques-pulseiras' },
+    ],
+  },
   { label: 'Piercings', href: '/produtos?categoria=piercings' },
   { label: 'Tornozeleira', href: '/produtos?categoria=tornozeleiras' },
   { label: 'Acessórios', href: '/produtos?categoria=acessorios' },

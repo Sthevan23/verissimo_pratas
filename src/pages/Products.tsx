@@ -42,6 +42,19 @@ const PULSEIRAS_TIPOS = [
   },
 ] as const
 
+const BERLOQUES_TIPOS = [
+  {
+    slug: 'berloques',
+    title: 'Ver tudo',
+    description: 'Berloques e pulseiras para montar',
+  },
+  {
+    slug: 'berloques-pulseiras',
+    title: 'Pulseiras',
+    description: 'Pulseiras para por berloques',
+  },
+] as const
+
 function isTrioProduct(name: string) {
   return /trio/i.test(name)
 }
@@ -58,6 +71,13 @@ function isInfantilProduct(name: string) {
   return /infantil|crian[cç]a|baby|kids/i.test(name)
 }
 
+function isPulseiraBerloqueProduct(name: string, description?: string) {
+  const text = `${name} ${description ?? ''}`
+  return /pulseira.*berloque|berloque.*pulseira|para berloques|pulseira de berloques/i.test(
+    text
+  )
+}
+
 function isBrincosCategory(cat: string) {
   return cat === 'brincos' || cat === 'brincos-duplas' || cat === 'brincos-trios'
 }
@@ -68,6 +88,10 @@ function isPulseirasCategory(cat: string) {
     cat === 'pulseiras-braceletes' ||
     cat === 'pulseiras-infantil'
   )
+}
+
+function isBerloquesCategory(cat: string) {
+  return cat === 'berloques' || cat === 'berloques-pulseiras'
 }
 
 export function Products() {
@@ -83,11 +107,19 @@ export function Products() {
     category === 'pulseiras' ||
     category === 'pulseiras-braceletes' ||
     category === 'pulseiras-infantil'
+  const isBerloquesFamily =
+    category === 'berloques' || category === 'berloques-pulseiras'
   const familyHub = isBrincosFamily
     ? { label: 'Brincos', tipos: BRINCOS_TIPOS, hint: 'Escolha o formato certo para a quantidade de furos.' }
     : isPulseirasFamily
       ? { label: 'Pulseiras', tipos: PULSEIRAS_TIPOS, hint: 'Escolha entre pulseiras, braceletes ou linha infantil.' }
-      : null
+      : isBerloquesFamily
+        ? {
+            label: 'Berloques',
+            tipos: BERLOQUES_TIPOS,
+            hint: 'Berloques avulsos ou pulseiras para montar do seu jeito.',
+          }
+        : null
 
   const filtered = useMemo(() => {
     let result = [...products]
@@ -132,6 +164,15 @@ export function Products() {
           (p) =>
             p.category === 'pulseiras-infantil' ||
             (p.category === 'pulseiras' && isInfantilProduct(p.name))
+        )
+      } else if (category === 'berloques') {
+        result = result.filter((p) => isBerloquesCategory(p.category))
+      } else if (category === 'berloques-pulseiras') {
+        result = result.filter(
+          (p) =>
+            p.category === 'berloques-pulseiras' ||
+            (p.category === 'berloques' &&
+              isPulseiraBerloqueProduct(p.name, p.description))
         )
       } else {
         result = result.filter((p) => p.category === category)
@@ -244,6 +285,13 @@ export function Products() {
                   {' '}
                   Cadastre produtos em <strong>Pulseiras</strong>, <strong>Braceletes</strong> ou{' '}
                   <strong>Infantil</strong> no painel.
+                </>
+              )}
+              {isBerloquesFamily && (
+                <>
+                  {' '}
+                  Cadastre produtos em <strong>Berloques</strong> ou{' '}
+                  <strong>Pulseiras</strong> (para berloques) no painel.
                 </>
               )}
             </p>

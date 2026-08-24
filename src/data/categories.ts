@@ -66,7 +66,13 @@ export const categories: Category[] = [
   {
     slug: 'berloques',
     name: 'Berloques',
-    description: 'Personalize sua pulseira com charme',
+    description: 'Personalize sua pulseira com charme — berloques e pulseiras para berloques',
+    image: `${CDN}/products/img_4633-9c3c043dc188f7692c17807857126302-480-0.webp`,
+  },
+  {
+    slug: 'berloques-pulseiras',
+    name: 'Pulseiras',
+    description: 'Pulseiras para montar e personalizar com berloques',
     image: `${CDN}/products/img_4633-9c3c043dc188f7692c17807857126302-480-0.webp`,
   },
   {
@@ -113,6 +119,7 @@ export const categoryLabels: Record<string, string> = {
   'pulseiras-braceletes': 'Braceletes',
   'pulseiras-infantil': 'Infantil',
   berloques: 'Berloques',
+  'berloques-pulseiras': 'Pulseiras',
   piercings: 'Piercings',
   tornozeleiras: 'Tornozeleiras',
   acessorios: 'Acessórios',
@@ -131,6 +138,7 @@ export const homeCategories = categories
         'brincos-duplas',
         'pulseiras-braceletes',
         'pulseiras-infantil',
+        'berloques-pulseiras',
         'conjuntos',
         'novidades',
       ].includes(c.slug)

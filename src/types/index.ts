@@ -10,6 +10,7 @@ export type CategorySlug =
   | 'pulseiras-braceletes'
   | 'pulseiras-infantil'
   | 'berloques'
+  | 'berloques-pulseiras'
   | 'piercings'
   | 'tornozeleiras'
   | 'acessorios'

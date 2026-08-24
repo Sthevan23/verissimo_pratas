@@ -263,12 +263,13 @@ INSERT INTO `categories` (`id`, `name`, `slug`, `sort_order`) VALUES
 ('cat-pulseiras-braceletes',  'Braceletes',     'pulseiras-braceletes',  8),
 ('cat-pulseiras-infantil',    'Infantil',       'pulseiras-infantil',    9),
 ('cat-berloques',             'Berloques',      'berloques',            10),
-('cat-piercings',             'Piercings',      'piercings',            11),
-('cat-tornozeleiras',         'Tornozeleiras',  'tornozeleiras',         12),
-('cat-acessorios',            'Acessórios',     'acessorios',           13),
-('cat-conjuntos',             'Conjuntos',      'conjuntos',            14),
-('cat-novidades',             'Novidades',      'novidades',            15),
-('cat-promocoes',             'Promoções',      'promocoes',            16);
+('cat-berloques-pulseiras',   'Pulseiras',      'berloques-pulseiras',  11),
+('cat-piercings',             'Piercings',      'piercings',            12),
+('cat-tornozeleiras',         'Tornozeleiras',  'tornozeleiras',         13),
+('cat-acessorios',            'Acessórios',     'acessorios',           14),
+('cat-conjuntos',             'Conjuntos',      'conjuntos',            15),
+('cat-novidades',             'Novidades',      'novidades',            16),
+('cat-promocoes',             'Promoções',      'promocoes',            17);
 
 INSERT INTO `products` (
   `id`, `name`, `description`, `price`, `price_from`, `category_id`, `image`,
@@ -411,7 +412,7 @@ INSERT INTO `products` (
 ) VALUES (
   'p11', 'Pulseira de Berloques Coração Cravejado',
   'Pulseira para berloques em prata 925 com coração cravejado. Personalize com charms e conte sua história única.',
-  435.00, 0, 'cat-berloques',
+  435.00, 0, 'cat-berloques-pulseiras',
   'https://dcdn-us.mitiendanube.com/stores/003/936/343/products/img_7594-240e7c614ba912830107842945370455-480-0.webp',
   0, 'pulseira-de-berloques-coracao-cravejado', '', 0, NULL, '', 0, 1, 1, 10
 );
