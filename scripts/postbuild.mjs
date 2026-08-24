@@ -78,6 +78,14 @@ if (existsSync(join(dist, 'icons.svg'))) {
   copyFileSync(join(dist, 'icons.svg'), join(root, 'icons.svg'))
 }
 
+// Pasta de fotos de produtos (public/products → raiz + deploy)
+const distProducts = join(dist, 'products')
+if (existsSync(distProducts)) {
+  const rootProducts = join(root, 'products')
+  if (existsSync(rootProducts)) rmSync(rootProducts, { recursive: true, force: true })
+  copyDir(distProducts, rootProducts)
+}
+
 // API na raiz (com senha se houver)
 const rootApi = join(root, 'api')
 // não apagar api/ fonte — só garantir arquivos PHP de produção

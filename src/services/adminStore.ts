@@ -12,7 +12,7 @@ import type {
 } from '../types/admin'
 import { getSession } from './authService'
 
-const STORAGE_KEY = 'verissimo-admin-db'
+const STORAGE_KEY = 'verissimo-admin-db-v2'
 
 function uid() {
   return crypto.randomUUID()
