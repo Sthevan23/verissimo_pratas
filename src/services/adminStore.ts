@@ -13,7 +13,7 @@ import type {
 } from '../types/admin'
 import { getSession } from './authService'
 
-const STORAGE_KEY = 'verissimo-admin-db-v4'
+const STORAGE_KEY = 'verissimo-admin-db-v5'
 
 function uid() {
   return crypto.randomUUID()
@@ -87,17 +87,12 @@ function createSeedDatabase(): AdminDatabase {
   ]
 
   const customers = [
-    { id: uid(), name: 'Camila Ribeiro', email: 'camila@email.com', phone: '(19) 99999-1234', cpf: '123.456.789-00', totalOrders: 3, totalSpent: 489, lastPurchase: daysAgo(2), createdAt: daysAgo(90) },
-    { id: uid(), name: 'Juliana Martins', email: 'juliana@email.com', phone: '(19) 98888-5678', totalOrders: 5, totalSpent: 1240, lastPurchase: daysAgo(5), createdAt: daysAgo(120) },
-    { id: uid(), name: 'Fernanda Lima', email: 'fernanda@email.com', phone: '(19) 97777-9012', totalOrders: 2, totalSpent: 378, lastPurchase: daysAgo(12), createdAt: daysAgo(60) },
+    { id: uid(), name: 'Camila Ribeiro', email: 'camila@email.com', phone: '(19) 99999-1234', cpf: '123.456.789-00', totalOrders: 0, totalSpent: 0, lastPurchase: '', createdAt: daysAgo(90) },
+    { id: uid(), name: 'Juliana Martins', email: 'juliana@email.com', phone: '(19) 98888-5678', totalOrders: 0, totalSpent: 0, lastPurchase: '', createdAt: daysAgo(120) },
+    { id: uid(), name: 'Fernanda Lima', email: 'fernanda@email.com', phone: '(19) 97777-9012', totalOrders: 0, totalSpent: 0, lastPurchase: '', createdAt: daysAgo(60) },
   ]
 
-  const orders: Order[] = [
-    makeOrder(customers[0], adminProducts[0], adminProducts[6], 2, 'pago', 'entregue', 5),
-    makeOrder(customers[1], adminProducts[3], adminProducts[4], 1, 'pago', 'enviado', 3),
-    makeOrder(customers[2], adminProducts[1], null, 1, 'pago', 'em_preparacao', 1),
-    makeOrder(customers[0], adminProducts[5], adminProducts[7], 3, 'pendente', 'pagamento_pendente', 0),
-  ]
+  const orders: Order[] = []
 
   return {
     products: adminProducts,
@@ -105,26 +100,13 @@ function createSeedDatabase(): AdminDatabase {
     orders,
     customers,
     coupons: [
-      { id: uid(), code: 'VERISSIMO10', type: 'percentual', value: 10, minPurchase: 100, usageLimit: 100, usageCount: 23, startsAt: daysAgo(30), expiresAt: daysFromNow(60), active: true },
-      { id: uid(), code: 'PRATA15', type: 'percentual', value: 15, minPurchase: 200, usageLimit: 50, usageCount: 8, startsAt: daysAgo(10), expiresAt: daysFromNow(20), active: true },
+      { id: uid(), code: 'VERISSIMO10', type: 'percentual', value: 10, minPurchase: 100, usageLimit: 100, usageCount: 0, startsAt: daysAgo(30), expiresAt: daysFromNow(60), active: true },
+      { id: uid(), code: 'PRATA15', type: 'percentual', value: 15, minPurchase: 200, usageLimit: 50, usageCount: 0, startsAt: daysAgo(10), expiresAt: daysFromNow(20), active: true },
     ],
-    reviews: [
-      { id: uid(), customerId: customers[0].id, customerName: customers[0].name, productId: adminProducts[0].id, productName: adminProducts[0].name, rating: 5, comment: 'Peça linda, qualidade impecável!', status: 'aprovada', createdAt: daysAgo(3) },
-      { id: uid(), customerId: customers[1].id, customerName: customers[1].name, productId: adminProducts[3].id, productName: adminProducts[3].name, rating: 5, comment: 'Entrega rápida e produto maravilhoso.', status: 'aprovada', createdAt: daysAgo(7) },
-      { id: uid(), customerId: customers[2].id, customerName: customers[2].name, productId: adminProducts[1].id, productName: adminProducts[1].name, rating: 4, comment: 'Muito bonito, recomendo.', status: 'pendente', createdAt: daysAgo(1) },
-    ],
-    transactions: [
-      { id: uid(), description: 'Venda online', category: 'Vendas', type: 'entrada', amount: 489, date: daysAgo(2), paymentMethod: 'Pix', status: 'confirmado', createdAt: daysAgo(2) },
-      { id: uid(), description: 'Anúncios Instagram', category: 'Publicidade', type: 'saida', amount: 350, date: daysAgo(5), paymentMethod: 'Cartão', status: 'confirmado', createdAt: daysAgo(5) },
-      { id: uid(), description: 'Embalagens', category: 'Embalagens', type: 'saida', amount: 120, date: daysAgo(8), paymentMethod: 'Pix', status: 'confirmado', createdAt: daysAgo(8) },
-    ],
-    payables: [
-      { id: uid(), description: 'Fornecedor prata 925', supplier: 'Metal Prata Ltda', amount: 2500, dueDate: daysFromNow(5), category: 'Fornecedores', status: 'pendente' },
-      { id: uid(), description: 'Aluguel loja', supplier: 'Imobiliária Central', amount: 1800, dueDate: daysFromNow(10), category: 'Aluguel', status: 'pendente' },
-    ],
-    receivables: [
-      { id: uid(), customerId: customers[0].id, customerName: customers[0].name, orderId: orders[3].id, amount: orders[3].total, dueDate: daysFromNow(3), status: 'pendente' },
-    ],
+    reviews: [],
+    transactions: [],
+    payables: [],
+    receivables: [],
     inventoryMovements: [],
     adminUsers: [
       { id: uid(), name: 'Administrador', email: import.meta.env.VITE_ADMIN_EMAIL || 'verissimopratass@gmail.com', role: 'administrador', active: true, createdAt: now() },
@@ -145,7 +127,7 @@ function createSeedDatabase(): AdminDatabase {
       tiktok: '@verissimopratas',
       freeShippingMin: 499,
       minOrder: 0,
-      maxInstallments: 3,
+      maxInstallments: 6,
       heroTitle: 'Elegância que permanece.',
       heroSubtitle: 'Descubra peças em prata pensadas para transformar momentos em memórias.',
     },
@@ -351,10 +333,10 @@ export function getDashboardStats(): DashboardStats {
     avgTicket,
     productsCount: db.products.filter((p) => p.status === 'active').length,
     lowStockCount: lowStock,
-    salesTodayChange: 12.5,
-    salesMonthChange: 8.3,
-    ordersChange: 5.2,
-    ticketChange: -2.1,
+    salesTodayChange: 0,
+    salesMonthChange: 0,
+    ordersChange: 0,
+    ticketChange: 0,
     grossRevenue: salesMonth,
     netRevenue: salesMonth - costs - expenses,
     costs,
