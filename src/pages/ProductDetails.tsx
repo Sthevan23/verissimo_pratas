@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { getProductBySlug, getRelatedProducts } from '../data/products'
 import { categoryLabels } from '../data/categories'
 import { STORE_COMMERCE } from '../data/commerce'
+import { resolveProductSizes } from '../data/sizes'
 import { useApp } from '../context/AppContext'
 import {
   calcPixPrice,
@@ -37,8 +38,11 @@ export function ProductDetails() {
   const [shareHint, setShareHint] = useState(false)
 
   useEffect(() => {
-    if (product?.sizes?.length) {
-      setSelectedSize(product.sizes[0])
+    const nextSizes = product
+      ? resolveProductSizes(product.category, product.sizes)
+      : undefined
+    if (nextSizes?.length) {
+      setSelectedSize(nextSizes[0])
     } else {
       setSelectedSize(undefined)
     }
@@ -62,13 +66,14 @@ export function ProductDetails() {
   const pixPrice = calcPixPrice(currentPrice)
   const related = getRelatedProducts(product)
   const categoryName = categoryLabels[product.category] ?? product.category
+  const sizes = resolveProductSizes(product.category, product.sizes)
   const stock = product.stock
   const isLastPiece = product.inStock && stock !== undefined && stock === 1
   const isLowStock =
     product.inStock && stock !== undefined && stock > 1 && stock <= 3
 
   const handleBuy = () => {
-    if (product.sizes && !selectedSize) return
+    if (sizes?.length && !selectedSize) return
     addToCart(product, quantity, selectedSize)
     openCart()
   }
@@ -264,7 +269,7 @@ export function ProductDetails() {
                   {formatPrice(STORE_COMMERCE.freeShippingNationalMin)}
                 </p>
 
-                {product.sizes && product.sizes.length > 0 && (
+                {sizes && sizes.length > 0 && (
                   <div className="mb-3">
                     <label
                       htmlFor="product-size"
@@ -279,7 +284,7 @@ export function ProductDetails() {
                         onChange={(e) => setSelectedSize(e.target.value)}
                         className="w-full appearance-none border border-border bg-cream rounded-sm px-3.5 py-3 pr-10 text-[15px] text-charcoal focus:outline-none focus:border-graphite"
                       >
-                        {product.sizes.map((size) => (
+                        {sizes.map((size) => (
                           <option key={size} value={size}>
                             {size}
                           </option>
@@ -338,7 +343,7 @@ export function ProductDetails() {
                   <button
                     type="button"
                     onClick={handleBuy}
-                    disabled={!product.inStock || (Boolean(product.sizes) && !selectedSize)}
+                    disabled={!product.inStock || (Boolean(sizes?.length) && !selectedSize)}
                     className="flex-1 h-[48px] bg-graphite text-cream text-[15px] font-semibold tracking-wide hover:bg-charcoal disabled:opacity-45 disabled:cursor-not-allowed transition-colors"
                   >
                     Comprar

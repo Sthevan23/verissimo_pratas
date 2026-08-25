@@ -1,5 +1,6 @@
 import { products as seedProducts } from '../data/seedProducts'
 import { categories as seedCategories } from '../data/categories'
+import { resolveProductSizes } from '../data/sizes'
 import type {
   AdminDatabase,
   AdminProduct,
@@ -12,7 +13,7 @@ import type {
 } from '../types/admin'
 import { getSession } from './authService'
 
-const STORAGE_KEY = 'verissimo-admin-db-v3'
+const STORAGE_KEY = 'verissimo-admin-db-v4'
 
 function uid() {
   return crypto.randomUUID()
@@ -49,7 +50,7 @@ function toAdminProduct(p: (typeof seedProducts)[0], index: number): AdminProduc
     warranty: p.warranty,
     care: p.care,
     shippingDays: p.shippingDays,
-    sizes: p.sizes,
+    sizes: resolveProductSizes(p.category, p.sizes),
     seoTitle: `${p.name} | Verissimo Pratas 925`,
     seoDescription: p.description.slice(0, 160),
     status: 'active',

@@ -19,8 +19,9 @@ interface AppContextValue {
   cartCount: number
   cartSubtotal: number
   addToCart: (product: Product, quantity?: number, size?: string) => void
-  removeFromCart: (productId: string) => void
-  updateQuantity: (productId: string, quantity: number) => void
+  removeFromCart: (productId: string, selectedSize?: string) => void
+  updateQuantity: (productId: string, quantity: number, selectedSize?: string) => void
+  updateCartSize: (productId: string, oldSize: string | undefined, newSize: string) => void
   clearCart: () => void
   favorites: string[]
   toggleFavorite: (productId: string) => void
@@ -97,23 +98,59 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [showToast]
   )
 
-  const removeFromCart = useCallback((productId: string) => {
-    setCart((prev) => prev.filter((item) => item.product.id !== productId))
+  const removeFromCart = useCallback((productId: string, selectedSize?: string) => {
+    setCart((prev) =>
+      prev.filter((item) => {
+        if (item.product.id !== productId) return true
+        if (selectedSize === undefined) return false
+        return item.selectedSize !== selectedSize
+      })
+    )
   }, [])
 
   const updateQuantity = useCallback(
-    (productId: string, quantity: number) => {
+    (productId: string, quantity: number, selectedSize?: string) => {
       if (quantity <= 0) {
-        removeFromCart(productId)
+        removeFromCart(productId, selectedSize)
         return
       }
       setCart((prev) =>
-        prev.map((item) =>
-          item.product.id === productId ? { ...item, quantity } : item
-        )
+        prev.map((item) => {
+          if (item.product.id !== productId) return item
+          if (selectedSize !== undefined && item.selectedSize !== selectedSize) return item
+          return { ...item, quantity }
+        })
       )
     },
     [removeFromCart]
+  )
+
+  const updateCartSize = useCallback(
+    (productId: string, oldSize: string | undefined, newSize: string) => {
+      if (oldSize === newSize) return
+      setCart((prev) => {
+        const source = prev.find(
+          (item) => item.product.id === productId && item.selectedSize === oldSize
+        )
+        if (!source) return prev
+
+        const withoutSource = prev.filter(
+          (item) => !(item.product.id === productId && item.selectedSize === oldSize)
+        )
+        const target = withoutSource.find(
+          (item) => item.product.id === productId && item.selectedSize === newSize
+        )
+        if (target) {
+          return withoutSource.map((item) =>
+            item.product.id === productId && item.selectedSize === newSize
+              ? { ...item, quantity: item.quantity + source.quantity }
+              : item
+          )
+        }
+        return [...withoutSource, { ...source, selectedSize: newSize }]
+      })
+    },
+    []
   )
 
   const clearCart = useCallback(() => setCart([]), [])
@@ -206,6 +243,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addToCart,
     removeFromCart,
     updateQuantity,
+    updateCartSize,
     clearCart,
     favorites,
     toggleFavorite,

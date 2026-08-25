@@ -244,6 +244,24 @@ export function AdminProductForm() {
           {/* Additional */}
           <section className="admin-card p-6 space-y-4">
             <h2 className="font-serif text-lg font-light border-b border-border pb-3">Informações adicionais</h2>
+            <div>
+              <label className="admin-label">Tamanhos (separados por vírgula)</label>
+              <input
+                className="admin-input"
+                value={(product.sizes ?? []).join(', ')}
+                onChange={(e) => {
+                  const sizes = e.target.value
+                    .split(',')
+                    .map((s) => s.trim())
+                    .filter(Boolean)
+                  update('sizes', sizes.length ? sizes : undefined)
+                }}
+                placeholder="14, 16, 18, 20, 22"
+              />
+              <p className="text-[11px] text-muted mt-1">
+                Anéis e pulseiras: informe os tamanhos disponíveis na loja.
+              </p>
+            </div>
             {(['material', 'silverType', 'weight', 'size', 'dimensions', 'warranty'] as const).map((field) => (
               <div key={field}>
                 <label className="admin-label capitalize">{field === 'silverType' ? 'Tipo de prata' : field === 'weight' ? 'Peso' : field === 'size' ? 'Tamanho' : field === 'dimensions' ? 'Dimensões' : field === 'warranty' ? 'Garantia' : 'Material'}</label>

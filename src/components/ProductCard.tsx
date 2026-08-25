@@ -22,6 +22,12 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const favorite = isFavorite(product.id)
   const currentPrice = product.salePrice ?? product.price
   const hasSecondImage = product.images.length > 1
+  const needsSize = Boolean(product.sizes?.length)
+
+  const handleBuy = () => {
+    if (needsSize) return
+    addToCart(product)
+  }
 
   return (
     <motion.article
@@ -87,13 +93,23 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
         </button>
 
         <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-500 hidden lg:block">
-          <button
-            onClick={() => addToCart(product)}
-            className="w-full flex items-center justify-center gap-2 bg-graphite text-cream py-3 text-[10px] tracking-[0.2em] uppercase hover:bg-charcoal transition-colors"
-          >
-            <ShoppingBag className="w-3.5 h-3.5" strokeWidth={1.5} />
-            Comprar
-          </button>
+          {needsSize ? (
+            <Link
+              to={`/produto/${product.slug}`}
+              className="w-full flex items-center justify-center gap-2 bg-graphite text-cream py-3 text-[10px] tracking-[0.2em] uppercase hover:bg-charcoal transition-colors"
+            >
+              <ShoppingBag className="w-3.5 h-3.5" strokeWidth={1.5} />
+              Escolher tamanho
+            </Link>
+          ) : (
+            <button
+              onClick={handleBuy}
+              className="w-full flex items-center justify-center gap-2 bg-graphite text-cream py-3 text-[10px] tracking-[0.2em] uppercase hover:bg-charcoal transition-colors"
+            >
+              <ShoppingBag className="w-3.5 h-3.5" strokeWidth={1.5} />
+              Comprar
+            </button>
+          )}
         </div>
       </div>
 
@@ -128,12 +144,21 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
           {formatInstallments(currentPrice)}
         </p>
 
-        <button
-          onClick={() => addToCart(product)}
-          className="lg:hidden w-full mt-2 min-h-11 py-2.5 border border-border text-[10px] tracking-[0.2em] uppercase text-graphite active:border-graphite active:bg-off-white transition-colors"
-        >
-          Comprar
-        </button>
+        {needsSize ? (
+          <Link
+            to={`/produto/${product.slug}`}
+            className="lg:hidden w-full mt-2 min-h-11 py-2.5 border border-border text-[10px] tracking-[0.2em] uppercase text-graphite active:border-graphite active:bg-off-white transition-colors flex items-center justify-center"
+          >
+            Escolher tamanho
+          </Link>
+        ) : (
+          <button
+            onClick={handleBuy}
+            className="lg:hidden w-full mt-2 min-h-11 py-2.5 border border-border text-[10px] tracking-[0.2em] uppercase text-graphite active:border-graphite active:bg-off-white transition-colors"
+          >
+            Comprar
+          </button>
+        )}
       </div>
     </motion.article>
   )

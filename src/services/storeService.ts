@@ -1,6 +1,7 @@
 import type { Product, Category } from '../types'
 import { getDatabase } from './adminStore'
 import { categoryLabels } from '../data/categories'
+import { resolveProductSizes } from '../data/sizes'
 
 /** Bridge: storefront reads from admin store (localStorage) when available */
 export function getStoreProducts(): Product[] {
@@ -84,7 +85,7 @@ function adminToStoreProduct(p: import('../types/admin').AdminProduct): Product 
     warranty: p.warranty,
     care: p.care,
     shippingDays: p.shippingDays,
-    sizes: p.sizes,
+    sizes: resolveProductSizes(p.category, p.sizes),
     isNew: p.isNew,
     isFeatured: p.isFeatured,
     isOnSale: p.isOnSale,

@@ -12,6 +12,7 @@ export function Cart() {
     cart,
     removeFromCart,
     updateQuantity,
+    updateCartSize,
     cartSubtotal,
     couponCode,
     setCouponCode,
@@ -54,8 +55,9 @@ export function Cart() {
               <div className="space-y-6">
                 {cart.map((item) => {
                   const price = item.product.salePrice ?? item.product.price
+                  const sizes = item.product.sizes
                   return (
-                    <AnimateIn key={`${item.product.id}-${item.selectedSize}`}>
+                    <AnimateIn key={`${item.product.id}-${item.selectedSize ?? 'nosize'}`}>
                       <div className="flex gap-5 pb-6 border-b border-border">
                         <Link
                           to={`/produto/${item.product.slug}`}
@@ -67,18 +69,43 @@ export function Cart() {
                             className="w-full h-full object-cover"
                           />
                         </Link>
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <Link
                             to={`/produto/${item.product.slug}`}
                             className="text-base font-light text-graphite hover:text-charcoal"
                           >
                             {item.product.name}
                           </Link>
-                          {item.selectedSize && (
+
+                          {sizes && sizes.length > 0 ? (
+                            <div className="mt-2 max-w-[10rem]">
+                              <label className="block text-xs text-muted mb-1">
+                                Tamanho
+                              </label>
+                              <select
+                                value={item.selectedSize ?? sizes[0]}
+                                onChange={(e) =>
+                                  updateCartSize(
+                                    item.product.id,
+                                    item.selectedSize,
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full appearance-none border border-border bg-cream px-3 py-2 text-sm text-graphite focus:outline-none focus:border-graphite"
+                              >
+                                {sizes.map((size) => (
+                                  <option key={size} value={size}>
+                                    {size}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          ) : item.selectedSize ? (
                             <p className="text-sm text-muted mt-1">
                               Tamanho: {item.selectedSize}
                             </p>
-                          )}
+                          ) : null}
+
                           <p className="text-base font-medium mt-2">
                             {formatPrice(price)}
                           </p>
@@ -86,7 +113,11 @@ export function Cart() {
                             <div className="flex items-center border border-border">
                               <button
                                 onClick={() =>
-                                  updateQuantity(item.product.id, item.quantity - 1)
+                                  updateQuantity(
+                                    item.product.id,
+                                    item.quantity - 1,
+                                    item.selectedSize
+                                  )
                                 }
                                 className="p-2 hover:bg-off-white"
                                 aria-label="Diminuir"
@@ -96,7 +127,11 @@ export function Cart() {
                               <span className="px-4 text-sm">{item.quantity}</span>
                               <button
                                 onClick={() =>
-                                  updateQuantity(item.product.id, item.quantity + 1)
+                                  updateQuantity(
+                                    item.product.id,
+                                    item.quantity + 1,
+                                    item.selectedSize
+                                  )
                                 }
                                 className="p-2 hover:bg-off-white"
                                 aria-label="Aumentar"
@@ -105,7 +140,9 @@ export function Cart() {
                               </button>
                             </div>
                             <button
-                              onClick={() => removeFromCart(item.product.id)}
+                              onClick={() =>
+                                removeFromCart(item.product.id, item.selectedSize)
+                              }
                               className="flex items-center gap-1.5 text-sm text-muted hover:text-graphite transition-colors"
                             >
                               <Trash2 className="w-4 h-4" strokeWidth={1.5} />
