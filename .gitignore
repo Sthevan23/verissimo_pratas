@@ -16,8 +16,14 @@ dist-ssr
 .env.*.local
 api/config.local.php
 api/data/catalog.json
+api/data/images/*
+!api/data/images/.gitkeep
+!api/data/images/.htaccess
 deploy/public_html/api/config.local.php
 deploy/public_html/api/data/catalog.json
+deploy/public_html/api/data/images/*
+!deploy/public_html/api/data/images/.gitkeep
+!deploy/public_html/api/data/images/.htaccess
 deploy/.ftp-credentials.json
 
 

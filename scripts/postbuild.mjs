@@ -104,8 +104,28 @@ if (savedLocal) {
   writeFileSync(join(deploy, 'api', 'config.local.php'), savedLocal, 'utf8')
 }
 mkdirSync(join(deploy, 'api', 'data'), { recursive: true })
+mkdirSync(join(deploy, 'api', 'data', 'images'), { recursive: true })
 if (existsSync(join(apiSrc, 'data', '.htaccess'))) {
   copyFileSync(join(apiSrc, 'data', '.htaccess'), join(deploy, 'api', 'data', '.htaccess'))
+}
+if (existsSync(join(apiSrc, 'data', 'images', '.htaccess'))) {
+  copyFileSync(
+    join(apiSrc, 'data', 'images', '.htaccess'),
+    join(deploy, 'api', 'data', 'images', '.htaccess')
+  )
+}
+if (existsSync(join(apiSrc, 'data', 'images', '.gitkeep'))) {
+  copyFileSync(
+    join(apiSrc, 'data', 'images', '.gitkeep'),
+    join(deploy, 'api', 'data', 'images', '.gitkeep')
+  )
+}
+for (const file of ['helpers.php', 'upload.php', 'catalog.php', 'media.php']) {
+  const src = join(apiSrc, file)
+  if (existsSync(src)) {
+    mkdirSync(join(deploy, 'api'), { recursive: true })
+    copyFileSync(src, join(deploy, 'api', file))
+  }
 }
 mkdirSync(join(deploy, 'uploads', 'products'), { recursive: true })
 if (existsSync(join(root, 'uploads', 'products', '.htaccess'))) {

@@ -54,3 +54,12 @@ function verissimo_uploads_dir(): string {
   }
   return $dir;
 }
+
+/** Pasta persistente de imagens (junto do catalog.json — sobrevive melhor ao Git) */
+function verissimo_images_dir(): string {
+  $dir = __DIR__ . '/data/images';
+  if (!is_dir($dir)) {
+    mkdir($dir, 0755, true);
+  }
+  return $dir;
+}

@@ -1,0 +1,5 @@
+# Bloqueia listagem; arquivos são servidos só via media.php
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>
+Deny from all
