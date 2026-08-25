@@ -142,7 +142,7 @@ function createSeedDatabase(): AdminDatabase {
       instagram: '@verissimopratas',
       facebook: 'verissimopratas',
       tiktok: '@verissimopratas',
-      freeShippingMin: 349,
+      freeShippingMin: 499,
       minOrder: 0,
       maxInstallments: 3,
       heroTitle: 'Elegância que permanece.',
@@ -166,7 +166,7 @@ function makeOrder(
   ]
   if (p2) items.push({ productId: p2.id, productName: p2.name, productImage: p2.images[0], quantity: 1, unitPrice: p2.salePrice ?? p2.price })
   const subtotal = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0)
-  const shipping = subtotal >= 349 ? 0 : 19.9
+  const shipping = subtotal >= 499 ? 0 : 19.9
   return {
     id: uid(),
     orderNumber: `VP-${String(Math.floor(Math.random() * 90000) + 10000)}`,

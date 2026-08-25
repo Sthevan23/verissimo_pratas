@@ -5,6 +5,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { Button } from '../components/ui/Button'
 import { STORE_CONTACT, whatsappLink } from '../data/contact'
+import { STORE_COMMERCE } from '../data/commerce'
 
 const storyParagraphs = [
   'Seja muito bem-vinda à nossa marca!',
@@ -32,7 +33,7 @@ const benefits = [
   {
     icon: Truck,
     title: 'Envio nacional',
-    text: 'Para todo o Brasil. Frete grátis acima de R$349.',
+    text: `Boa Esperança acima de R$ ${STORE_COMMERCE.freeShippingLocalMin} · Correios acima de R$ ${STORE_COMMERCE.freeShippingNationalMin}.`,
   },
 ]
 
@@ -477,10 +478,55 @@ export function About() {
           </AnimateIn>
         </section>
 
+        <section
+          id="pagamento"
+          className="container-brand max-w-3xl mb-16 lg:mb-20 scroll-mt-32 border-t border-border pt-12 lg:pt-16"
+        >
+          <AnimateIn>
+            <h2 className="heading-display text-3xl text-graphite mb-8 text-center overflow-visible">
+              Formas de pagamento
+            </h2>
+            <div className="space-y-4 text-warm-gray font-light leading-relaxed text-center sm:text-left max-w-xl mx-auto">
+              <p>
+                Em até <strong className="text-graphite font-medium">{STORE_COMMERCE.maxInstallments}x sem juros</strong> no
+                cartão de crédito.
+              </p>
+              <p>
+                À vista <strong className="text-graphite font-medium">{STORE_COMMERCE.cashDiscountPercent}% de desconto</strong>.
+              </p>
+            </div>
+          </AnimateIn>
+        </section>
+
+        <section
+          id="entrega"
+          className="container-brand max-w-3xl mb-16 lg:mb-24 scroll-mt-32"
+        >
+          <AnimateIn>
+            <h2 className="heading-display text-3xl text-graphite mb-8 text-center overflow-visible">
+              Envios e frete
+            </h2>
+            <div className="space-y-4 text-warm-gray font-light leading-relaxed max-w-xl mx-auto">
+              <p>
+                Em <strong className="text-graphite font-medium">Boa Esperança</strong>, compras
+                acima de R$ {STORE_COMMERCE.freeShippingLocalMin.toFixed(2).replace('.', ',')} com{' '}
+                <strong className="text-graphite font-medium">frete grátis</strong>.
+              </p>
+              <p>
+                Envio pelos <strong className="text-graphite font-medium">Correios</strong> para todo
+                o Brasil: frete grátis acima de R${' '}
+                {STORE_COMMERCE.freeShippingNationalMin.toFixed(2).replace('.', ',')}.
+              </p>
+              <p>
+                Compras acima de R$ {STORE_COMMERCE.giftMin.toFixed(2).replace('.', ',')} ganham{' '}
+                <strong className="text-graphite font-medium">{STORE_COMMERCE.giftLabel}</strong>.
+              </p>
+            </div>
+          </AnimateIn>
+        </section>
+
         <div id="trocas" className="scroll-mt-32" />
         <div id="cuidados" className="scroll-mt-32" />
-        <div id="pagamento" className="scroll-mt-32" />
-        <div id="entrega" className="scroll-mt-32" />
         <div id="termos" className="scroll-mt-32" />
       </div>
     </>
@@ -498,7 +544,7 @@ const faqItems = [
   },
   {
     q: 'Qual o prazo de envio?',
-    a: 'O envio é realizado em até 24 horas úteis após a confirmação do pagamento. O prazo de entrega varia conforme a região.',
+    a: 'O envio é realizado em até 24 horas úteis após a confirmação do pagamento. Em Boa Esperança o frete é grátis acima de R$ 159,00; pelos Correios, acima de R$ 499,00.',
   },
   {
     q: 'Como funciona a troca?',
@@ -506,6 +552,6 @@ const faqItems = [
   },
   {
     q: 'Quais formas de pagamento são aceitas?',
-    a: 'Aceitamos cartão de crédito (até 3x sem juros), Pix com 5% de desconto e boleto bancário.',
+    a: 'Cartão de crédito em até 6x sem juros e à vista com 5% de desconto.',
   },
 ]

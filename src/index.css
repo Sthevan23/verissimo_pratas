@@ -20,13 +20,14 @@
 
 @layer base {
   :root {
-    --header-height: 4.75rem;
+    --header-height: 7rem;
+    --promo-ticker-height: 2.25rem;
   }
 
   @media (min-width: 1024px) {
     :root {
-      /* logo + faixa de categorias (desktop) — evita título cortado pelo header fixo */
-      --header-height: 9.25rem;
+      /* logo + faixa de categorias + ticker */
+      --header-height: 11.5rem;
     }
   }
 
@@ -98,5 +99,22 @@
 
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  .promo-ticker {
+    animation: promo-ticker-scroll 45s linear infinite;
+  }
+
+  .promo-ticker:hover {
+    animation-play-state: paused;
+  }
+
+  @keyframes promo-ticker-scroll {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
   }
 }

@@ -5,6 +5,7 @@ import { useApp } from '../context/AppContext'
 import { formatPrice } from '../utils/format'
 import { Button } from '../components/ui/Button'
 import { AnimateIn } from '../components/ui/AnimateIn'
+import { STORE_COMMERCE } from '../data/commerce'
 
 export function Cart() {
   const {
@@ -19,8 +20,10 @@ export function Cart() {
   } = useApp()
 
   const discount = cartSubtotal * couponDiscount
-  const shipping = cartSubtotal >= 349 ? 0 : cartSubtotal > 0 ? 19.9 : 0
+  const freeShip = STORE_COMMERCE.freeShippingNationalMin
+  const shipping = cartSubtotal >= freeShip ? 0 : cartSubtotal > 0 ? 19.9 : 0
   const total = cartSubtotal - discount + shipping
+  const getsGift = cartSubtotal >= STORE_COMMERCE.giftMin
 
   return (
     <>
@@ -156,9 +159,22 @@ export function Cart() {
                         {shipping === 0 ? 'Grátis' : formatPrice(shipping)}
                       </span>
                     </div>
-                    {cartSubtotal < 349 && (
+                    {getsGift && (
+                      <p className="text-[11px] text-graphite">
+                        Brinde incluso: {STORE_COMMERCE.giftLabel}
+                      </p>
+                    )}
+                    {!getsGift && cartSubtotal > 0 && (
                       <p className="text-[11px] text-muted">
-                        Frete grátis em compras acima de R$349
+                        Faltam {formatPrice(STORE_COMMERCE.giftMin - cartSubtotal)} para ganhar{' '}
+                        {STORE_COMMERCE.giftLabel}
+                      </p>
+                    )}
+                    {cartSubtotal < freeShip && (
+                      <p className="text-[11px] text-muted">
+                        Correios: frete grátis acima de R${' '}
+                        {STORE_COMMERCE.freeShippingNationalMin} · Boa Esperança:
+                        acima de R$ {STORE_COMMERCE.freeShippingLocalMin}
                       </p>
                     )}
                   </div>

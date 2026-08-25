@@ -14,6 +14,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { useScrollPosition } from '../hooks/useScrollPosition'
 import { Logo } from './Logo'
+import { PromoTicker } from './PromoTicker'
 
 type NavChild = { label: string; href: string; subtle?: boolean }
 type NavItem = {
@@ -126,11 +127,16 @@ export function Header() {
       <header
         className={`fixed top-0 left-0 right-0 z-50 safe-top transition-all duration-500 ${
           isScrolled
-            ? 'bg-cream/90 backdrop-blur-md shadow-[0_1px_0_0_rgba(0,0,0,0.05)] py-3'
-            : 'bg-cream/80 backdrop-blur-sm lg:bg-transparent py-4 lg:py-6'
+            ? 'bg-cream/90 backdrop-blur-md shadow-[0_1px_0_0_rgba(0,0,0,0.05)]'
+            : 'bg-cream/80 backdrop-blur-sm lg:bg-cream/90'
         }`}
       >
-        <div className="container-brand">
+        <PromoTicker />
+        <div
+          className={`container-brand transition-[padding] duration-500 ${
+            isScrolled ? 'py-3' : 'py-4 lg:py-5'
+          }`}
+        >
           {/* Desktop — logo/ícones em cima, menu em faixa única embaixo */}
           <div className="hidden lg:block">
             <div className="flex items-center justify-between gap-6">

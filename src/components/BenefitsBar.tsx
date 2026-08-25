@@ -3,7 +3,7 @@ import { AnimateIn } from './ui/AnimateIn'
 
 const benefits = [
   { icon: Gem, text: 'Prata de alta qualidade' },
-  { icon: Truck, text: 'Envio para todo o Brasil' },
+  { icon: Truck, text: 'Frete grátis — Correios acima de R$ 499' },
   { icon: Shield, text: 'Compra segura' },
   { icon: Headphones, text: 'Atendimento especializado' },
 ]

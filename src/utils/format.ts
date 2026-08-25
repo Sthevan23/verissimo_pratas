@@ -5,7 +5,7 @@ export function formatPrice(value: number): string {
   })
 }
 
-export function formatInstallments(value: number, installments = 3): string {
+export function formatInstallments(value: number, installments = 6): string {
   const installmentValue = value / installments
   return `${installments}x de ${formatPrice(installmentValue)} sem juros`
 }
