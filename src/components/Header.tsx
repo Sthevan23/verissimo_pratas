@@ -10,6 +10,7 @@ import {
   X,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useLocation } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { useScrollPosition } from '../hooks/useScrollPosition'
@@ -100,13 +101,28 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [submenu, setSubmenu] = useState<NavItem | null>(null)
   const [desktopOpen, setDesktopOpen] = useState<string | null>(null)
+  const [desktopMenuPos, setDesktopMenuPos] = useState<{ top: number; left: number } | null>(
+    null
+  )
   const desktopRef = useRef<HTMLDivElement>(null)
+  const desktopMenuRef = useRef<HTMLDivElement>(null)
   const location = useLocation()
+
+  const openDesktopMenu = (label: string, anchor: HTMLElement) => {
+    const rect = anchor.getBoundingClientRect()
+    setDesktopOpen(label)
+    setDesktopMenuPos({ top: rect.bottom + 8, left: rect.left })
+  }
+
+  const closeDesktopMenu = () => {
+    setDesktopOpen(null)
+    setDesktopMenuPos(null)
+  }
 
   useEffect(() => {
     setMobileOpen(false)
     setSubmenu(null)
-    setDesktopOpen(null)
+    closeDesktopMenu()
   }, [location.pathname, location.search])
 
   useEffect(() => {
@@ -119,13 +135,24 @@ export function Header() {
   useEffect(() => {
     if (!desktopOpen) return
     const onClick = (e: MouseEvent) => {
-      if (desktopRef.current && !desktopRef.current.contains(e.target as Node)) {
-        setDesktopOpen(null)
-      }
+      const t = e.target as Node
+      if (desktopRef.current?.contains(t) || desktopMenuRef.current?.contains(t)) return
+      closeDesktopMenu()
     }
+    const onReposition = () => closeDesktopMenu()
     document.addEventListener('mousedown', onClick)
-    return () => document.removeEventListener('mousedown', onClick)
+    window.addEventListener('scroll', onReposition, true)
+    window.addEventListener('resize', onReposition)
+    return () => {
+      document.removeEventListener('mousedown', onClick)
+      window.removeEventListener('scroll', onReposition, true)
+      window.removeEventListener('resize', onReposition)
+    }
   }, [desktopOpen])
+
+  const openNavItem = desktopOpen
+    ? navLinks.find((l) => l.label === desktopOpen && l.children)
+    : null
 
   const closeMobile = () => {
     setMobileOpen(false)
@@ -186,64 +213,32 @@ export function Header() {
 
             <nav
               ref={desktopRef}
-              className="mt-4 pt-3 border-t border-border/50 -mx-4 sm:-mx-6 lg:-mx-8 relative z-40"
+              className="mt-4 pt-3 border-t border-border/50 -mx-4 sm:-mx-6 lg:-mx-8"
               aria-label="Categorias"
             >
-              {/* overflow-x corta o dropdown: com menu aberto usa overflow-visible */}
-              <div
-                className={`scrollbar-hide overscroll-x-contain px-4 sm:px-6 lg:px-8 ${
-                  desktopOpen ? 'overflow-visible' : 'overflow-x-auto'
-                }`}
-              >
+              <div className="overflow-x-auto scrollbar-hide overscroll-x-contain px-4 sm:px-6 lg:px-8">
                 <div className="flex w-max min-w-full items-center gap-x-3 xl:gap-x-3.5 2xl:gap-x-4 justify-start 2xl:justify-center">
                   {navLinks.map((link) =>
                     link.children ? (
-                      <div key={link.label} className="relative shrink-0">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setDesktopOpen((cur) => (cur === link.label ? null : link.label))
-                          }
-                          className="inline-flex items-center gap-0.5 text-[10px] xl:text-[11px] tracking-[0.08em] xl:tracking-[0.1em] uppercase text-warm-gray hover:text-graphite transition-colors duration-300 whitespace-nowrap"
-                          aria-expanded={desktopOpen === link.label}
-                        >
-                          {link.label}
-                          <ChevronDown
-                            className={`w-3 h-3 opacity-60 transition-transform ${
-                              desktopOpen === link.label ? 'rotate-180' : ''
-                            }`}
-                            strokeWidth={1.5}
-                          />
-                        </button>
-                        <AnimatePresence>
-                          {desktopOpen === link.label && (
-                            <motion.div
-                              initial={{ opacity: 0, y: 6 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: 6 }}
-                              transition={{ duration: 0.18 }}
-                              className="absolute top-full left-0 pt-3 z-[60]"
-                            >
-                              <div className="bg-cream border border-border shadow-[0_8px_24px_rgba(0,0,0,0.08)] min-w-[12rem] py-1">
-                                {link.children.map((child) => (
-                                  <Link
-                                    key={child.href + child.label}
-                                    to={child.href}
-                                    onClick={() => setDesktopOpen(null)}
-                                    className={`block px-4 py-3 tracking-[0.12em] uppercase transition-colors border-b border-border/40 last:border-0 ${
-                                      child.subtle
-                                        ? 'text-[10px] text-muted hover:text-graphite hover:bg-off-white'
-                                        : 'text-[11px] text-graphite hover:bg-off-white font-medium'
-                                    }`}
-                                  >
-                                    {child.label}
-                                  </Link>
-                                ))}
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
+                      <button
+                        key={link.label}
+                        type="button"
+                        onClick={(e) => {
+                          if (desktopOpen === link.label) closeDesktopMenu()
+                          else openDesktopMenu(link.label, e.currentTarget)
+                        }}
+                        className="shrink-0 inline-flex items-center gap-0.5 text-[10px] xl:text-[11px] tracking-[0.08em] xl:tracking-[0.1em] uppercase text-warm-gray hover:text-graphite transition-colors duration-300 whitespace-nowrap"
+                        aria-expanded={desktopOpen === link.label}
+                        aria-haspopup="menu"
+                      >
+                        {link.label}
+                        <ChevronDown
+                          className={`w-3 h-3 opacity-60 transition-transform ${
+                            desktopOpen === link.label ? 'rotate-180' : ''
+                          }`}
+                          strokeWidth={1.5}
+                        />
+                      </button>
                     ) : (
                       <Link
                         key={link.href}
@@ -257,6 +252,46 @@ export function Header() {
                 </div>
               </div>
             </nav>
+
+            {typeof document !== 'undefined' &&
+              openNavItem?.children &&
+              desktopMenuPos &&
+              createPortal(
+                <AnimatePresence>
+                  <motion.div
+                    ref={desktopMenuRef}
+                    role="menu"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 6 }}
+                    transition={{ duration: 0.18 }}
+                    style={{
+                      position: 'fixed',
+                      top: desktopMenuPos.top,
+                      left: desktopMenuPos.left,
+                      zIndex: 200,
+                    }}
+                    className="bg-cream border border-border shadow-[0_8px_24px_rgba(0,0,0,0.1)] min-w-[12rem] py-1"
+                  >
+                    {openNavItem.children.map((child) => (
+                      <Link
+                        key={child.href + child.label}
+                        to={child.href}
+                        role="menuitem"
+                        onClick={closeDesktopMenu}
+                        className={`block px-4 py-3 tracking-[0.12em] uppercase transition-colors border-b border-border/40 last:border-0 ${
+                          child.subtle
+                            ? 'text-[10px] text-muted hover:text-graphite hover:bg-off-white'
+                            : 'text-[11px] text-graphite hover:bg-off-white font-medium'
+                        }`}
+                      >
+                        {child.label}
+                      </Link>
+                    ))}
+                  </motion.div>
+                </AnimatePresence>,
+                document.body
+              )}
           </div>
 
           {/* Mobile — menu | logo | carrinho + busca (estilo Mafena) */}
