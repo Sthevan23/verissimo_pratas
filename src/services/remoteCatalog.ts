@@ -81,7 +81,7 @@ export async function ensurePublicImages(product: AdminProduct): Promise<AdminPr
     if (src.startsWith('data:')) {
       images.push(await uploadDataUrl(src, `produto-${product.id}-${i}`))
     } else {
-      images.push(src)
+      images.push(normalizeProductImageUrl(src))
     }
   }
   return { ...product, images }
@@ -92,23 +92,43 @@ export async function compressImageFile(file: File, maxSide = 1600, quality = 0.
   if (!file.type.startsWith('image/')) return file
   if (file.size < 400_000) return file
 
-  const bitmap = await createImageBitmap(file)
-  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height))
-  const w = Math.round(bitmap.width * scale)
-  const h = Math.round(bitmap.height * scale)
-  const canvas = document.createElement('canvas')
-  canvas.width = w
-  canvas.height = h
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return file
-  ctx.drawImage(bitmap, 0, 0, w, h)
-  bitmap.close()
+  try {
+    const bitmap = await createImageBitmap(file)
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height))
+    const w = Math.round(bitmap.width * scale)
+    const h = Math.round(bitmap.height * scale)
+    const canvas = document.createElement('canvas')
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return file
+    ctx.drawImage(bitmap, 0, 0, w, h)
+    bitmap.close()
 
-  const blob: Blob | null = await new Promise((resolve) =>
-    canvas.toBlob((b) => resolve(b), 'image/jpeg', quality)
-  )
-  if (!blob) return file
-  return new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', {
-    type: 'image/jpeg',
-  })
+    const blob: Blob | null = await new Promise((resolve) =>
+      canvas.toBlob((b) => resolve(b), 'image/jpeg', quality)
+    )
+    if (!blob) return file
+    return new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', {
+      type: 'image/jpeg',
+    })
+  } catch {
+    return file
+  }
+}
+
+/** Normaliza URL antiga /uploads/... para o proxy PHP (evita 500 na Hostinger) */
+export function normalizeProductImageUrl(url: string): string {
+  if (!url) return url
+  if (url.startsWith('/api/media.php')) return url
+  const m = url.match(/\/uploads\/products\/([^/?#]+)$/i)
+  if (m) return `/api/media.php?f=${encodeURIComponent(m[1])}`
+  return url
+}
+
+export function normalizeProductImages<T extends { images: string[] }>(product: T): T {
+  return {
+    ...product,
+    images: product.images.map(normalizeProductImageUrl),
+  }
 }

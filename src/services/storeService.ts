@@ -74,7 +74,13 @@ function adminToStoreProduct(p: import('../types/admin').AdminProduct): Product 
     description: p.description,
     price: p.price,
     salePrice: p.salePrice,
-    images: p.images,
+    images: p.images.map((img) => {
+      if (img.startsWith('/uploads/products/')) {
+        const f = img.split('/').pop() || ''
+        return `/api/media.php?f=${encodeURIComponent(f)}`
+      }
+      return img
+    }),
     category: p.category,
     badge: p.badge,
     rating: p.rating,

@@ -15,6 +15,7 @@ import { getSession } from './authService'
 import {
   ensurePublicImages,
   fetchRemoteCatalog,
+  normalizeProductImages,
   pushCatalogToServer,
 } from './remoteCatalog'
 
@@ -223,8 +224,9 @@ export async function publishCatalogToServer(): Promise<{ ok: boolean; error?: s
     const db = getDatabase()
     const withUrls: AdminProduct[] = []
     for (const p of db.products) {
-      const needsUpload = p.images.some((img) => img.startsWith('data:'))
-      withUrls.push(needsUpload ? await ensurePublicImages(p) : p)
+      const normalized = normalizeProductImages(p)
+      const needsUpload = normalized.images.some((img) => img.startsWith('data:'))
+      withUrls.push(needsUpload ? await ensurePublicImages(normalized) : normalized)
     }
     db.products = withUrls
     saveDatabase(db)
@@ -245,7 +247,7 @@ export async function hydrateCatalogFromServer(options?: {
 
   const db = getDatabase()
   if (remote.length > 0) {
-    db.products = remote
+    db.products = remote.map((p) => normalizeProductImages(p))
     saveDatabase(db)
     return true
   }

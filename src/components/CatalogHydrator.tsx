@@ -6,6 +6,7 @@ import { hydrateCatalogFromServer } from '../services/adminStore'
  */
 export function CatalogHydrator({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false)
+  const [version, setVersion] = useState(0)
 
   useEffect(() => {
     let alive = true
@@ -13,7 +14,10 @@ export function CatalogHydrator({ children }: { children: React.ReactNode }) {
       try {
         await hydrateCatalogFromServer()
       } finally {
-        if (alive) setReady(true)
+        if (alive) {
+          setVersion((v) => v + 1)
+          setReady(true)
+        }
       }
     })()
     return () => {
@@ -29,5 +33,5 @@ export function CatalogHydrator({ children }: { children: React.ReactNode }) {
     )
   }
 
-  return <>{children}</>
+  return <div key={version}>{children}</div>
 }

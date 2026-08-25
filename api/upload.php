@@ -46,10 +46,11 @@ if (!move_uploaded_file($file['tmp_name'], $dest)) {
 
 @chmod($dest, 0644);
 
-$url = '/uploads/products/' . $name;
+$url = '/api/media.php?f=' . rawurlencode($name);
 verissimo_json([
   'ok' => true,
   'url' => $url,
+  'path' => '/uploads/products/' . $name,
   'filename' => $name,
   'mime' => $mime,
   'bytes' => (int) filesize($dest),
