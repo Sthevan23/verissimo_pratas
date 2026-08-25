@@ -186,10 +186,15 @@ export function Header() {
 
             <nav
               ref={desktopRef}
-              className="mt-4 pt-3 border-t border-border/50 -mx-4 sm:-mx-6 lg:-mx-8"
+              className="mt-4 pt-3 border-t border-border/50 -mx-4 sm:-mx-6 lg:-mx-8 relative z-40"
               aria-label="Categorias"
             >
-              <div className="overflow-x-auto scrollbar-hide overscroll-x-contain px-4 sm:px-6 lg:px-8">
+              {/* overflow-x corta o dropdown: com menu aberto usa overflow-visible */}
+              <div
+                className={`scrollbar-hide overscroll-x-contain px-4 sm:px-6 lg:px-8 ${
+                  desktopOpen ? 'overflow-visible' : 'overflow-x-auto'
+                }`}
+              >
                 <div className="flex w-max min-w-full items-center gap-x-3 xl:gap-x-3.5 2xl:gap-x-4 justify-start 2xl:justify-center">
                   {navLinks.map((link) =>
                     link.children ? (
@@ -217,9 +222,9 @@ export function Header() {
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: 6 }}
                               transition={{ duration: 0.18 }}
-                              className="absolute top-full left-0 pt-3 z-50"
+                              className="absolute top-full left-0 pt-3 z-[60]"
                             >
-                              <div className="bg-cream border border-border shadow-[0_8px_24px_rgba(0,0,0,0.06)] min-w-[12rem] py-1">
+                              <div className="bg-cream border border-border shadow-[0_8px_24px_rgba(0,0,0,0.08)] min-w-[12rem] py-1">
                                 {link.children.map((child) => (
                                   <Link
                                     key={child.href + child.label}
