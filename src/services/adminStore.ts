@@ -12,6 +12,11 @@ import type {
   OrderStatus,
 } from '../types/admin'
 import { getSession } from './authService'
+import {
+  ensurePublicImages,
+  fetchRemoteCatalog,
+  pushCatalogToServer,
+} from './remoteCatalog'
 
 const STORAGE_KEY = 'verissimo-admin-db-v5'
 
@@ -208,7 +213,48 @@ export function saveProduct(product: AdminProduct): AdminProduct {
     addAudit('create', 'product', product.id, `Criou o produto ${product.name}`)
   }
   saveDatabase(db)
+  void publishCatalogToServer()
   return product
+}
+
+/** Sobe fotos base64 + publica catálogo no servidor (visível no site) */
+export async function publishCatalogToServer(): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const db = getDatabase()
+    const withUrls: AdminProduct[] = []
+    for (const p of db.products) {
+      const needsUpload = p.images.some((img) => img.startsWith('data:'))
+      withUrls.push(needsUpload ? await ensurePublicImages(p) : p)
+    }
+    db.products = withUrls
+    saveDatabase(db)
+    const ok = await pushCatalogToServer(withUrls)
+    return ok ? { ok: true } : { ok: false, error: 'Servidor não aceitou o catálogo' }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erro ao publicar' }
+  }
+}
+
+/** Baixa catálogo do servidor e atualiza o painel/vitrine local */
+export async function hydrateCatalogFromServer(options?: {
+  /** Só no painel admin: se o servidor estiver vazio, envia os produtos deste aparelho */
+  pushIfEmpty?: boolean
+}): Promise<boolean> {
+  const remote = await fetchRemoteCatalog()
+  if (!remote) return false
+
+  const db = getDatabase()
+  if (remote.length > 0) {
+    db.products = remote
+    saveDatabase(db)
+    return true
+  }
+
+  if (options?.pushIfEmpty && db.products.length > 0) {
+    const result = await publishCatalogToServer()
+    return result.ok
+  }
+  return false
 }
 
 export function deleteProduct(id: string): void {
@@ -217,6 +263,7 @@ export function deleteProduct(id: string): void {
   db.products = db.products.filter((x) => x.id !== id)
   saveDatabase(db)
   if (p) addAudit('delete', 'product', id, `Excluiu o produto ${p.name}`)
+  void publishCatalogToServer()
 }
 
 export function archiveProduct(id: string): void {
@@ -247,6 +294,7 @@ export function bulkUpdateProducts(ids: string[], updates: Partial<AdminProduct>
   )
   saveDatabase(db)
   addAudit('bulk_update', 'product', ids.join(','), `Atualização em massa de ${ids.length} produtos`)
+  void publishCatalogToServer()
 }
 
 // ─── Orders ───

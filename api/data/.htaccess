@@ -1,0 +1,5 @@
+# Bloqueia acesso HTTP direto aos JSON (só via PHP)
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>
+Deny from all

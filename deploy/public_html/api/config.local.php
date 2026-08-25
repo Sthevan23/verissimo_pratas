@@ -13,4 +13,5 @@ return [
   'user' => 'u586160337_verissimo',
   'pass' => 'Sh100901',
   'charset' => 'utf8mb4',
+  'api_token' => 'Verissimo@2026',
 ];

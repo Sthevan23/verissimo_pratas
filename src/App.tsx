@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AnimatePresence, motion } from 'framer-motion'
 import { HelmetProvider } from 'react-helmet-async'
 import { AppProvider } from './context/AppContext'
+import { CatalogHydrator } from './components/CatalogHydrator'
 import { AdminAuthProvider } from './context/AdminAuthContext'
 import { AdminToastProvider } from './context/AdminToastContext'
 import { Layout } from './components/Layout'
@@ -95,7 +96,9 @@ export default function App() {
                 path="/*"
                 element={
                   <AppProvider>
-                    <StoreRoutes />
+                    <CatalogHydrator>
+                      <StoreRoutes />
+                    </CatalogHydrator>
                   </AppProvider>
                 }
               />

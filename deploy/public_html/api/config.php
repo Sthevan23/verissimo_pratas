@@ -20,4 +20,6 @@ return [
   'user' => getenv('VERISSIMO_DB_USER') ?: 'u586160337_verissimo',
   'pass' => getenv('VERISSIMO_DB_PASS') ?: '',
   'charset' => 'utf8mb4',
+  /** Token para upload/salvar catálogo (mesmo valor da senha admin) */
+  'api_token' => getenv('VERISSIMO_API_TOKEN') ?: 'Verissimo@2026',
 ];

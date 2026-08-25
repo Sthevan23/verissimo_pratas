@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-import { Upload, X, GripVertical, Star } from 'lucide-react'
+import { Upload, X, GripVertical, Star, Loader2 } from 'lucide-react'
 import { PageHeader } from '../../components/admin/Modal'
-import { getAdminProduct, saveProduct } from '../../services/adminStore'
+import {
+  getAdminProduct,
+  saveProduct,
+  publishCatalogToServer,
+} from '../../services/adminStore'
 import { getDatabase } from '../../services/adminStore'
 import { useAdminToast } from '../../context/AdminToastContext'
 import { calcMargin, slugify } from '../../context/AdminToastContext'
+import { compressImageFile, uploadProductFile } from '../../services/remoteCatalog'
 import type { AdminProduct } from '../../types/admin'
 import type { CategorySlug } from '../../types'
 
@@ -46,6 +51,8 @@ export function AdminProductForm() {
   const { showToast } = useAdminToast()
   const isNew = id === 'novo' || !id
   const [product, setProduct] = useState<AdminProduct>(emptyProduct)
+  const [uploading, setUploading] = useState(false)
+  const [saving, setSaving] = useState(false)
   const categories = getDatabase().categories
 
   useEffect(() => {
@@ -61,16 +68,25 @@ export function AdminProductForm() {
     setProduct((p) => ({ ...p, [field]: value }))
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
-    if (!files) return
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader()
-      reader.onload = () => {
-        setProduct((p) => ({ ...p, images: [...p.images, reader.result as string] }))
+    if (!files?.length) return
+    setUploading(true)
+    try {
+      const urls: string[] = []
+      for (const file of Array.from(files)) {
+        const compressed = await compressImageFile(file)
+        const url = await uploadProductFile(compressed)
+        urls.push(url)
       }
-      reader.readAsDataURL(file)
-    })
+      setProduct((p) => ({ ...p, images: [...p.images, ...urls] }))
+      showToast(urls.length > 1 ? `${urls.length} fotos enviadas ao site.` : 'Foto enviada ao site.')
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Falha no upload. Tente de novo.', 'error')
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
   }
 
   const removeImage = (index: number) => {
@@ -85,26 +101,43 @@ export function AdminProductForm() {
     setProduct((p) => ({ ...p, images: imgs }))
   }
 
-  const handleSave = (continueEditing = false) => {
+  const handleSave = async (continueEditing = false) => {
     if (!product.name || !product.price) {
       showToast('Preencha nome e preço.', 'error')
       return
     }
-    const slug = product.slug || slugify(product.name)
-    const sku = product.sku || `VP-${Date.now().toString().slice(-6)}`
-    const saved = saveProduct({
-      ...product,
-      slug,
-      sku,
-      seoTitle: product.seoTitle || `${product.name} | Verissimo Pratas 925`,
-      inStock: product.stock > 0,
-    })
-    showToast(isNew ? 'Produto criado com sucesso!' : 'Produto atualizado!')
-    if (continueEditing) {
-      navigate(`/admin/produtos/${saved.id}`, { replace: true })
-      setProduct(saved)
-    } else {
-      navigate('/admin/produtos')
+    if (product.images.length === 0) {
+      showToast('Adicione pelo menos uma foto.', 'error')
+      return
+    }
+    setSaving(true)
+    try {
+      const slug = product.slug || slugify(product.name)
+      const sku = product.sku || `VP-${Date.now().toString().slice(-6)}`
+      const saved = saveProduct({
+        ...product,
+        slug,
+        sku,
+        seoTitle: product.seoTitle || `${product.name} | Verissimo Pratas 925`,
+        inStock: product.stock > 0,
+      })
+      const pub = await publishCatalogToServer()
+      if (!pub.ok) {
+        showToast(
+          'Produto salvo neste aparelho, mas não publicou no site. Verifique a internet e tente de novo.',
+          'error'
+        )
+      } else {
+        showToast(isNew ? 'Produto publicado no site!' : 'Produto atualizado no site!')
+      }
+      if (continueEditing) {
+        navigate(`/admin/produtos/${saved.id}`, { replace: true })
+        setProduct(saved)
+      } else {
+        navigate('/admin/produtos')
+      }
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -155,10 +188,19 @@ export function AdminProductForm() {
           {/* Photos */}
           <section className="admin-card p-6 space-y-4">
             <h2 className="font-serif text-lg font-light border-b border-border pb-3">Fotos</h2>
-            <label className="flex flex-col items-center justify-center border-2 border-dashed border-border p-8 cursor-pointer hover:border-silver-dark transition-colors">
-              <Upload className="w-8 h-8 text-muted mb-2" strokeWidth={1.5} />
-              <span className="text-sm text-muted font-light">Arraste ou clique para upload</span>
-              <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
+            <p className="text-xs text-muted">
+              As fotos sobem para o servidor e aparecem no site para todos os visitantes.
+            </p>
+            <label className={`flex flex-col items-center justify-center border-2 border-dashed border-border p-8 cursor-pointer hover:border-silver-dark transition-colors ${uploading ? 'opacity-60 pointer-events-none' : ''}`}>
+              {uploading ? (
+                <Loader2 className="w-8 h-8 text-muted mb-2 animate-spin" strokeWidth={1.5} />
+              ) : (
+                <Upload className="w-8 h-8 text-muted mb-2" strokeWidth={1.5} />
+              )}
+              <span className="text-sm text-muted font-light">
+                {uploading ? 'Enviando foto…' : 'Toque para escolher foto do celular'}
+              </span>
+              <input type="file" accept="image/*" multiple capture="environment" className="hidden" onChange={handleImageUpload} disabled={uploading || saving} />
             </label>
             {product.images.length > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -280,8 +322,20 @@ export function AdminProductForm() {
 
           {/* Actions */}
           <div className="space-y-2">
-            <button onClick={() => handleSave(false)} className="admin-btn-primary w-full py-3">Salvar produto</button>
-            <button onClick={() => handleSave(true)} className="admin-btn-secondary w-full py-3">Salvar e continuar</button>
+            <button
+              onClick={() => handleSave(false)}
+              disabled={saving || uploading}
+              className="admin-btn-primary w-full py-3 disabled:opacity-50"
+            >
+              {saving ? 'Publicando no site…' : 'Salvar e publicar no site'}
+            </button>
+            <button
+              onClick={() => handleSave(true)}
+              disabled={saving || uploading}
+              className="admin-btn-secondary w-full py-3 disabled:opacity-50"
+            >
+              Salvar e continuar
+            </button>
             <button onClick={() => navigate('/admin/produtos')} className="admin-btn-secondary w-full py-3 border-transparent text-muted">Cancelar</button>
           </div>
         </div>

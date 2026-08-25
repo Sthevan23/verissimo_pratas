@@ -86,16 +86,15 @@ if (existsSync(distProducts)) {
   copyDir(distProducts, rootProducts)
 }
 
-// API na raiz (com senha se houver)
+// API na raiz: fonte já está em api/ — só garantir config.local
 const rootApi = join(root, 'api')
-// não apagar api/ fonte — só garantir arquivos PHP de produção
-for (const file of ['config.php', 'config.local.example.php', 'db.php', 'ping.php', 'ping-db.php', '.htaccess']) {
-  const src = join(apiSrc, file)
-  if (existsSync(src)) copyFileSync(src, join(rootApi, file))
-}
+mkdirSync(join(rootApi, 'data'), { recursive: true })
 if (savedLocal) {
   writeFileSync(join(rootApi, 'config.local.php'), savedLocal, 'utf8')
 }
+
+// Pasta uploads (fotos do painel)
+mkdirSync(join(root, 'uploads', 'products'), { recursive: true })
 
 // 6. Sincronizar deploy/public_html
 if (existsSync(deploy)) rmSync(deploy, { recursive: true, force: true })
@@ -103,6 +102,23 @@ copyDir(dist, deploy)
 if (savedLocal) {
   mkdirSync(join(deploy, 'api'), { recursive: true })
   writeFileSync(join(deploy, 'api', 'config.local.php'), savedLocal, 'utf8')
+}
+mkdirSync(join(deploy, 'api', 'data'), { recursive: true })
+if (existsSync(join(apiSrc, 'data', '.htaccess'))) {
+  copyFileSync(join(apiSrc, 'data', '.htaccess'), join(deploy, 'api', 'data', '.htaccess'))
+}
+mkdirSync(join(deploy, 'uploads', 'products'), { recursive: true })
+if (existsSync(join(root, 'uploads', 'products', '.htaccess'))) {
+  copyFileSync(
+    join(root, 'uploads', 'products', '.htaccess'),
+    join(deploy, 'uploads', 'products', '.htaccess')
+  )
+}
+if (existsSync(join(root, 'uploads', 'products', '.gitkeep'))) {
+  copyFileSync(
+    join(root, 'uploads', 'products', '.gitkeep'),
+    join(deploy, 'uploads', 'products', '.gitkeep')
+  )
 }
 
 console.log('Build publicado na raiz + deploy/public_html (pronto para Hostinger Git)')

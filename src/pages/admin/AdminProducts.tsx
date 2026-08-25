@@ -1,7 +1,7 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-import { Plus, Search, Copy, Archive, Trash2, Pencil } from 'lucide-react'
+import { Plus, Search, Copy, Archive, Trash2, Pencil, CloudUpload } from 'lucide-react'
 import { PageHeader, ConfirmDialog, EmptyState } from '../../components/admin/Modal'
 import { StatusBadge } from '../../components/admin/StatusBadge'
 import {
@@ -11,6 +11,8 @@ import {
   archiveProduct,
   duplicateProduct,
   bulkUpdateProducts,
+  hydrateCatalogFromServer,
+  publishCatalogToServer,
 } from '../../services/adminStore'
 import { useAdminToast } from '../../context/AdminToastContext'
 import { formatPrice } from '../../utils/format'
@@ -26,8 +28,36 @@ export function AdminProducts() {
   const [bulkDiscount, setBulkDiscount] = useState('10')
   const [editingPrice, setEditingPrice] = useState<string | null>(null)
   const [priceValue, setPriceValue] = useState('')
+  const [syncing, setSyncing] = useState(false)
 
   const refresh = useCallback(() => setProducts(getAdminProducts()), [])
+
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      setSyncing(true)
+      const ok = await hydrateCatalogFromServer({ pushIfEmpty: true })
+      if (alive) {
+        refresh()
+        if (ok) showToast('Catálogo sincronizado com o site.')
+        setSyncing(false)
+      }
+    })()
+    return () => {
+      alive = false
+    }
+  }, [refresh, showToast])
+
+  const publishNow = async () => {
+    setSyncing(true)
+    const result = await publishCatalogToServer()
+    refresh()
+    setSyncing(false)
+    showToast(
+      result.ok ? 'Produtos publicados no site!' : result.error || 'Falha ao publicar',
+      result.ok ? 'success' : 'error'
+    )
+  }
 
   const filtered = useMemo(() => {
     if (!search) return products
@@ -69,11 +99,21 @@ export function AdminProducts() {
       <Helmet><title>Produtos — Verissimo Admin</title></Helmet>
       <PageHeader
         title="Produtos"
-        subtitle={`${filtered.length} produtos ativos`}
+        subtitle={`${filtered.length} produtos${syncing ? ' · sincronizando…' : ''}`}
         action={
-          <Link to="/admin/produtos/novo" className="admin-btn-primary">
-            <Plus className="w-4 h-4" /> Novo produto
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={publishNow}
+              disabled={syncing}
+              className="admin-btn-secondary text-[10px] disabled:opacity-50"
+            >
+              <CloudUpload className="w-4 h-4" /> Publicar no site
+            </button>
+            <Link to="/admin/produtos/novo" className="admin-btn-primary">
+              <Plus className="w-4 h-4" /> Novo produto
+            </Link>
+          </div>
         }
       />
 

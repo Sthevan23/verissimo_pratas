@@ -15,7 +15,11 @@ dist-ssr
 .env.local
 .env.*.local
 api/config.local.php
+api/data/catalog.json
+deploy/public_html/api/config.local.php
+deploy/public_html/api/data/catalog.json
 deploy/.ftp-credentials.json
+
 
 # Editor directories and files
 .vscode/*

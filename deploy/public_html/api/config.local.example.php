@@ -16,4 +16,5 @@ return [
   'user' => 'u586160337_verissimo',
   'pass' => 'COLOQUE_A_SENHA_DO_MYSQL_AQUI',
   'charset' => 'utf8mb4',
+  'api_token' => 'Verissimo@2026',
 ];
