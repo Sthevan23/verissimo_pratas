@@ -24,7 +24,6 @@ type NavItem = {
 }
 
 const navLinks: NavItem[] = [
-  { label: 'Início', href: '/' },
   { label: 'Anéis', href: '/produtos?categoria=aneis' },
   {
     label: 'Brincos',
@@ -35,8 +34,14 @@ const navLinks: NavItem[] = [
       { label: 'Trios', href: '/produtos?categoria=brincos-trios' },
     ],
   },
-  { label: 'Colares', href: '/produtos?categoria=colares' },
-  { label: 'Conjuntos', href: '/produtos?categoria=conjuntos' },
+  {
+    label: 'Colares',
+    href: '/produtos?categoria=colares',
+    children: [
+      { label: 'Ver tudo em Colares', href: '/produtos?categoria=colares', subtle: true },
+      { label: 'Conjuntos', href: '/produtos?categoria=conjuntos' },
+    ],
+  },
   { label: 'Correntes', href: '/produtos?categoria=correntes' },
   { label: 'Pingentes', href: '/produtos?categoria=pingentes' },
   {
@@ -57,7 +62,7 @@ const navLinks: NavItem[] = [
     ],
   },
   {
-    label: 'Personalizados (encomenda)',
+    label: 'Personalizados',
     href: '/produtos?categoria=personalizados',
     children: [
       { label: 'Ver tudo (encomenda)', href: '/produtos?categoria=personalizados', subtle: true },
@@ -69,7 +74,7 @@ const navLinks: NavItem[] = [
     ],
   },
   { label: 'Piercings', href: '/produtos?categoria=piercings' },
-  { label: 'Tornozeleira', href: '/produtos?categoria=tornozeleiras' },
+  { label: 'Tornozeleiras', href: '/produtos?categoria=tornozeleiras' },
   {
     label: 'Masculinos',
     href: '/produtos?categoria=masculinos',
@@ -82,6 +87,12 @@ const navLinks: NavItem[] = [
   },
   { label: 'Sobre nós', href: '/sobre' },
 ]
+
+const mobileNavLinks: NavItem[] = [
+  { label: 'Início', href: '/' },
+  ...navLinks,
+]
+
 
 export function Header() {
   const isScrolled = useScrollPosition(30)
@@ -175,66 +186,71 @@ export function Header() {
 
             <nav
               ref={desktopRef}
-              className="mt-4 pt-3 border-t border-border/50 flex items-center justify-center gap-x-3 xl:gap-x-4 2xl:gap-x-5 flex-nowrap overflow-x-auto scrollbar-hide"
+              className="mt-4 pt-3 border-t border-border/50 -mx-4 sm:-mx-6 lg:-mx-8"
+              aria-label="Categorias"
             >
-              {navLinks.map((link) =>
-                link.children ? (
-                  <div key={link.label} className="relative shrink-0">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setDesktopOpen((cur) => (cur === link.label ? null : link.label))
-                      }
-                      className="inline-flex items-center gap-0.5 text-[9px] xl:text-[10px] 2xl:text-[11px] tracking-[0.1em] xl:tracking-[0.12em] uppercase text-warm-gray hover:text-graphite transition-colors duration-300 whitespace-nowrap"
-                      aria-expanded={desktopOpen === link.label}
-                    >
-                      {link.label}
-                      <ChevronDown
-                        className={`w-3 h-3 opacity-60 transition-transform ${
-                          desktopOpen === link.label ? 'rotate-180' : ''
-                        }`}
-                        strokeWidth={1.5}
-                      />
-                    </button>
-                    <AnimatePresence>
-                      {desktopOpen === link.label && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 6 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 6 }}
-                          transition={{ duration: 0.18 }}
-                          className="absolute top-full left-1/2 -translate-x-1/2 pt-3 z-50"
+              <div className="overflow-x-auto scrollbar-hide overscroll-x-contain px-4 sm:px-6 lg:px-8">
+                <div className="flex w-max min-w-full items-center gap-x-3 xl:gap-x-3.5 2xl:gap-x-4 justify-start 2xl:justify-center">
+                  {navLinks.map((link) =>
+                    link.children ? (
+                      <div key={link.label} className="relative shrink-0">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDesktopOpen((cur) => (cur === link.label ? null : link.label))
+                          }
+                          className="inline-flex items-center gap-0.5 text-[10px] xl:text-[11px] tracking-[0.08em] xl:tracking-[0.1em] uppercase text-warm-gray hover:text-graphite transition-colors duration-300 whitespace-nowrap"
+                          aria-expanded={desktopOpen === link.label}
                         >
-                          <div className="bg-cream border border-border shadow-[0_8px_24px_rgba(0,0,0,0.06)] min-w-[12rem] py-1">
-                            {link.children.map((child) => (
-                              <Link
-                                key={child.href + child.label}
-                                to={child.href}
-                                onClick={() => setDesktopOpen(null)}
-                                className={`block px-4 py-3 tracking-[0.12em] uppercase transition-colors border-b border-border/40 last:border-0 ${
-                                  child.subtle
-                                    ? 'text-[10px] text-muted hover:text-graphite hover:bg-off-white'
-                                    : 'text-[11px] text-graphite hover:bg-off-white font-medium'
-                                }`}
-                              >
-                                {child.label}
-                              </Link>
-                            ))}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                ) : (
-                  <Link
-                    key={link.href}
-                    to={link.href}
-                    className="shrink-0 text-[9px] xl:text-[10px] 2xl:text-[11px] tracking-[0.1em] xl:tracking-[0.12em] uppercase text-warm-gray hover:text-graphite transition-colors duration-300 link-underline whitespace-nowrap"
-                  >
-                    {link.label}
-                  </Link>
-                )
-              )}
+                          {link.label}
+                          <ChevronDown
+                            className={`w-3 h-3 opacity-60 transition-transform ${
+                              desktopOpen === link.label ? 'rotate-180' : ''
+                            }`}
+                            strokeWidth={1.5}
+                          />
+                        </button>
+                        <AnimatePresence>
+                          {desktopOpen === link.label && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 6 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: 6 }}
+                              transition={{ duration: 0.18 }}
+                              className="absolute top-full left-0 pt-3 z-50"
+                            >
+                              <div className="bg-cream border border-border shadow-[0_8px_24px_rgba(0,0,0,0.06)] min-w-[12rem] py-1">
+                                {link.children.map((child) => (
+                                  <Link
+                                    key={child.href + child.label}
+                                    to={child.href}
+                                    onClick={() => setDesktopOpen(null)}
+                                    className={`block px-4 py-3 tracking-[0.12em] uppercase transition-colors border-b border-border/40 last:border-0 ${
+                                      child.subtle
+                                        ? 'text-[10px] text-muted hover:text-graphite hover:bg-off-white'
+                                        : 'text-[11px] text-graphite hover:bg-off-white font-medium'
+                                    }`}
+                                  >
+                                    {child.label}
+                                  </Link>
+                                ))}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    ) : (
+                      <Link
+                        key={link.href}
+                        to={link.href}
+                        className="shrink-0 text-[10px] xl:text-[11px] tracking-[0.08em] xl:tracking-[0.1em] uppercase text-warm-gray hover:text-graphite transition-colors duration-300 link-underline whitespace-nowrap"
+                      >
+                        {link.label}
+                      </Link>
+                    )
+                  )}
+                </div>
+              </div>
             </nav>
           </div>
 
@@ -314,7 +330,7 @@ export function Header() {
                   </div>
 
                   <div className="flex-1 overflow-y-auto py-2 px-5">
-                    {navLinks.map((link) =>
+                    {mobileNavLinks.map((link) =>
                       link.children ? (
                         <button
                           key={link.label}
