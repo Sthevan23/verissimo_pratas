@@ -135,42 +135,6 @@ function createSeedDatabase(): AdminDatabase {
   }
 }
 
-function makeOrder(
-  customer: { id: string; name: string; email: string; phone: string },
-  p1: AdminProduct,
-  p2: AdminProduct | null,
-  qty: number,
-  payStatus: 'pendente' | 'pago',
-  status: OrderStatus,
-  daysBack: number
-): Order {
-  const items = [
-    { productId: p1.id, productName: p1.name, productImage: p1.images[0], quantity: qty, unitPrice: p1.salePrice ?? p1.price },
-  ]
-  if (p2) items.push({ productId: p2.id, productName: p2.name, productImage: p2.images[0], quantity: 1, unitPrice: p2.salePrice ?? p2.price })
-  const subtotal = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0)
-  const shipping = subtotal >= 499 ? 0 : 19.9
-  return {
-    id: uid(),
-    orderNumber: `VP-${String(Math.floor(Math.random() * 90000) + 10000)}`,
-    customerId: customer.id,
-    customerName: customer.name,
-    customerEmail: customer.email,
-    customerPhone: customer.phone,
-    items,
-    subtotal,
-    discount: 0,
-    shipping,
-    total: subtotal + shipping,
-    paymentMethod: 'pix',
-    paymentStatus: payStatus,
-    status,
-    shippingAddress: 'Rua das Flores, 123 — Campinas, SP',
-    createdAt: daysAgo(daysBack),
-    updatedAt: daysAgo(daysBack),
-  }
-}
-
 function daysAgo(n: number) {
   const d = new Date()
   d.setDate(d.getDate() - n)
