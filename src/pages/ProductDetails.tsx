@@ -263,12 +263,6 @@ export function ProductDetails() {
                   </AnimatePresence>
                 </div>
 
-                <p className="flex items-center gap-2 text-[14px] text-charcoal font-medium mb-5">
-                  <Truck className="w-4 h-4 shrink-0" strokeWidth={1.75} />
-                  Frete grátis a partir de{' '}
-                  {formatPrice(STORE_COMMERCE.freeShippingNationalMin)}
-                </p>
-
                 {sizes && sizes.length > 0 && (
                   <div className="mb-3">
                     <label
