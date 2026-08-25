@@ -4,6 +4,7 @@ import { Footer } from './Footer'
 import { CartDrawer } from './CartDrawer'
 import { SearchOverlay } from './SearchOverlay'
 import { ToastContainer } from './ui/Toast'
+import { WhatsAppFloat } from './WhatsAppFloat'
 
 export function Layout() {
   return (
@@ -16,6 +17,7 @@ export function Layout() {
       <CartDrawer />
       <SearchOverlay />
       <ToastContainer />
+      <WhatsAppFloat />
     </>
   )
 }

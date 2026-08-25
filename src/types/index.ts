@@ -42,6 +42,8 @@ export interface Product {
   rating: number
   reviewCount: number
   inStock: boolean
+  /** Unidades em estoque (quando controlado) */
+  stock?: number
   material: string
   warranty: string
   care: string

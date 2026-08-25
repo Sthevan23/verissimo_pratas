@@ -79,6 +79,7 @@ function adminToStoreProduct(p: import('../types/admin').AdminProduct): Product 
     rating: p.rating,
     reviewCount: p.reviewCount,
     inStock: p.inStock && p.stock > 0,
+    stock: p.stock,
     material: p.material,
     warranty: p.warranty,
     care: p.care,
