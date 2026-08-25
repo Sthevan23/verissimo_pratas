@@ -217,6 +217,7 @@ export const homeCategories = categories
         'masculinos-corrente',
         'masculinos-pulseira',
         'masculinos-pingente',
+        'acessorios',
         'novidades',
       ].includes(c.slug)
   )

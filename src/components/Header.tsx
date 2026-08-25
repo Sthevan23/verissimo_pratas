@@ -80,7 +80,6 @@ const navLinks: NavItem[] = [
       { label: 'Pingente', href: '/produtos?categoria=masculinos-pingente' },
     ],
   },
-  { label: 'Acessórios', href: '/produtos?categoria=acessorios' },
   { label: 'Sobre nós', href: '/sobre' },
 ]
 
