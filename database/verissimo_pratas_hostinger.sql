@@ -217,9 +217,9 @@ CREATE TABLE `product_images` (
 
 -- ---------- DADOS INICIAIS — VERISSIMO PRATAS 925 ----------
 
--- Admin: admin@verissimopratos.com.br / senha: Verissimo@2026 (troque depois)
+-- Admin: verissimopratass@gmail.com / senha: Verissimo@2026 (troque depois)
 INSERT INTO `admins` (`email`, `password_hash`) VALUES (
-  'admin@verissimopratos.com.br',
+  'verissimopratass@gmail.com',
   'Verissimo@2026'
 );
 

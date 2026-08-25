@@ -73,7 +73,7 @@ export function AdminLogin() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="admin-input"
-                placeholder="admin@verissimopratos.com.br"
+                placeholder="verissimopratass@gmail.com"
                 required
                 autoComplete="email"
               />

@@ -127,9 +127,9 @@ function createSeedDatabase(): AdminDatabase {
     ],
     inventoryMovements: [],
     adminUsers: [
-      { id: uid(), name: 'Administrador', email: import.meta.env.VITE_ADMIN_EMAIL || 'admin@verissimopratos.com.br', role: 'administrador', active: true, createdAt: now() },
-      { id: uid(), name: 'Gerente Loja', email: 'gerente@verissimopratos.com.br', role: 'gerente', active: true, createdAt: now() },
-      { id: uid(), name: 'Editor Conteúdo', email: 'editor@verissimopratos.com.br', role: 'editor', active: true, createdAt: now() },
+      { id: uid(), name: 'Administrador', email: import.meta.env.VITE_ADMIN_EMAIL || 'verissimopratass@gmail.com', role: 'administrador', active: true, createdAt: now() },
+      { id: uid(), name: 'Gerente Loja', email: 'gerente@verissimopratas.com.br', role: 'gerente', active: true, createdAt: now() },
+      { id: uid(), name: 'Editor Conteúdo', email: 'editor@verissimopratas.com.br', role: 'editor', active: true, createdAt: now() },
     ],
     settings: {
       storeName: 'Verissimo Pratas 925',
