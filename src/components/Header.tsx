@@ -254,31 +254,24 @@ export function Header() {
             </nav>
           </div>
 
-          {/* Mobile top bar */}
-          <div className="grid lg:hidden grid-cols-[44px_1fr_88px] items-center gap-1 min-h-[44px]">
-            <button
-              onClick={() => setMobileOpen(true)}
-              className="touch-target -ml-2 text-graphite"
-              aria-label="Menu"
-            >
-              <Menu className="w-5 h-5" strokeWidth={1.5} />
-            </button>
-
-            <div className="flex justify-center overflow-hidden px-1">
-              <Logo compact />
-            </div>
-
-            <div className="flex items-center justify-end gap-0">
+          {/* Mobile — menu | logo | carrinho + busca (estilo Mafena) */}
+          <div className="lg:hidden">
+            <div className="grid grid-cols-[44px_1fr_44px] items-center gap-1 min-h-[44px]">
               <button
-                onClick={openSearch}
-                className="touch-target text-graphite"
-                aria-label="Buscar"
+                onClick={() => setMobileOpen(true)}
+                className="touch-target -ml-2 text-graphite"
+                aria-label="Menu"
               >
-                <Search className="w-5 h-5" strokeWidth={1.5} />
+                <Menu className="w-5 h-5" strokeWidth={1.5} />
               </button>
+
+              <div className="flex justify-center overflow-hidden px-1">
+                <Logo compact />
+              </div>
+
               <button
                 onClick={openCart}
-                className="relative touch-target -mr-2 text-graphite"
+                className="relative touch-target -mr-2 justify-self-end text-graphite"
                 aria-label="Carrinho"
               >
                 <ShoppingBag className="w-5 h-5" strokeWidth={1.5} />
@@ -289,6 +282,16 @@ export function Header() {
                 )}
               </button>
             </div>
+
+            <button
+              type="button"
+              onClick={openSearch}
+              className="mt-3 w-full flex items-center gap-2 border border-border bg-cream px-3 py-2.5 text-left"
+              aria-label="Buscar produtos"
+            >
+              <span className="flex-1 text-sm text-muted font-light">Buscar</span>
+              <Search className="w-4 h-4 text-silver-dark shrink-0" strokeWidth={1.5} />
+            </button>
           </div>
         </div>
       </header>

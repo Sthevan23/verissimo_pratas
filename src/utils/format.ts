@@ -12,7 +12,7 @@ export function formatInstallments(
   installments = STORE_COMMERCE.maxInstallments
 ): string {
   const installmentValue = value / installments
-  return `${installments}x de ${formatPrice(installmentValue)} sem juros`
+  return `${installments} x de ${formatPrice(installmentValue)} sem juros`
 }
 
 /** Preço à vista com desconto Pix */

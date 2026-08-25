@@ -4,7 +4,6 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ChevronDown,
   CreditCard,
-  Heart,
   Minus,
   Plus,
   Share2,
@@ -21,19 +20,18 @@ import {
   formatInstallments,
   formatPrice,
 } from '../utils/format'
-import { Button } from '../components/ui/Button'
 import { ProductCard } from '../components/ProductCard'
 import { AnimateIn } from '../components/ui/AnimateIn'
+import { Button } from '../components/ui/Button'
 
 export function ProductDetails() {
   const { slug } = useParams<{ slug: string }>()
   const product = slug ? getProductBySlug(slug) : undefined
   const navigate = useNavigate()
-  const { addToCart, toggleFavorite, isFavorite, openCart } = useApp()
+  const { addToCart, openCart } = useApp()
   const [selectedImage, setSelectedImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [selectedSize, setSelectedSize] = useState<string | undefined>()
-  const [zoomed, setZoomed] = useState(false)
   const [paymentOpen, setPaymentOpen] = useState(false)
   const [shippingOpen, setShippingOpen] = useState(false)
   const [shareHint, setShareHint] = useState(false)
@@ -63,14 +61,13 @@ export function ProductDetails() {
   const currentPrice = product.salePrice ?? product.price
   const pixPrice = calcPixPrice(currentPrice)
   const related = getRelatedProducts(product)
-  const favorite = isFavorite(product.id)
   const categoryName = categoryLabels[product.category] ?? product.category
   const stock = product.stock
   const isLastPiece = product.inStock && stock !== undefined && stock === 1
   const isLowStock =
     product.inStock && stock !== undefined && stock > 1 && stock <= 3
 
-  const handleAddToCart = () => {
+  const handleBuy = () => {
     if (product.sizes && !selectedSize) return
     addToCart(product, quantity, selectedSize)
     openCart()
@@ -84,7 +81,7 @@ export function ProductDetails() {
         return
       }
     } catch {
-      /* user cancelled */
+      /* cancelled */
     }
     try {
       await navigator.clipboard.writeText(url)
@@ -120,62 +117,62 @@ export function ProductDetails() {
         </script>
       </Helmet>
 
-      <div className="header-offset pb-20 sm:pb-24">
+      <div className="header-offset bg-cream pb-24">
+        {/* Galeria — mobile full bleed como Nuvemshop/Mafena */}
+        <AnimateIn>
+          <div className="lg:hidden">
+            <div className="relative aspect-square bg-off-white overflow-hidden">
+              <motion.img
+                key={selectedImage}
+                src={product.images[selectedImage]}
+                alt={product.name}
+                className="w-full h-full object-cover"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.25 }}
+              />
+            </div>
+            {product.images.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 py-3">
+                {product.images.map((img, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setSelectedImage(i)}
+                    className={cn(
+                      'w-14 h-14 shrink-0 overflow-hidden border',
+                      i === selectedImage ? 'border-graphite' : 'border-border'
+                    )}
+                  >
+                    <img src={img} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </AnimateIn>
+
         <div className="container-brand">
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-16">
-            {/* Gallery */}
-            <AnimateIn direction="left">
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 lg:pt-8">
+            {/* Galeria desktop */}
+            <AnimateIn direction="left" className="hidden lg:block">
               <div className="space-y-3">
-                <div
-                  className="relative aspect-square bg-off-white overflow-hidden lg:cursor-zoom-in"
-                  onClick={() => {
-                    if (window.matchMedia('(min-width: 1024px)').matches) {
-                      setZoomed(!zoomed)
-                    }
-                  }}
-                >
-                  <motion.img
-                    key={selectedImage}
+                <div className="relative aspect-square bg-off-white overflow-hidden">
+                  <img
                     src={product.images[selectedImage]}
                     alt={product.name}
-                    className={cn(
-                      'w-full h-full object-cover transition-transform duration-500',
-                      zoomed && 'scale-150'
-                    )}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.3 }}
+                    className="w-full h-full object-cover"
                   />
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      toggleFavorite(product.id)
-                    }}
-                    className="absolute top-3 right-3 w-10 h-10 bg-cream/90 backdrop-blur-sm flex items-center justify-center border border-border/60"
-                    aria-label="Favoritar"
-                  >
-                    <Heart
-                      className={cn(
-                        'w-5 h-5',
-                        favorite ? 'fill-graphite text-graphite' : 'text-graphite'
-                      )}
-                      strokeWidth={1.5}
-                    />
-                  </button>
                 </div>
                 {product.images.length > 1 && (
-                  <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+                  <div className="flex gap-2">
                     {product.images.map((img, i) => (
                       <button
                         key={i}
                         type="button"
-                        onClick={() => {
-                          setSelectedImage(i)
-                          setZoomed(false)
-                        }}
+                        onClick={() => setSelectedImage(i)}
                         className={cn(
-                          'w-16 h-16 sm:w-20 sm:h-20 shrink-0 bg-off-white overflow-hidden border transition-colors',
+                          'w-20 h-20 shrink-0 overflow-hidden border',
                           i === selectedImage ? 'border-graphite' : 'border-transparent'
                         )}
                       >
@@ -187,20 +184,20 @@ export function ProductDetails() {
               </div>
             </AnimateIn>
 
-            {/* Buy panel — Malena-style flow */}
-            <AnimateIn direction="right" delay={0.1}>
-              <div className="lg:sticky lg:top-[calc(var(--header-height)+1rem)]">
+            {/* Painel de compra — igual à estrutura da foto Mafena */}
+            <AnimateIn direction="right" delay={0.05}>
+              <div className="pt-4 lg:pt-0 lg:sticky lg:top-[calc(var(--header-height)+1rem)] max-w-xl">
                 <nav
-                  className="text-[11px] sm:text-xs text-muted mb-4 leading-relaxed"
+                  className="text-[12px] text-muted mb-3 leading-relaxed"
                   aria-label="Breadcrumb"
                 >
-                  <Link to="/" className="hover:text-graphite transition-colors">
+                  <Link to="/" className="hover:text-graphite">
                     Início
                   </Link>
                   <span className="mx-1.5">·</span>
                   <Link
                     to={`/produtos?categoria=${product.category}`}
-                    className="hover:text-graphite transition-colors"
+                    className="hover:text-graphite"
                   >
                     {categoryName}
                   </Link>
@@ -208,47 +205,34 @@ export function ProductDetails() {
                   <span className="text-warm-gray">{product.name}</span>
                 </nav>
 
-                {product.badge && (
-                  <span className="inline-block text-[10px] tracking-[0.2em] uppercase bg-graphite text-cream px-2.5 py-1 mb-3">
-                    {product.badge === 'novidade'
-                      ? 'Novidade'
-                      : product.badge === 'oferta-especial'
-                        ? 'Oferta especial'
-                        : 'Promoção'}
-                  </span>
-                )}
-
-                <h1 className="font-sans text-xl sm:text-2xl lg:text-[1.65rem] font-medium text-graphite leading-snug mb-5">
+                <h1 className="font-sans text-[1.35rem] sm:text-2xl font-semibold text-charcoal leading-snug mb-4">
                   {product.name}
                 </h1>
 
-                {/* Pricing */}
-                <div className="mb-4">
-                  <p className="text-sm text-muted mb-0.5">
+                {/* Preços */}
+                <div className="mb-3">
+                  <p className="text-[15px] text-muted line-through decoration-muted/80">
                     {formatPrice(listPrice)}
                   </p>
-                  <p className="text-xl sm:text-2xl font-semibold text-graphite tracking-tight">
+                  <p className="text-[1.35rem] sm:text-2xl font-bold text-graphite leading-tight mt-0.5">
                     {formatPrice(pixPrice)}{' '}
-                    <span className="text-base font-medium">com Pix</span>
+                    <span className="font-semibold text-[1.05rem] sm:text-xl">
+                      com Pix
+                    </span>
                   </p>
-                  <p className="text-sm text-warm-gray mt-1">
+                  <p className="text-[15px] text-charcoal/80 mt-1 font-medium">
                     {formatInstallments(currentPrice)}
                   </p>
+
                   <button
                     type="button"
                     onClick={() => setPaymentOpen((o) => !o)}
-                    className="mt-2 inline-flex items-center gap-1.5 text-sm text-graphite hover:underline"
+                    className="mt-2.5 inline-flex items-center gap-1.5 text-[14px] text-charcoal"
                   >
-                    <CreditCard className="w-4 h-4" strokeWidth={1.5} />
+                    <CreditCard className="w-[15px] h-[15px]" strokeWidth={1.75} />
                     Ver mais detalhes
-                    <ChevronDown
-                      className={cn(
-                        'w-3.5 h-3.5 transition-transform',
-                        paymentOpen && 'rotate-180'
-                      )}
-                      strokeWidth={1.5}
-                    />
                   </button>
+
                   <AnimatePresence>
                     {paymentOpen && (
                       <motion.div
@@ -257,36 +241,34 @@ export function ProductDetails() {
                         exit={{ height: 0, opacity: 0 }}
                         className="overflow-hidden"
                       >
-                        <ul className="mt-3 text-sm text-warm-gray font-light space-y-1.5 border border-border bg-off-white/60 px-4 py-3">
+                        <ul className="mt-3 text-sm text-warm-gray space-y-1.5 bg-off-white border border-border px-4 py-3">
                           <li>
                             À vista no Pix: {formatPrice(pixPrice)} (
                             {STORE_COMMERCE.cashDiscountPercent}% off)
                           </li>
                           <li>
-                            Cartão: até {STORE_COMMERCE.maxInstallments}x sem juros
-                            de {formatPrice(currentPrice / STORE_COMMERCE.maxInstallments)}
+                            Cartão: até {STORE_COMMERCE.maxInstallments} x de{' '}
+                            {formatPrice(currentPrice / STORE_COMMERCE.maxInstallments)}{' '}
+                            sem juros
                           </li>
-                          <li>Preço de tabela: {formatPrice(currentPrice)}</li>
+                          <li>Preço: {formatPrice(currentPrice)}</li>
                         </ul>
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
 
-                <p className="flex items-center gap-2 text-sm text-graphite mb-6">
-                  <Truck className="w-4 h-4 shrink-0 text-silver-dark" strokeWidth={1.5} />
-                  <span>
-                    Frete grátis a partir de{' '}
-                    {formatPrice(STORE_COMMERCE.freeShippingNationalMin)}
-                  </span>
+                <p className="flex items-center gap-2 text-[14px] text-charcoal font-medium mb-5">
+                  <Truck className="w-4 h-4 shrink-0" strokeWidth={1.75} />
+                  Frete grátis a partir de{' '}
+                  {formatPrice(STORE_COMMERCE.freeShippingNationalMin)}
                 </p>
 
-                {/* Size select */}
                 {product.sizes && product.sizes.length > 0 && (
-                  <div className="mb-4">
+                  <div className="mb-3">
                     <label
                       htmlFor="product-size"
-                      className="block text-sm font-medium text-graphite mb-2"
+                      className="block text-[14px] text-charcoal mb-2"
                     >
                       Tamanho
                     </label>
@@ -295,7 +277,7 @@ export function ProductDetails() {
                         id="product-size"
                         value={selectedSize ?? ''}
                         onChange={(e) => setSelectedSize(e.target.value)}
-                        className="w-full appearance-none border border-border bg-cream px-4 py-3 pr-10 text-sm text-graphite focus:outline-none focus:border-graphite"
+                        className="w-full appearance-none border border-border bg-cream rounded-sm px-3.5 py-3 pr-10 text-[15px] text-charcoal focus:outline-none focus:border-graphite"
                       >
                         {product.sizes.map((size) => (
                           <option key={size} value={size}>
@@ -312,7 +294,7 @@ export function ProductDetails() {
                 )}
 
                 {(isLastPiece || isLowStock) && (
-                  <p className="text-sm font-semibold text-graphite mb-4">
+                  <p className="text-[15px] font-bold text-graphite mb-3">
                     {isLastPiece
                       ? 'Atenção, última peça!'
                       : 'Atenção, últimas peças!'}
@@ -320,21 +302,21 @@ export function ProductDetails() {
                 )}
 
                 {!product.inStock && (
-                  <p className="text-sm font-semibold text-muted mb-4">Esgotado</p>
+                  <p className="text-[15px] font-bold text-muted mb-3">Esgotado</p>
                 )}
 
-                {/* Qty + Comprar */}
-                <div className="flex gap-2 sm:gap-3 mb-6">
-                  <div className="inline-flex items-center border border-border shrink-0">
+                {/* Quantidade + Comprar */}
+                <div className="flex items-stretch gap-2.5 mb-2">
+                  <div className="inline-flex items-center border border-border rounded-sm shrink-0 bg-cream">
                     <button
                       type="button"
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="p-3 sm:p-3.5 hover:bg-off-white transition-colors"
+                      className="w-11 h-[48px] flex items-center justify-center text-charcoal"
                       aria-label="Diminuir"
                     >
-                      <Minus className="w-4 h-4" strokeWidth={1.5} />
+                      <Minus className="w-4 h-4" strokeWidth={1.75} />
                     </button>
-                    <span className="min-w-[2rem] text-center text-sm tabular-nums">
+                    <span className="w-8 text-center text-[15px] tabular-nums text-charcoal">
                       {quantity}
                     </span>
                     <button
@@ -346,39 +328,40 @@ export function ProductDetails() {
                             : quantity + 1
                         )
                       }
-                      className="p-3 sm:p-3.5 hover:bg-off-white transition-colors"
+                      className="w-11 h-[48px] flex items-center justify-center text-charcoal"
                       aria-label="Aumentar"
                     >
-                      <Plus className="w-4 h-4" strokeWidth={1.5} />
+                      <Plus className="w-4 h-4" strokeWidth={1.75} />
                     </button>
                   </div>
-                  <Button
-                    size="lg"
-                    className="flex-1 !tracking-[0.12em]"
-                    onClick={handleAddToCart}
-                    disabled={!product.inStock || (product.sizes && !selectedSize)}
+
+                  <button
+                    type="button"
+                    onClick={handleBuy}
+                    disabled={!product.inStock || (Boolean(product.sizes) && !selectedSize)}
+                    className="flex-1 h-[48px] bg-graphite text-cream text-[15px] font-semibold tracking-wide hover:bg-charcoal disabled:opacity-45 disabled:cursor-not-allowed transition-colors"
                   >
                     Comprar
-                  </Button>
+                  </button>
                 </div>
 
                 {/* Meios de envio */}
-                <div className="border-t border-border">
+                <div className="mt-4 border-t border-border">
                   <button
                     type="button"
                     onClick={() => setShippingOpen((o) => !o)}
-                    className="w-full flex items-center justify-between py-4 text-sm text-graphite"
+                    className="w-full flex items-center justify-between py-3.5 text-[14px] text-charcoal"
                   >
                     <span className="inline-flex items-center gap-2">
-                      <Truck className="w-4 h-4 text-silver-dark" strokeWidth={1.5} />
+                      <Truck className="w-4 h-4" strokeWidth={1.75} />
                       Meios de envio
                     </span>
-                    <ChevronDown
+                    <Plus
                       className={cn(
                         'w-4 h-4 text-muted transition-transform',
-                        shippingOpen && 'rotate-180'
+                        shippingOpen && 'rotate-45'
                       )}
-                      strokeWidth={1.5}
+                      strokeWidth={1.75}
                     />
                   </button>
                   <AnimatePresence>
@@ -389,16 +372,16 @@ export function ProductDetails() {
                         exit={{ height: 0, opacity: 0 }}
                         className="overflow-hidden"
                       >
-                        <ul className="pb-4 text-sm text-warm-gray font-light space-y-2 pl-6">
+                        <ul className="pb-4 text-sm text-warm-gray space-y-2 pl-6">
                           <li>
                             Boa Esperança: frete grátis acima de{' '}
                             {formatPrice(STORE_COMMERCE.freeShippingLocalMin)}
                           </li>
                           <li>
-                            Correios (Brasil): frete grátis acima de{' '}
+                            Correios: frete grátis acima de{' '}
                             {formatPrice(STORE_COMMERCE.freeShippingNationalMin)}
                           </li>
-                          <li>Prazo estimado: {product.shippingDays}</li>
+                          <li>Prazo: {product.shippingDays}</li>
                         </ul>
                       </motion.div>
                     )}
@@ -409,49 +392,36 @@ export function ProductDetails() {
                   <button
                     type="button"
                     onClick={handleShare}
-                    className="w-full flex items-center gap-2 py-4 text-sm text-graphite hover:underline"
+                    className="flex items-center gap-2 py-3.5 text-[14px] text-charcoal"
                   >
-                    <Share2 className="w-4 h-4 text-silver-dark" strokeWidth={1.5} />
+                    <Share2 className="w-4 h-4" strokeWidth={1.75} />
                     {shareHint ? 'Link copiado!' : 'Compartilhar'}
                   </button>
                 </div>
 
-                <div className="mt-6 pt-6 border-t border-border space-y-4">
-                  <div>
-                    <p className="text-[11px] tracking-[0.15em] uppercase text-muted mb-1.5">
-                      Descrição
-                    </p>
-                    <p className="text-sm text-warm-gray font-light leading-relaxed">
-                      {product.description}
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                    <p>
-                      <span className="text-muted">Material · </span>
-                      <span className="text-graphite font-light">{product.material}</span>
-                    </p>
-                    <p>
-                      <span className="text-muted">Garantia · </span>
-                      <span className="text-graphite font-light">{product.warranty}</span>
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[11px] tracking-[0.15em] uppercase text-muted mb-1.5">
-                      Cuidados
-                    </p>
-                    <p className="text-sm text-warm-gray font-light">{product.care}</p>
-                  </div>
+                <div className="mt-6 pt-5 border-t border-border space-y-4">
+                  <p className="text-sm text-warm-gray font-light leading-relaxed">
+                    {product.description}
+                  </p>
+                  <p className="text-sm text-warm-gray">
+                    <span className="text-muted">Material · </span>
+                    {product.material}
+                  </p>
+                  <p className="text-sm text-warm-gray">
+                    <span className="text-muted">Garantia · </span>
+                    {product.warranty}
+                  </p>
                 </div>
               </div>
             </AnimateIn>
           </div>
 
           {related.length > 0 && (
-            <section className="mt-16 lg:mt-24 pt-12 border-t border-border">
-              <h2 className="heading-display text-2xl lg:text-3xl text-graphite mb-10 text-center">
+            <section className="mt-14 lg:mt-20 pt-10 border-t border-border">
+              <h2 className="heading-display text-2xl lg:text-3xl text-graphite mb-8 text-center">
                 Você também pode gostar
               </h2>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-10 lg:gap-x-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-3 gap-y-8 sm:gap-x-4 lg:gap-x-6">
                 {related.map((p, i) => (
                   <ProductCard key={p.id} product={p} index={i} />
                 ))}

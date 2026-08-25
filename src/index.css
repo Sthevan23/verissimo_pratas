@@ -20,7 +20,7 @@
 
 @layer base {
   :root {
-    --header-height: 7rem;
+    --header-height: 9.75rem;
     --promo-ticker-height: 2.25rem;
   }
 
