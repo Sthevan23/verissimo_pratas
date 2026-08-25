@@ -9,7 +9,12 @@ import {
   searchStoreProducts,
 } from '../services/storeService'
 
-/** @deprecated Use storeService — kept for backward compatibility */
+/** Lista ao vivo do catálogo (não cachear em constante de módulo) */
+export function getAllProducts(): Product[] {
+  return getStoreProducts()
+}
+
+/** @deprecated Prefer getAllProducts / getStoreProducts — snapshot pode ficar desatualizado */
 export const products: Product[] = getStoreProducts()
 
 export function getProductBySlug(slug: string): Product | undefined {

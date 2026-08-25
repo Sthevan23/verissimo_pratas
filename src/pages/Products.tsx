@@ -4,7 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { ProductCard } from '../components/ProductCard'
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { categoryLabels } from '../data/categories'
-import { products } from '../data/products'
+import { getStoreProducts } from '../services/storeService'
 
 const BRINCOS_TIPOS = [
   {
@@ -120,7 +120,7 @@ function isDuplaProduct(name: string) {
 }
 
 function isBraceleteProduct(name: string) {
-  return /bracelet/i.test(name)
+  return /bracelete|bracelet/i.test(name)
 }
 
 function isInfantilProduct(name: string) {
@@ -211,7 +211,8 @@ export function Products() {
             : null
 
   const filtered = useMemo(() => {
-    let result = [...products]
+    // Sempre lê do catálogo hidratado (não snapshot estático do módulo)
+    let result = [...getStoreProducts()]
     if (category) {
       if (category === 'novidades') {
         result = result.filter((p) => p.isNew)
@@ -245,7 +246,7 @@ export function Products() {
         result = result.filter(
           (p) =>
             p.category === 'pulseiras-braceletes' ||
-            (p.category === 'pulseiras' && isBraceleteProduct(p.name))
+            isBraceleteProduct(p.name)
         )
       } else if (category === 'pulseiras-infantil') {
         result = result.filter(
@@ -266,6 +267,11 @@ export function Products() {
         result = result.filter((p) => isPersonalizadosCategory(p.category))
       } else if (category === 'masculinos' || category === 'linha-masculina') {
         result = result.filter((p) => isMasculinosCategory(p.category))
+      } else if (category === 'aneis') {
+        // Não misturar braceletes cadastrados por engano em Anéis
+        result = result.filter(
+          (p) => p.category === 'aneis' && !isBraceleteProduct(p.name)
+        )
       } else {
         result = result.filter((p) => p.category === category)
       }

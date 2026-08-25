@@ -19,10 +19,12 @@ interface ProductCardProps {
 export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const { addToCart, toggleFavorite, isFavorite } = useApp()
   const [hovered, setHovered] = useState(false)
+  const [imgBroken, setImgBroken] = useState(false)
   const favorite = isFavorite(product.id)
   const currentPrice = product.salePrice ?? product.price
-  const hasSecondImage = product.images.length > 1
+  const hasSecondImage = product.images.length > 1 && !imgBroken
   const needsSize = Boolean(product.sizes?.length)
+  const primarySrc = !imgBroken && product.images[0] ? product.images[0] : undefined
 
   const handleBuy = () => {
     if (needsSize) return
@@ -41,15 +43,22 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
     >
       <div className="relative aspect-[3/4] bg-off-white overflow-hidden mb-3 sm:mb-4">
         <Link to={`/produto/${product.slug}`}>
-          <img
-            src={product.images[0]}
-            alt={product.name}
-            className={cn(
-              'absolute inset-0 w-full h-full object-cover transition-all duration-700 active:scale-105',
-              hovered && hasSecondImage ? 'opacity-0 scale-105' : 'opacity-100 scale-100 lg:group-hover:scale-105'
-            )}
-            loading="lazy"
-          />
+          {primarySrc ? (
+            <img
+              src={primarySrc}
+              alt={product.name}
+              className={cn(
+                'absolute inset-0 w-full h-full object-cover transition-all duration-700 active:scale-105',
+                hovered && hasSecondImage ? 'opacity-0 scale-105' : 'opacity-100 scale-100 lg:group-hover:scale-105'
+              )}
+              loading="lazy"
+              onError={() => setImgBroken(true)}
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center bg-off-white text-muted text-[10px] tracking-widest uppercase px-4 text-center">
+              Foto indisponível
+            </div>
+          )}
           {hasSecondImage && (
             <img
               src={product.images[1]}
