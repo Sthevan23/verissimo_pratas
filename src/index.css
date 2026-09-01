@@ -16,6 +16,7 @@
   --color-muted: #9A9A9A;
   --color-border: #E5E3DF;
   --color-accent: #A8A8A8;
+  --color-brand-green: #7A895F;
 }
 
 @layer base {
