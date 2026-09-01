@@ -41,20 +41,128 @@ export async function pushCatalogToServer(products: AdminProduct[]): Promise<boo
   }
 }
 
-/** Envia arquivo de imagem para /uploads/products/ */
+/** Envia arquivo de imagem para o servidor */
 export async function uploadProductFile(file: File): Promise<string> {
   const form = new FormData()
-  form.append('file', file)
+  form.append('file', file, file.name || 'foto.jpg')
   const res = await fetch('/api/upload.php', {
     method: 'POST',
     headers: { 'X-Verissimo-Token': WRITE_TOKEN },
     body: form,
   })
-  const data = await res.json()
+  const raw = await res.text()
+  let data: { ok?: boolean; url?: string; error?: string } | null = null
+  try {
+    data = JSON.parse(raw) as { ok?: boolean; url?: string; error?: string }
+  } catch {
+    throw new Error(
+      res.ok
+        ? 'Resposta inválida do servidor ao enviar foto.'
+        : `Erro ${res.status} ao enviar foto. Tente de novo.`
+    )
+  }
   if (!res.ok || !data?.ok || !data.url) {
     throw new Error(data?.error || 'Falha no upload da imagem')
   }
-  return data.url as string
+  return data.url
+}
+
+function isImageFile(file: File): boolean {
+  if (file.type.startsWith('image/')) return true
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
+  return ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif'].includes(ext)
+}
+
+async function compressWithCanvas(
+  source: CanvasImageSource,
+  file: File,
+  maxSide: number,
+  quality: number
+): Promise<File | null> {
+  let w = 0
+  let h = 0
+  if (source instanceof HTMLImageElement) {
+    w = source.naturalWidth || source.width
+    h = source.naturalHeight || source.height
+  } else if (source instanceof HTMLVideoElement) {
+    w = source.videoWidth
+    h = source.videoHeight
+  } else if (source instanceof ImageBitmap) {
+    w = source.width
+    h = source.height
+  } else if (source instanceof HTMLCanvasElement) {
+    w = source.width
+    h = source.height
+  }
+  if (!w || !h) return null
+
+  const scale = Math.min(1, maxSide / Math.max(w, h))
+  const cw = Math.round(w * scale)
+  const ch = Math.round(h * scale)
+  const canvas = document.createElement('canvas')
+  canvas.width = cw
+  canvas.height = ch
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+  ctx.drawImage(source, 0, 0, cw, ch)
+
+  const blob: Blob | null = await new Promise((resolve) =>
+    canvas.toBlob((b) => resolve(b), 'image/jpeg', quality)
+  )
+  if (!blob) return null
+  const base = file.name.replace(/\.[^.]+$/, '') || 'foto'
+  return new File([blob], `${base}.jpg`, { type: 'image/jpeg' })
+}
+
+/** Compacta imagem (galeria/câmera) — converte HEIC e fotos grandes para JPEG */
+export async function compressImageFile(file: File, maxSide = 1600, quality = 0.82): Promise<File> {
+  if (!isImageFile(file)) {
+    throw new Error('Arquivo não é uma imagem válida.')
+  }
+
+  // Já pequena e JPEG — envia direto
+  if (
+    file.size < 400_000 &&
+    (file.type === 'image/jpeg' || file.name.toLowerCase().endsWith('.jpg'))
+  ) {
+    return file
+  }
+
+  // createImageBitmap (Android / desktop)
+  try {
+    const bitmap = await createImageBitmap(file)
+    const out = await compressWithCanvas(bitmap, file, maxSide, quality)
+    bitmap.close()
+    if (out) return out
+  } catch {
+    // segue para fallback
+  }
+
+  // <img> — melhor compatibilidade com galeria do iPhone (HEIC)
+  const fromImg = await new Promise<File | null>((resolve) => {
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+    img.onload = async () => {
+      const out = await compressWithCanvas(img, file, maxSide, quality)
+      URL.revokeObjectURL(url)
+      resolve(out)
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      resolve(null)
+    }
+    img.src = url
+  })
+  if (fromImg) return fromImg
+
+  // Último recurso: envia original se for imagem conhecida
+  if (file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/webp') {
+    return file
+  }
+
+  throw new Error(
+    'Não foi possível processar esta foto. Tente outra imagem ou tire uma foto nova.'
+  )
 }
 
 /** Converte data-URL (base64) em File e faz upload */
@@ -85,36 +193,6 @@ export async function ensurePublicImages(product: AdminProduct): Promise<AdminPr
     }
   }
   return { ...product, images }
-}
-
-/** Compacta imagem no celular antes do upload (máx. 1600px / JPEG) */
-export async function compressImageFile(file: File, maxSide = 1600, quality = 0.82): Promise<File> {
-  if (!file.type.startsWith('image/')) return file
-  if (file.size < 400_000) return file
-
-  try {
-    const bitmap = await createImageBitmap(file)
-    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height))
-    const w = Math.round(bitmap.width * scale)
-    const h = Math.round(bitmap.height * scale)
-    const canvas = document.createElement('canvas')
-    canvas.width = w
-    canvas.height = h
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return file
-    ctx.drawImage(bitmap, 0, 0, w, h)
-    bitmap.close()
-
-    const blob: Blob | null = await new Promise((resolve) =>
-      canvas.toBlob((b) => resolve(b), 'image/jpeg', quality)
-    )
-    if (!blob) return file
-    return new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', {
-      type: 'image/jpeg',
-    })
-  } catch {
-    return file
-  }
 }
 
 /** Normaliza URL antiga /uploads/... para o proxy PHP (evita 500 na Hostinger) */

@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-import { Upload, X, GripVertical, Star, Loader2 } from 'lucide-react'
+import { X, GripVertical, Star, Loader2, ImageIcon, Camera } from 'lucide-react'
 import { PageHeader } from '../../components/admin/Modal'
 import {
   getAdminProduct,
@@ -53,6 +53,8 @@ export function AdminProductForm() {
   const [product, setProduct] = useState<AdminProduct>(emptyProduct)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
   const categories = getDatabase().categories
 
   useEffect(() => {
@@ -72,17 +74,31 @@ export function AdminProductForm() {
     const files = e.target.files
     if (!files?.length) return
     setUploading(true)
+    const urls: string[] = []
+    const errors: string[] = []
     try {
-      const urls: string[] = []
       for (const file of Array.from(files)) {
-        const compressed = await compressImageFile(file)
-        const url = await uploadProductFile(compressed)
-        urls.push(url)
+        try {
+          const compressed = await compressImageFile(file)
+          const url = await uploadProductFile(compressed)
+          urls.push(url)
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'falha no envio'
+          errors.push(`${file.name || 'foto'}: ${msg}`)
+        }
       }
-      setProduct((p) => ({ ...p, images: [...p.images, ...urls] }))
-      showToast(urls.length > 1 ? `${urls.length} fotos enviadas ao site.` : 'Foto enviada ao site.')
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Falha no upload. Tente de novo.', 'error')
+      if (urls.length > 0) {
+        setProduct((p) => ({ ...p, images: [...p.images, ...urls] }))
+        showToast(
+          urls.length > 1 ? `${urls.length} fotos enviadas ao site.` : 'Foto enviada ao site.'
+        )
+      }
+      if (errors.length > 0) {
+        showToast(
+          errors.length === 1 ? errors[0] : `${errors.length} fotos com erro. ${errors[0]}`,
+          'error'
+        )
+      }
     } finally {
       setUploading(false)
       e.target.value = ''
@@ -195,19 +211,60 @@ export function AdminProductForm() {
           <section className="admin-card p-6 space-y-4">
             <h2 className="font-serif text-lg font-light border-b border-border pb-3">Fotos</h2>
             <p className="text-xs text-muted">
-              As fotos sobem para o servidor e aparecem no site para todos os visitantes.
+              Escolha da galeria ou tire foto na hora. As imagens sobem para o servidor e aparecem no site.
             </p>
-            <label className={`flex flex-col items-center justify-center border-2 border-dashed border-border p-8 cursor-pointer hover:border-silver-dark transition-colors ${uploading ? 'opacity-60 pointer-events-none' : ''}`}>
-              {uploading ? (
-                <Loader2 className="w-8 h-8 text-muted mb-2 animate-spin" strokeWidth={1.5} />
-              ) : (
-                <Upload className="w-8 h-8 text-muted mb-2" strokeWidth={1.5} />
-              )}
-              <span className="text-sm text-muted font-light">
-                {uploading ? 'Enviando foto…' : 'Toque para escolher foto do celular'}
-              </span>
-              <input type="file" accept="image/*" multiple capture="environment" className="hidden" onChange={handleImageUpload} disabled={uploading || saving} />
-            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                disabled={uploading || saving}
+                onClick={() => galleryInputRef.current?.click()}
+                className={`flex flex-col items-center justify-center border-2 border-dashed border-border p-8 hover:border-silver-dark transition-colors disabled:opacity-60 ${
+                  uploading ? 'pointer-events-none' : ''
+                }`}
+              >
+                {uploading ? (
+                  <Loader2 className="w-8 h-8 text-muted mb-2 animate-spin" strokeWidth={1.5} />
+                ) : (
+                  <ImageIcon className="w-8 h-8 text-muted mb-2" strokeWidth={1.5} />
+                )}
+                <span className="text-sm text-muted font-light text-center">
+                  {uploading ? 'Enviando…' : 'Galeria — escolher fotos'}
+                </span>
+              </button>
+              <button
+                type="button"
+                disabled={uploading || saving}
+                onClick={() => cameraInputRef.current?.click()}
+                className={`flex flex-col items-center justify-center border-2 border-dashed border-border p-8 hover:border-silver-dark transition-colors disabled:opacity-60 ${
+                  uploading ? 'pointer-events-none' : ''
+                }`}
+              >
+                <Camera className="w-8 h-8 text-muted mb-2" strokeWidth={1.5} />
+                <span className="text-sm text-muted font-light text-center">
+                  Câmera — tirar foto agora
+                </span>
+              </button>
+            </div>
+            {/* Galeria: sem capture — abre fotos salvas no celular */}
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.heic,.heif"
+              multiple
+              className="sr-only"
+              onChange={handleImageUpload}
+              disabled={uploading || saving}
+            />
+            {/* Câmera: só quando quiser tirar foto na hora */}
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="sr-only"
+              onChange={handleImageUpload}
+              disabled={uploading || saving}
+            />
             {product.images.length > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {product.images.map((img, i) => (

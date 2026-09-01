@@ -18,12 +18,22 @@ verissimo_require_write_token();
 $file = $_FILES['file'] ?? $_FILES['image'] ?? null;
 if (!$file || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
   $code = (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE);
-  verissimo_json(['ok' => false, 'error' => 'Nenhum arquivo enviado (código ' . $code . ')'], 400);
+  $messages = [
+    UPLOAD_ERR_INI_SIZE => 'Arquivo muito grande para o servidor.',
+    UPLOAD_ERR_FORM_SIZE => 'Arquivo muito grande.',
+    UPLOAD_ERR_PARTIAL => 'Upload incompleto. Tente de novo.',
+    UPLOAD_ERR_NO_FILE => 'Nenhum arquivo enviado.',
+    UPLOAD_ERR_NO_TMP_DIR => 'Servidor sem pasta temporária.',
+    UPLOAD_ERR_CANT_WRITE => 'Servidor não conseguiu gravar o arquivo.',
+    UPLOAD_ERR_EXTENSION => 'Upload bloqueado pelo servidor.',
+  ];
+  $msg = $messages[$code] ?? ('Nenhum arquivo enviado (código ' . $code . ')');
+  verissimo_json(['ok' => false, 'error' => $msg], 400);
 }
 
-$maxBytes = 8 * 1024 * 1024;
+$maxBytes = 12 * 1024 * 1024;
 if (($file['size'] ?? 0) > $maxBytes) {
-  verissimo_json(['ok' => false, 'error' => 'Arquivo muito grande (máx. 8MB)'], 400);
+  verissimo_json(['ok' => false, 'error' => 'Arquivo muito grande (máx. 12MB)'], 400);
 }
 
 $finfo = new finfo(FILEINFO_MIME_TYPE);
@@ -33,9 +43,20 @@ $allowed = [
   'image/png' => 'png',
   'image/webp' => 'webp',
   'image/gif' => 'gif',
+  'image/heic' => 'jpg',
+  'image/heif' => 'jpg',
+  'image/heic-sequence' => 'jpg',
 ];
+// iOS às vezes manda application/octet-stream ou vazio
 if (!isset($allowed[$mime])) {
-  verissimo_json(['ok' => false, 'error' => 'Formato inválido. Use JPG, PNG ou WEBP.'], 400);
+  $ext = strtolower(pathinfo((string) ($file['name'] ?? ''), PATHINFO_EXTENSION));
+  $extMap = ['jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp', 'gif' => 'image/gif', 'heic' => 'image/heic', 'heif' => 'image/heif'];
+  if (isset($extMap[$ext])) {
+    $mime = $extMap[$ext];
+  }
+}
+if (!isset($allowed[$mime])) {
+  verissimo_json(['ok' => false, 'error' => 'Formato inválido. Use JPG, PNG, WEBP ou foto da galeria do celular.'], 400);
 }
 
 $ext = $allowed[$mime];
