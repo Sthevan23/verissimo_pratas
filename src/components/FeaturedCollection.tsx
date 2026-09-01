@@ -4,8 +4,7 @@ import { Link } from 'react-router-dom'
 import { Button } from './ui/Button'
 import { AnimateIn } from './ui/AnimateIn'
 
-const COLLECTION_IMAGE =
-  'https://dcdn-us.mitiendanube.com/stores/003/936/343/products/img_4633-9c3c043dc188f7692c17807857126302-640-0.webp'
+const COLLECTION_IMAGE = '/categories/colares.png'
 
 export function FeaturedCollection() {
   const ref = useRef<HTMLElement>(null)

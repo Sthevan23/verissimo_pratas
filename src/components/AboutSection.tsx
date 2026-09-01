@@ -11,7 +11,7 @@ export function AboutSection() {
           <AnimateIn direction="left">
             <div className="relative aspect-[4/5] bg-off-white overflow-hidden max-w-lg mx-auto lg:mx-0">
               <img
-                src="https://dcdn-us.mitiendanube.com/stores/003/936/343/products/img_4817-jpg-bc43e9cb0a124925e817801724891973-640-0.webp"
+                src="/categories/conjuntos.png"
                 alt="Verissimo Pratas — joias em prata 925"
                 className="w-full h-full object-cover"
                 loading="lazy"
