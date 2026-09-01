@@ -223,13 +223,13 @@ export const homeCategories = categories
   )
   .map((c) => (c.slug === 'brincos' ? { ...c, name: 'Brincos' } : c))
 
-/** Grid da home — só texto, sem fotos */
+/** Grid da home — categorias com fotos próprias */
 export const HOME_CATEGORY_NAV = [
-  { name: 'Anéis', slug: 'aneis' },
-  { name: 'Pulseiras', slug: 'pulseiras' },
-  { name: 'Colares', slug: 'colares' },
-  { name: 'Masculino', slug: 'masculinos' },
-  { name: 'Brincos', slug: 'brincos' },
-  { name: 'Conjuntos', slug: 'conjuntos' },
-  { name: 'Braceletes', slug: 'pulseiras-braceletes' },
+  { name: 'Anéis', slug: 'aneis', image: '/categories/aneis.png' },
+  { name: 'Pulseiras', slug: 'pulseiras', image: '/categories/pulseiras.png' },
+  { name: 'Colares', slug: 'colares', image: '/categories/colares.png' },
+  { name: 'Masculino', slug: 'masculinos', image: '/categories/masculinos.png' },
+  { name: 'Brincos', slug: 'brincos', image: '/categories/brincos.png' },
+  { name: 'Conjuntos', slug: 'conjuntos', image: '/categories/conjuntos.png' },
+  { name: 'Braceletes', slug: 'pulseiras-braceletes', image: '/categories/braceletes.png' },
 ] as const

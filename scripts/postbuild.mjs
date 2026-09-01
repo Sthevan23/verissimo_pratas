@@ -78,12 +78,14 @@ if (existsSync(join(dist, 'icons.svg'))) {
   copyFileSync(join(dist, 'icons.svg'), join(root, 'icons.svg'))
 }
 
-// Pasta de fotos de produtos (public/products → raiz + deploy)
-const distProducts = join(dist, 'products')
-if (existsSync(distProducts)) {
-  const rootProducts = join(root, 'products')
-  if (existsSync(rootProducts)) rmSync(rootProducts, { recursive: true, force: true })
-  copyDir(distProducts, rootProducts)
+// Pastas estáticas (public/products e public/categories → raiz)
+for (const folder of ['products', 'categories']) {
+  const distFolder = join(dist, folder)
+  if (existsSync(distFolder)) {
+    const rootFolder = join(root, folder)
+    if (existsSync(rootFolder)) rmSync(rootFolder, { recursive: true, force: true })
+    copyDir(distFolder, rootFolder)
+  }
 }
 
 // API na raiz: fonte já está em api/ — só garantir config.local
