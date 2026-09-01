@@ -21,7 +21,7 @@ import { useAdminAuth } from '../../context/AdminAuthContext'
 const menuItems = [
   { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard', module: 'dashboard' },
   { to: '/admin/produtos', icon: Package, label: 'Produtos', module: 'products' },
-  { to: '/admin/categorias', icon: FolderTree, label: 'Categorias', module: 'categories' },
+  { to: '/admin/categorias', icon: FolderTree, label: 'Página inicial', module: 'categories' },
   { to: '/admin/pedidos', icon: ShoppingCart, label: 'Pedidos', module: 'orders' },
   { to: '/admin/clientes', icon: Users, label: 'Clientes', module: 'customers' },
   { to: '/admin/estoque', icon: Warehouse, label: 'Estoque', module: 'inventory' },

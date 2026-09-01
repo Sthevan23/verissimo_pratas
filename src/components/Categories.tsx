@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom'
-import { homeCategories } from '../data/categories'
+import { getHomeCategories } from '../services/storeService'
 import { AnimateIn } from './ui/AnimateIn'
 
 export function Categories() {
+  const homeCategories = getHomeCategories()
+
   return (
     <section className="py-14 sm:py-20 lg:py-28">
       <div className="container-brand">

@@ -76,6 +76,8 @@ export interface AdminCategory {
   description: string
   order: number
   active: boolean
+  /** Exibir no grid da página inicial */
+  showOnHome?: boolean
 }
 
 export interface Customer {
@@ -220,6 +222,7 @@ export interface StoreSettings {
   maxInstallments: number
   heroTitle: string
   heroSubtitle: string
+  heroImage: string
 }
 
 export interface AdminDatabase {

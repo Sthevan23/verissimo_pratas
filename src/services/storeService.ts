@@ -1,7 +1,8 @@
 import type { Product, Category } from '../types'
 import { getDatabase } from './adminStore'
-import { categoryLabels } from '../data/categories'
+import { categoryLabels, homeCategories as fallbackHomeCategories } from '../data/categories'
 import { resolveProductSizes } from '../data/sizes'
+import { normalizeProductImageUrl } from './remoteCatalog'
 
 /** Bridge: storefront reads from admin store (localStorage) when available */
 export function getStoreProducts(): Product[] {
@@ -54,9 +55,28 @@ export function getStoreCategories(): Category[] {
     .map((c) => ({
       slug: c.slug as Category['slug'],
       name: c.name,
-      image: c.image,
+      image: normalizeProductImageUrl(c.image),
       description: c.description,
     }))
+}
+
+/** Grid "Nossas categorias" na página inicial — editável no painel */
+export function getHomeCategories(): Category[] {
+  const fromDb = getDatabase()
+    .categories.filter((c) => c.active && c.showOnHome !== false)
+    .sort((a, b) => a.order - b.order)
+    .map((c) => ({
+      slug: c.slug as Category['slug'],
+      name: c.name,
+      image: normalizeProductImageUrl(c.image),
+      description: c.description,
+    }))
+
+  return fromDb.length > 0 ? fromDb : fallbackHomeCategories
+}
+
+export function getStoreSettings() {
+  return getDatabase().settings
 }
 
 export function getStoreCategoryLabels(): Record<string, string> {

@@ -29,6 +29,37 @@ function now() {
   return new Date().toISOString()
 }
 
+/** Slugs que não aparecem no grid da home (só subcategorias) */
+const HOME_HIDDEN_SLUGS = new Set([
+  'brincos-trios',
+  'brincos-duplas',
+  'pulseiras-braceletes',
+  'pulseiras-infantil',
+  'berloques-pulseiras',
+  'personalizados-aneis',
+  'personalizados-colares',
+  'personalizados-pulseiras',
+  'personalizados-berloques',
+  'personalizados-chaveiros',
+  'masculinos-corrente',
+  'masculinos-pulseira',
+  'masculinos-pingente',
+  'acessorios',
+  'novidades',
+  'promocoes',
+])
+
+function defaultShowOnHome(slug: string): boolean {
+  return !HOME_HIDDEN_SLUGS.has(slug)
+}
+
+function migrateCategory(cat: AdminCategory): AdminCategory {
+  return {
+    ...cat,
+    showOnHome: cat.showOnHome ?? defaultShowOnHome(String(cat.slug)),
+  }
+}
+
 function toAdminProduct(p: (typeof seedProducts)[0], index: number): AdminProduct {
   const cost = Math.round(p.price * 0.42)
   return {
@@ -80,6 +111,7 @@ function createSeedDatabase(): AdminDatabase {
       description: c.description,
       order: i,
       active: true,
+      showOnHome: defaultShowOnHome(c.slug),
     })),
     {
       id: uid(),
@@ -89,6 +121,7 @@ function createSeedDatabase(): AdminDatabase {
       description: 'Peças em oferta especial',
       order: seedCategories.length,
       active: true,
+      showOnHome: false,
     },
   ]
 
@@ -136,6 +169,7 @@ function createSeedDatabase(): AdminDatabase {
       maxInstallments: 6,
       heroTitle: 'Elegância que permanece.',
       heroSubtitle: 'Descubra peças em prata pensadas para transformar momentos em memórias.',
+      heroImage: '',
     },
     auditLog: [],
   }
@@ -157,7 +191,10 @@ export function getDatabase(): AdminDatabase {
   const raw = localStorage.getItem(STORAGE_KEY)
   if (raw) {
     try {
-      return JSON.parse(raw) as AdminDatabase
+      const db = JSON.parse(raw) as AdminDatabase
+      db.categories = (db.categories ?? []).map(migrateCategory)
+      if (!db.settings.heroImage) db.settings.heroImage = ''
+      return db
     } catch {
       /* fall through */
     }
@@ -230,7 +267,11 @@ export async function publishCatalogToServer(): Promise<{ ok: boolean; error?: s
     }
     db.products = withUrls
     saveDatabase(db)
-    const ok = await pushCatalogToServer(withUrls)
+    const ok = await pushCatalogToServer({
+      products: withUrls,
+      categories: db.categories.map(migrateCategory),
+      settings: db.settings,
+    })
     return ok ? { ok: true } : { ok: false, error: 'Servidor não aceitou o catálogo' }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Erro ao publicar' }
@@ -246,8 +287,21 @@ export async function hydrateCatalogFromServer(options?: {
   if (!remote) return false
 
   const db = getDatabase()
-  if (remote.length > 0) {
-    db.products = remote.map((p) => normalizeProductImages(p))
+  const hasRemote =
+    remote.products.length > 0 ||
+    remote.categories.length > 0 ||
+    Boolean(remote.settings)
+
+  if (hasRemote) {
+    if (remote.products.length > 0) {
+      db.products = remote.products.map((p) => normalizeProductImages(p))
+    }
+    if (remote.categories.length > 0) {
+      db.categories = remote.categories.map(migrateCategory)
+    }
+    if (remote.settings) {
+      db.settings = { ...db.settings, ...remote.settings }
+    }
     saveDatabase(db)
     return true
   }
@@ -452,3 +506,22 @@ export function setStock(productId: string, quantity: number, reason: string): v
 
 export function getDb() { return getDatabase() }
 export function saveDb(db: AdminDatabase) { saveDatabase(db) }
+
+export function saveCategory(category: AdminCategory): AdminCategory {
+  const db = getDatabase()
+  const cat = migrateCategory(category)
+  const idx = db.categories.findIndex((c) => c.id === cat.id)
+  if (idx >= 0) db.categories[idx] = cat
+  else db.categories.push(cat)
+  saveDatabase(db)
+  addAudit('update', 'category', cat.id, `Atualizou categoria ${cat.name}`)
+  return cat
+}
+
+export function deleteCategory(id: string): void {
+  const db = getDatabase()
+  const cat = db.categories.find((c) => c.id === id)
+  db.categories = db.categories.filter((c) => c.id !== id)
+  saveDatabase(db)
+  if (cat) addAudit('delete', 'category', id, `Excluiu categoria ${cat.name}`)
+}

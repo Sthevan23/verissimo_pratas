@@ -1,16 +1,23 @@
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
+import { getStoreSettings } from '../services/storeService'
 import { Button } from './ui/Button'
+import { normalizeProductImageUrl } from '../services/remoteCatalog'
 
-const HERO_IMAGE =
+const DEFAULT_HERO_IMAGE =
   'https://dcdn-us.mitiendanube.com/stores/003/936/343/products/img_7459-jpg-ae93f851c77204047a17840546062480-640-0.webp'
 
 export function Hero() {
+  const settings = getStoreSettings()
+  const heroImage = settings.heroImage
+    ? normalizeProductImageUrl(settings.heroImage)
+    : DEFAULT_HERO_IMAGE
+
   return (
     <section className="relative min-h-screen-safe lg:min-h-[90vh] flex items-center overflow-hidden">
       <div className="absolute inset-0">
         <motion.img
-          src={HERO_IMAGE}
+          src={heroImage}
           alt="Joias em prata Verissimo — elegância atemporal"
           className="w-full h-full object-cover object-center"
           initial={{ scale: 1.05 }}
@@ -38,7 +45,7 @@ export function Hero() {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="heading-display text-3xl sm:text-5xl lg:text-6xl xl:text-7xl text-graphite leading-[1.1] mb-4 sm:mb-6"
           >
-            Elegância que<br />permanece.
+            {settings.heroTitle || 'Elegância que permanece.'}
           </motion.h1>
 
           <motion.p
@@ -47,7 +54,8 @@ export function Hero() {
             transition={{ duration: 0.8, delay: 0.6 }}
             className="text-sm sm:text-base lg:text-lg text-warm-gray font-light leading-relaxed mb-8 sm:mb-10 max-w-md"
           >
-            Descubra peças em prata pensadas para transformar momentos em memórias.
+            {settings.heroSubtitle ||
+              'Descubra peças em prata pensadas para transformar momentos em memórias.'}
           </motion.p>
 
           <motion.div

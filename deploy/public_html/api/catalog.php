@@ -1,9 +1,8 @@
 <?php
 /**
- * Catálogo de produtos (JSON no servidor)
- * GET  → lista produtos públicos
- * POST → salva lista completa (admin)
- * Header POST: X-Verissimo-Token
+ * Catálogo + conteúdo do site (JSON no servidor)
+ * GET  → produtos, categorias da home, configurações
+ * POST → salva (admin) — mescla com dados existentes
  */
 require __DIR__ . '/helpers.php';
 verissimo_api_headers();
@@ -11,21 +10,35 @@ verissimo_api_headers();
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $path = verissimo_catalog_path();
 
-if ($method === 'GET') {
+function verissimo_read_catalog(string $path): array {
   if (!is_file($path)) {
-    verissimo_json(['ok' => true, 'products' => [], 'updatedAt' => null]);
+    return ['products' => [], 'categories' => [], 'settings' => []];
   }
   $raw = file_get_contents($path);
   $data = json_decode($raw ?: '[]', true);
   if (!is_array($data)) {
-    verissimo_json(['ok' => true, 'products' => [], 'updatedAt' => null]);
+    return ['products' => [], 'categories' => [], 'settings' => []];
   }
-  $products = $data['products'] ?? (array_is_list($data) ? $data : []);
+  if (array_is_list($data)) {
+    return ['products' => $data, 'categories' => [], 'settings' => []];
+  }
+  return [
+    'products' => $data['products'] ?? [],
+    'categories' => $data['categories'] ?? [],
+    'settings' => $data['settings'] ?? [],
+    'updatedAt' => $data['updatedAt'] ?? null,
+  ];
+}
+
+if ($method === 'GET') {
+  $data = verissimo_read_catalog($path);
   verissimo_json([
     'ok' => true,
-    'products' => $products,
+    'products' => $data['products'],
+    'categories' => $data['categories'],
+    'settings' => $data['settings'],
     'updatedAt' => $data['updatedAt'] ?? null,
-    'count' => count($products),
+    'count' => count($data['products']),
   ]);
 }
 
@@ -41,10 +54,18 @@ if ($method === 'POST') {
     verissimo_json(['ok' => false, 'error' => 'Campo products obrigatório'], 400);
   }
 
+  $existing = verissimo_read_catalog($path);
   $out = [
     'updatedAt' => gmdate('c'),
     'products' => array_values($products),
+    'categories' => isset($payload['categories']) && is_array($payload['categories'])
+      ? array_values($payload['categories'])
+      : $existing['categories'],
+    'settings' => isset($payload['settings']) && is_array($payload['settings'])
+      ? $payload['settings']
+      : $existing['settings'],
   ];
+
   $json = json_encode($out, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
   if ($json === false) {
     verissimo_json(['ok' => false, 'error' => 'Falha ao serializar'], 500);
@@ -55,6 +76,7 @@ if ($method === 'POST') {
   verissimo_json([
     'ok' => true,
     'count' => count($out['products']),
+    'categoriesCount' => count($out['categories']),
     'updatedAt' => $out['updatedAt'],
   ]);
 }

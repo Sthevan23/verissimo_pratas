@@ -1,4 +1,10 @@
-import type { AdminProduct } from '../types/admin'
+import type { AdminCategory, AdminProduct, StoreSettings } from '../types/admin'
+
+export interface RemoteSiteCatalog {
+  products: AdminProduct[]
+  categories: AdminCategory[]
+  settings: StoreSettings | null
+}
 
 const WRITE_TOKEN =
   import.meta.env.VITE_ADMIN_PASSWORD ||
@@ -12,26 +18,34 @@ function writeHeaders(): HeadersInit {
   }
 }
 
-/** Baixa o catálogo publicado no servidor */
-export async function fetchRemoteCatalog(): Promise<AdminProduct[] | null> {
+/** Baixa catálogo + categorias + configurações do servidor */
+export async function fetchRemoteCatalog(): Promise<RemoteSiteCatalog | null> {
   try {
     const res = await fetch('/api/catalog.php', { cache: 'no-store' })
     if (!res.ok) return null
     const data = await res.json()
     if (!data?.ok || !Array.isArray(data.products)) return null
-    return data.products as AdminProduct[]
+    return {
+      products: data.products as AdminProduct[],
+      categories: Array.isArray(data.categories) ? (data.categories as AdminCategory[]) : [],
+      settings: data.settings ?? null,
+    }
   } catch {
     return null
   }
 }
 
-/** Publica a lista de produtos no servidor (visível para todos) */
-export async function pushCatalogToServer(products: AdminProduct[]): Promise<boolean> {
+/** Publica conteúdo do site no servidor (visível para todos) */
+export async function pushCatalogToServer(payload: {
+  products: AdminProduct[]
+  categories?: AdminCategory[]
+  settings?: StoreSettings
+}): Promise<boolean> {
   try {
     const res = await fetch('/api/catalog.php', {
       method: 'POST',
       headers: writeHeaders(),
-      body: JSON.stringify({ products }),
+      body: JSON.stringify(payload),
     })
     if (!res.ok) return false
     const data = await res.json()
