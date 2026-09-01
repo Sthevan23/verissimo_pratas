@@ -222,3 +222,14 @@ export const homeCategories = categories
       ].includes(c.slug)
   )
   .map((c) => (c.slug === 'brincos' ? { ...c, name: 'Brincos' } : c))
+
+/** Grid da home — só texto, sem fotos */
+export const HOME_CATEGORY_NAV = [
+  { name: 'Anéis', slug: 'aneis' },
+  { name: 'Pulseiras', slug: 'pulseiras' },
+  { name: 'Colares', slug: 'colares' },
+  { name: 'Masculino', slug: 'masculinos' },
+  { name: 'Brincos', slug: 'brincos' },
+  { name: 'Conjuntos', slug: 'conjuntos' },
+  { name: 'Braceletes', slug: 'pulseiras-braceletes' },
+] as const
