@@ -47,7 +47,7 @@ export function Hero() {
             <Link to="/produtos" className="w-full sm:w-auto">
               <Button
                 size="lg"
-                className="w-full bg-white text-brand-green border-white hover:bg-white/90 hover:text-brand-green"
+                className="w-full !bg-white !text-[#4a5a38] !border-white hover:!bg-off-white hover:!text-[#3d4a30]"
               >
                 Explorar coleção
               </Button>
@@ -56,7 +56,7 @@ export function Hero() {
               <Button
                 variant="secondary"
                 size="lg"
-                className="w-full bg-transparent text-white border-white hover:bg-white/10 hover:text-white"
+                className="w-full !bg-transparent !text-white !border-white hover:!bg-white/15 hover:!text-white"
               >
                 Conheça a Verissimo
               </Button>
