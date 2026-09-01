@@ -3,6 +3,7 @@ import { Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { formatPrice } from '../utils/format'
+import { cartLineKey, describeCartChoices } from '../utils/cart'
 import { Button } from '../components/ui/Button'
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { STORE_COMMERCE } from '../data/commerce'
@@ -56,8 +57,19 @@ export function Cart() {
                 {cart.map((item) => {
                   const price = item.product.salePrice ?? item.product.price
                   const sizes = item.product.sizes
+                  const line = {
+                    size: item.selectedSize,
+                    choices: item.selectedChoices,
+                  }
+                  const choiceText = describeCartChoices(item.product, item.selectedChoices)
                   return (
-                    <AnimateIn key={`${item.product.id}-${item.selectedSize ?? 'nosize'}`}>
+                    <AnimateIn
+                      key={cartLineKey(
+                        item.product.id,
+                        item.selectedSize,
+                        item.selectedChoices
+                      )}
+                    >
                       <div className="flex gap-5 pb-6 border-b border-border">
                         <Link
                           to={`/produto/${item.product.slug}`}
@@ -88,7 +100,8 @@ export function Cart() {
                                   updateCartSize(
                                     item.product.id,
                                     item.selectedSize,
-                                    e.target.value
+                                    e.target.value,
+                                    item.selectedChoices
                                   )
                                 }
                                 className="w-full appearance-none border border-border bg-cream px-3 py-2 text-sm text-graphite focus:outline-none focus:border-graphite"
@@ -106,6 +119,10 @@ export function Cart() {
                             </p>
                           ) : null}
 
+                          {choiceText ? (
+                            <p className="text-sm text-muted mt-1">{choiceText}</p>
+                          ) : null}
+
                           <p className="text-base font-medium mt-2">
                             {formatPrice(price)}
                           </p>
@@ -116,7 +133,7 @@ export function Cart() {
                                   updateQuantity(
                                     item.product.id,
                                     item.quantity - 1,
-                                    item.selectedSize
+                                    line
                                   )
                                 }
                                 className="p-2 hover:bg-off-white"
@@ -130,7 +147,7 @@ export function Cart() {
                                   updateQuantity(
                                     item.product.id,
                                     item.quantity + 1,
-                                    item.selectedSize
+                                    line
                                   )
                                 }
                                 className="p-2 hover:bg-off-white"
@@ -140,9 +157,7 @@ export function Cart() {
                               </button>
                             </div>
                             <button
-                              onClick={() =>
-                                removeFromCart(item.product.id, item.selectedSize)
-                              }
+                              onClick={() => removeFromCart(item.product.id, line)}
                               className="flex items-center gap-1.5 text-sm text-muted hover:text-graphite transition-colors"
                             >
                               <Trash2 className="w-4 h-4" strokeWidth={1.5} />

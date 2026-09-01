@@ -3,6 +3,7 @@ import { Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { formatPrice } from '../utils/format'
+import { cartLineKey, describeCartChoices } from '../utils/cart'
 import { Button } from './ui/Button'
 import { STORE_COMMERCE } from '../data/commerce'
 
@@ -74,9 +75,18 @@ export function CartDrawer() {
                   {cart.map((item) => {
                     const price = item.product.salePrice ?? item.product.price
                     const sizes = item.product.sizes
+                    const line = {
+                      size: item.selectedSize,
+                      choices: item.selectedChoices,
+                    }
+                    const choiceText = describeCartChoices(item.product, item.selectedChoices)
                     return (
                       <div
-                        key={`${item.product.id}-${item.selectedSize ?? 'nosize'}`}
+                        key={cartLineKey(
+                          item.product.id,
+                          item.selectedSize,
+                          item.selectedChoices
+                        )}
                         className="flex gap-4"
                       >
                         <Link
@@ -109,7 +119,8 @@ export function CartDrawer() {
                                   updateCartSize(
                                     item.product.id,
                                     item.selectedSize,
-                                    e.target.value
+                                    e.target.value,
+                                    item.selectedChoices
                                   )
                                 }
                                 className="w-full max-w-[7.5rem] border border-border bg-cream px-2 py-1.5 text-xs text-graphite focus:outline-none focus:border-graphite"
@@ -126,6 +137,9 @@ export function CartDrawer() {
                               Tamanho: {item.selectedSize}
                             </p>
                           ) : null}
+                          {choiceText ? (
+                            <p className="text-xs text-muted mt-0.5">{choiceText}</p>
+                          ) : null}
                           <p className="text-sm font-medium mt-1">
                             {formatPrice(price)}
                           </p>
@@ -136,7 +150,7 @@ export function CartDrawer() {
                                   updateQuantity(
                                     item.product.id,
                                     item.quantity - 1,
-                                    item.selectedSize
+                                    line
                                   )
                                 }
                                 className="touch-target hover:bg-off-white active:bg-off-white transition-colors"
@@ -152,7 +166,7 @@ export function CartDrawer() {
                                   updateQuantity(
                                     item.product.id,
                                     item.quantity + 1,
-                                    item.selectedSize
+                                    line
                                   )
                                 }
                                 className="touch-target hover:bg-off-white active:bg-off-white transition-colors"
@@ -162,9 +176,7 @@ export function CartDrawer() {
                               </button>
                             </div>
                             <button
-                              onClick={() =>
-                                removeFromCart(item.product.id, item.selectedSize)
-                              }
+                              onClick={() => removeFromCart(item.product.id, line)}
                               className="touch-target text-muted hover:text-graphite active:text-graphite transition-colors"
                               aria-label="Remover item"
                             >

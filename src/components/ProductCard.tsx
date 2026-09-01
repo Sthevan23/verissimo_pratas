@@ -10,6 +10,7 @@ import {
   formatInstallments,
   formatPrice,
 } from '../utils/format'
+import { productRequiresSelection } from '../utils/cart'
 
 interface ProductCardProps {
   product: Product
@@ -23,11 +24,11 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const favorite = isFavorite(product.id)
   const currentPrice = product.salePrice ?? product.price
   const hasSecondImage = product.images.length > 1 && !imgBroken
-  const needsSize = Boolean(product.sizes?.length)
+  const needsSelection = productRequiresSelection(product)
   const primarySrc = !imgBroken && product.images[0] ? product.images[0] : undefined
 
   const handleBuy = () => {
-    if (needsSize) return
+    if (needsSelection) return
     addToCart(product)
   }
 
@@ -102,13 +103,13 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
         </button>
 
         <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-500 hidden lg:block">
-          {needsSize ? (
+          {needsSelection ? (
             <Link
               to={`/produto/${product.slug}`}
               className="w-full flex items-center justify-center gap-2 bg-graphite text-cream py-3 text-[10px] tracking-[0.2em] uppercase hover:bg-charcoal transition-colors"
             >
               <ShoppingBag className="w-3.5 h-3.5" strokeWidth={1.5} />
-              Escolher tamanho
+              Escolher opções
             </Link>
           ) : (
             <button
@@ -153,12 +154,12 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
           {formatInstallments(currentPrice)}
         </p>
 
-        {needsSize ? (
+        {needsSelection ? (
           <Link
             to={`/produto/${product.slug}`}
             className="lg:hidden w-full mt-2 min-h-11 py-2.5 border border-border text-[10px] tracking-[0.2em] uppercase text-graphite active:border-graphite active:bg-off-white transition-colors flex items-center justify-center"
           >
-            Escolher tamanho
+            Escolher opções
           </Link>
         ) : (
           <button

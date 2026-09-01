@@ -8,6 +8,11 @@ import {
 } from 'react'
 import { getStoreCategories, searchStoreProducts } from '../services/storeService'
 import type { CartItem, Product, SearchResult } from '../types'
+import {
+  normalizeCartLineSelection,
+  sameCartLine,
+  type CartLineSelection,
+} from '../utils/cart'
 
 interface Toast {
   id: string
@@ -18,10 +23,26 @@ interface AppContextValue {
   cart: CartItem[]
   cartCount: number
   cartSubtotal: number
-  addToCart: (product: Product, quantity?: number, size?: string) => void
-  removeFromCart: (productId: string, selectedSize?: string) => void
-  updateQuantity: (productId: string, quantity: number, selectedSize?: string) => void
-  updateCartSize: (productId: string, oldSize: string | undefined, newSize: string) => void
+  addToCart: (
+    product: Product,
+    quantity?: number,
+    line?: string | CartLineSelection
+  ) => void
+  removeFromCart: (
+    productId: string,
+    line?: string | CartLineSelection
+  ) => void
+  updateQuantity: (
+    productId: string,
+    quantity: number,
+    line?: string | CartLineSelection
+  ) => void
+  updateCartSize: (
+    productId: string,
+    oldSize: string | undefined,
+    newSize: string,
+    choices?: Record<string, string>
+  ) => void
   clearCart: () => void
   favorites: string[]
   toggleFavorite: (productId: string) => void
@@ -76,48 +97,75 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const addToCart = useCallback(
-    (product: Product, quantity = 1, selectedSize?: string) => {
+    (product: Product, quantity = 1, line?: string | CartLineSelection) => {
+      const { size: selectedSize, choices: selectedChoices } =
+        normalizeCartLineSelection(line)
       setCart((prev) => {
-        const existing = prev.find(
-          (item) =>
-            item.product.id === product.id &&
-            item.selectedSize === selectedSize
+        const existing = prev.find((item) =>
+          sameCartLine(item, {
+            productId: product.id,
+            size: selectedSize,
+            choices: selectedChoices,
+          })
         )
         if (existing) {
           return prev.map((item) =>
-            item.product.id === product.id &&
-            item.selectedSize === selectedSize
+            sameCartLine(item, {
+              productId: product.id,
+              size: selectedSize,
+              choices: selectedChoices,
+            })
               ? { ...item, quantity: item.quantity + quantity }
               : item
           )
         }
-        return [...prev, { product, quantity, selectedSize }]
+        return [...prev, { product, quantity, selectedSize, selectedChoices }]
       })
       showToast(`${product.name} adicionado ao carrinho`)
     },
     [showToast]
   )
 
-  const removeFromCart = useCallback((productId: string, selectedSize?: string) => {
-    setCart((prev) =>
-      prev.filter((item) => {
-        if (item.product.id !== productId) return true
-        if (selectedSize === undefined) return false
-        return item.selectedSize !== selectedSize
-      })
-    )
-  }, [])
+  const removeFromCart = useCallback(
+    (productId: string, line?: string | CartLineSelection) => {
+      const { size: selectedSize, choices: selectedChoices } =
+        normalizeCartLineSelection(line)
+      setCart((prev) =>
+        prev.filter((item) => {
+          if (item.product.id !== productId) return true
+          if (line === undefined) return false
+          return !sameCartLine(item, {
+            productId,
+            size: selectedSize,
+            choices: selectedChoices,
+          })
+        })
+      )
+    },
+    []
+  )
 
   const updateQuantity = useCallback(
-    (productId: string, quantity: number, selectedSize?: string) => {
+    (productId: string, quantity: number, line?: string | CartLineSelection) => {
+      const { size: selectedSize, choices: selectedChoices } =
+        normalizeCartLineSelection(line)
       if (quantity <= 0) {
-        removeFromCart(productId, selectedSize)
+        removeFromCart(productId, line)
         return
       }
       setCart((prev) =>
         prev.map((item) => {
           if (item.product.id !== productId) return item
-          if (selectedSize !== undefined && item.selectedSize !== selectedSize) return item
+          if (
+            line !== undefined &&
+            !sameCartLine(item, {
+              productId,
+              size: selectedSize,
+              choices: selectedChoices,
+            })
+          ) {
+            return item
+          }
           return { ...item, quantity }
         })
       )
@@ -126,23 +174,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
   )
 
   const updateCartSize = useCallback(
-    (productId: string, oldSize: string | undefined, newSize: string) => {
+    (
+      productId: string,
+      oldSize: string | undefined,
+      newSize: string,
+      choices?: Record<string, string>
+    ) => {
       if (oldSize === newSize) return
       setCart((prev) => {
-        const source = prev.find(
-          (item) => item.product.id === productId && item.selectedSize === oldSize
+        const source = prev.find((item) =>
+          sameCartLine(item, { productId, size: oldSize, choices })
         )
         if (!source) return prev
 
         const withoutSource = prev.filter(
-          (item) => !(item.product.id === productId && item.selectedSize === oldSize)
+          (item) => !sameCartLine(item, { productId, size: oldSize, choices })
         )
-        const target = withoutSource.find(
-          (item) => item.product.id === productId && item.selectedSize === newSize
+        const target = withoutSource.find((item) =>
+          sameCartLine(item, { productId, size: newSize, choices })
         )
         if (target) {
           return withoutSource.map((item) =>
-            item.product.id === productId && item.selectedSize === newSize
+            sameCartLine(item, { productId, size: newSize, choices })
               ? { ...item, quantity: item.quantity + source.quantity }
               : item
           )

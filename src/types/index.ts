@@ -29,6 +29,14 @@ export type CategorySlug =
   | 'relogios'
   | 'linha-masculina'
 
+export interface ProductOption {
+  /** Identificador interno, ex: fecho */
+  id: string
+  /** Nome exibido ao cliente, ex: Fecho */
+  label: string
+  values: string[]
+}
+
 export interface Product {
   id: string
   slug: string
@@ -49,6 +57,8 @@ export interface Product {
   care: string
   shippingDays: string
   sizes?: string[]
+  /** Opções de escolha do cliente (fecho, cor, etc.) */
+  options?: ProductOption[]
   isNew?: boolean
   isFeatured?: boolean
   isOnSale?: boolean
@@ -65,6 +75,8 @@ export interface CartItem {
   product: Product
   quantity: number
   selectedSize?: string
+  /** Ex: { fecho: "Coração cravejado" } */
+  selectedChoices?: Record<string, string>
 }
 
 export interface Testimonial {

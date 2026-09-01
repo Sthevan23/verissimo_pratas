@@ -12,6 +12,7 @@ import { getDatabase } from '../../services/adminStore'
 import { useAdminToast } from '../../context/AdminToastContext'
 import { calcMargin, slugify } from '../../context/AdminToastContext'
 import { compressImageFile, uploadProductFile } from '../../services/remoteCatalog'
+import { formatProductOptions, parseProductOptions } from '../../utils/productOptions'
 import type { AdminProduct } from '../../types/admin'
 import type { CategorySlug } from '../../types'
 
@@ -365,6 +366,24 @@ export function AdminProductForm() {
               />
               <p className="text-[11px] text-muted mt-1">
                 Anéis e pulseiras: informe os tamanhos disponíveis na loja.
+              </p>
+            </div>
+            <div>
+              <label className="admin-label">Opções de escolha (fecho, cor, etc.)</label>
+              <textarea
+                className="admin-input min-h-[88px] font-mono text-[12px]"
+                value={formatProductOptions(product.options)}
+                onChange={(e) => {
+                  const options = parseProductOptions(e.target.value)
+                  update('options', options.length ? options : undefined)
+                }}
+                placeholder={'Fecho: Coração cravejado, Quadrado cravejado'}
+              />
+              <p className="text-[11px] text-muted mt-1">
+                Uma opção por linha. Formato: <strong>Nome: valor1, valor2</strong>
+                <br />
+                Exemplo para braceletes:{' '}
+                <code className="text-[10px]">Fecho: Coração cravejado, Quadrado cravejado</code>
               </p>
             </div>
             {(['material', 'silverType', 'weight', 'size', 'dimensions', 'warranty'] as const).map((field) => (

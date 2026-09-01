@@ -33,6 +33,7 @@ export function ProductDetails() {
   const [selectedImage, setSelectedImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [selectedSize, setSelectedSize] = useState<string | undefined>()
+  const [selectedChoices, setSelectedChoices] = useState<Record<string, string>>({})
   const [paymentOpen, setPaymentOpen] = useState(false)
   const [shippingOpen, setShippingOpen] = useState(false)
   const [shareHint, setShareHint] = useState(false)
@@ -46,6 +47,11 @@ export function ProductDetails() {
     } else {
       setSelectedSize(undefined)
     }
+    const defaults: Record<string, string> = {}
+    product?.options?.forEach((opt) => {
+      if (opt.values[0]) defaults[opt.id] = opt.values[0]
+    })
+    setSelectedChoices(defaults)
     setQuantity(1)
     setSelectedImage(0)
     setPaymentOpen(false)
@@ -67,6 +73,9 @@ export function ProductDetails() {
   const related = getRelatedProducts(product)
   const categoryName = categoryLabels[product.category] ?? product.category
   const sizes = resolveProductSizes(product.category, product.sizes)
+  const options = product.options?.filter((o) => o.values.length > 0) ?? []
+  const optionsComplete =
+    options.length === 0 || options.every((o) => Boolean(selectedChoices[o.id]))
   const stock = product.stock
   const isLastPiece = product.inStock && stock !== undefined && stock === 1
   const isLowStock =
@@ -74,7 +83,11 @@ export function ProductDetails() {
 
   const handleBuy = () => {
     if (sizes?.length && !selectedSize) return
-    addToCart(product, quantity, selectedSize)
+    if (!optionsComplete) return
+    addToCart(product, quantity, {
+      size: selectedSize,
+      choices: Object.keys(selectedChoices).length ? selectedChoices : undefined,
+    })
     openCart()
   }
 
@@ -292,6 +305,31 @@ export function ProductDetails() {
                   </div>
                 )}
 
+                {options.map((opt) => (
+                  <div key={opt.id} className="mb-3">
+                    <p className="block text-[14px] text-charcoal mb-2">{opt.label}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {opt.values.map((value) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() =>
+                            setSelectedChoices((prev) => ({ ...prev, [opt.id]: value }))
+                          }
+                          className={cn(
+                            'px-3 py-2.5 text-[13px] border rounded-sm transition-colors text-left',
+                            selectedChoices[opt.id] === value
+                              ? 'border-graphite bg-graphite text-cream'
+                              : 'border-border text-charcoal hover:border-graphite bg-cream'
+                          )}
+                        >
+                          {value}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
                 {(isLastPiece || isLowStock) && (
                   <p className="text-[15px] font-bold text-graphite mb-3">
                     {isLastPiece
@@ -337,7 +375,11 @@ export function ProductDetails() {
                   <button
                     type="button"
                     onClick={handleBuy}
-                    disabled={!product.inStock || (Boolean(sizes?.length) && !selectedSize)}
+                    disabled={
+                      !product.inStock ||
+                      (Boolean(sizes?.length) && !selectedSize) ||
+                      !optionsComplete
+                    }
                     className="flex-1 h-[48px] bg-graphite text-cream text-[15px] font-semibold tracking-wide hover:bg-charcoal disabled:opacity-45 disabled:cursor-not-allowed transition-colors"
                   >
                     Comprar

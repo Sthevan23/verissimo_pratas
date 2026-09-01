@@ -92,6 +92,7 @@ function adminToStoreProduct(p: import('../types/admin').AdminProduct): Product 
     care: p.care,
     shippingDays: p.shippingDays,
     sizes: resolveProductSizes(p.category, p.sizes),
+    options: p.options?.length ? p.options : undefined,
     isNew: p.isNew,
     isFeatured: p.isFeatured,
     isOnSale: p.isOnSale,

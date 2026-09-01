@@ -1,4 +1,4 @@
-import type { CategorySlug } from './index'
+import type { CategorySlug, ProductOption } from './index'
 
 export type AdminRole = 'administrador' | 'gerente' | 'editor'
 export type ProductStatus = 'active' | 'draft' | 'archived'
@@ -57,6 +57,7 @@ export interface AdminProduct {
   care: string
   shippingDays: string
   sizes?: string[]
+  options?: ProductOption[]
   seoTitle: string
   seoDescription: string
   status: ProductStatus
