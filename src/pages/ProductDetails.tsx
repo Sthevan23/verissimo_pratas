@@ -159,7 +159,7 @@ export function ProductDetails() {
                     onClick={() => setSelectedImage(i)}
                     className={cn(
                       'w-14 h-14 shrink-0 overflow-hidden border',
-                      i === selectedImage ? 'border-graphite' : 'border-border'
+                      i === selectedImage ? 'border-brand-green' : 'border-border'
                     )}
                   >
                     <img src={img} alt="" className="w-full h-full object-cover" />
@@ -191,7 +191,7 @@ export function ProductDetails() {
                         onClick={() => setSelectedImage(i)}
                         className={cn(
                           'w-20 h-20 shrink-0 overflow-hidden border',
-                          i === selectedImage ? 'border-graphite' : 'border-transparent'
+                          i === selectedImage ? 'border-brand-green' : 'border-transparent'
                         )}
                       >
                         <img src={img} alt="" className="w-full h-full object-cover" />
@@ -319,8 +319,8 @@ export function ProductDetails() {
                           className={cn(
                             'px-3 py-2.5 text-[13px] border rounded-sm transition-colors text-left',
                             selectedChoices[opt.id] === value
-                              ? 'border-graphite bg-graphite text-cream'
-                              : 'border-border text-charcoal hover:border-graphite bg-cream'
+                              ? 'border-brand-green bg-brand-green text-white'
+                              : 'border-border text-charcoal hover:border-brand-green bg-cream'
                           )}
                         >
                           {value}
@@ -380,7 +380,7 @@ export function ProductDetails() {
                       (Boolean(sizes?.length) && !selectedSize) ||
                       !optionsComplete
                     }
-                    className="flex-1 h-[48px] bg-graphite text-cream text-[15px] font-semibold tracking-wide hover:bg-charcoal disabled:opacity-45 disabled:cursor-not-allowed transition-colors"
+                    className="flex-1 h-[48px] bg-brand-green text-white text-[15px] font-semibold tracking-wide hover:bg-brand-green-dark disabled:opacity-45 disabled:cursor-not-allowed transition-colors"
                   >
                     Comprar
                   </button>

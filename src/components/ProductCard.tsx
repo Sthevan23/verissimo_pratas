@@ -74,7 +74,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
         </Link>
 
         {product.badge && (
-          <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-graphite text-cream text-[8px] sm:text-[9px] tracking-[0.15em] uppercase px-2 py-1 sm:px-3 sm:py-1.5">
+          <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-brand-green text-white text-[8px] sm:text-[9px] tracking-[0.15em] uppercase px-2 py-1 sm:px-3 sm:py-1.5">
             {product.badge === 'novidade'
               ? 'Novidade'
               : product.badge === 'oferta-especial'
@@ -106,7 +106,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
           {needsSelection ? (
             <Link
               to={`/produto/${product.slug}`}
-              className="w-full flex items-center justify-center gap-2 bg-graphite text-cream py-3 text-[10px] tracking-[0.2em] uppercase hover:bg-charcoal transition-colors"
+              className="w-full flex items-center justify-center gap-2 bg-brand-green text-white py-3 text-[10px] tracking-[0.2em] uppercase hover:bg-brand-green-dark transition-colors"
             >
               <ShoppingBag className="w-3.5 h-3.5" strokeWidth={1.5} />
               Escolher opções
@@ -114,7 +114,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
           ) : (
             <button
               onClick={handleBuy}
-              className="w-full flex items-center justify-center gap-2 bg-graphite text-cream py-3 text-[10px] tracking-[0.2em] uppercase hover:bg-charcoal transition-colors"
+              className="w-full flex items-center justify-center gap-2 bg-brand-green text-white py-3 text-[10px] tracking-[0.2em] uppercase hover:bg-brand-green-dark transition-colors"
             >
               <ShoppingBag className="w-3.5 h-3.5" strokeWidth={1.5} />
               Comprar

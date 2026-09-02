@@ -200,7 +200,7 @@ export function CartDrawer() {
                     />
                     <button
                       onClick={applyCoupon}
-                      className="px-5 py-3 min-h-11 border border-graphite text-[10px] tracking-widest uppercase hover:bg-graphite hover:text-cream active:bg-graphite active:text-cream transition-colors shrink-0"
+                      className="px-5 py-3 min-h-11 border border-brand-green text-[10px] tracking-widest uppercase text-brand-green hover:bg-brand-green hover:text-white active:bg-brand-green active:text-white transition-colors shrink-0"
                     >
                       Aplicar
                     </button>

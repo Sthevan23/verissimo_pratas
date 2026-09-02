@@ -26,13 +26,13 @@ const steps = [
 
 export function ShoppingExperience() {
   return (
-    <section className="py-20 lg:py-28 bg-graphite text-cream">
+    <section className="py-20 lg:py-28 bg-[#EEEDEA] text-graphite">
       <div className="container-brand">
         <AnimateIn className="text-center mb-14 lg:mb-16">
-          <p className="text-[11px] tracking-[0.3em] uppercase text-silver-dark mb-3">
+          <p className="text-[11px] tracking-[0.3em] uppercase text-muted mb-3">
             Simples e seguro
           </p>
-          <h2 className="heading-display text-3xl lg:text-4xl">
+          <h2 className="heading-display text-3xl lg:text-4xl text-graphite">
             Sua experiência de compra
           </h2>
         </AnimateIn>
@@ -41,14 +41,14 @@ export function ShoppingExperience() {
           {steps.map((step, i) => (
             <AnimateIn key={step.title} delay={i * 0.1}>
               <div className="text-center lg:text-left">
-                <div className="inline-flex items-center justify-center w-12 h-12 border border-silver-dark/30 mb-5">
-                  <step.icon className="w-5 h-5 text-silver" strokeWidth={1.5} />
+                <div className="inline-flex items-center justify-center w-12 h-12 border border-border bg-cream/80 mb-5">
+                  <step.icon className="w-5 h-5 text-brand-green" strokeWidth={1.5} />
                 </div>
-                <span className="block text-[10px] tracking-[0.3em] text-silver-dark mb-2">
+                <span className="block text-[10px] tracking-[0.3em] text-muted mb-2">
                   0{i + 1}
                 </span>
-                <h3 className="font-serif text-xl font-light mb-2">{step.title}</h3>
-                <p className="text-sm text-silver-dark font-light leading-relaxed">
+                <h3 className="font-serif text-xl font-light text-graphite mb-2">{step.title}</h3>
+                <p className="text-sm text-warm-gray font-light leading-relaxed">
                   {step.description}
                 </p>
               </div>

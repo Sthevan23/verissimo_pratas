@@ -17,6 +17,7 @@
   --color-border: #E5E3DF;
   --color-accent: #A8A8A8;
   --color-brand-green: #7A8D5F;
+  --color-brand-green-dark: #6a7d52;
 }
 
 @layer base {
@@ -86,7 +87,7 @@
   }
 
   .link-underline {
-    @apply relative inline-block after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-graphite after:transition-all after:duration-300 hover:after:w-full;
+    @apply relative inline-block after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-brand-green after:transition-all after:duration-300 hover:after:w-full;
   }
 
   .image-zoom {

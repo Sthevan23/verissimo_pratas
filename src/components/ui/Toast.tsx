@@ -15,7 +15,7 @@ export function ToastContainer() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-            className="flex items-center gap-3 bg-graphite text-cream px-6 py-3.5 shadow-lg min-w-[280px]"
+            className="flex items-center gap-3 bg-brand-green text-white px-6 py-3.5 shadow-lg min-w-[280px]"
           >
             <CheckCircle className="w-4 h-4 text-silver shrink-0" />
             <span className="text-sm font-light tracking-wide">{toast.message}</span>

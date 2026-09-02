@@ -42,7 +42,7 @@ export function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.8 }}
-            className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start"
+            className="flex justify-center lg:justify-start"
           >
             <Link to="/produtos" className="w-full sm:w-auto">
               <Button
@@ -50,15 +50,6 @@ export function Hero() {
                 className="w-full !bg-white !text-[#4a5a38] !border-white hover:!bg-off-white hover:!text-[#3d4a30]"
               >
                 Explorar coleção
-              </Button>
-            </Link>
-            <Link to="/sobre" className="w-full sm:w-auto">
-              <Button
-                variant="secondary"
-                size="lg"
-                className="w-full !bg-transparent !text-white !border-white hover:!bg-white/15 hover:!text-white"
-              >
-                Conheça a Verissimo
               </Button>
             </Link>
           </motion.div>

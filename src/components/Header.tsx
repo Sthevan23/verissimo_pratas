@@ -187,7 +187,7 @@ export function Header() {
                     <Heart className="w-[18px] h-[18px]" strokeWidth={1.5} />
                   </IconButton>
                   {favorites.length > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-graphite text-cream text-[9px] flex items-center justify-center rounded-full">
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-brand-green text-white text-[9px] flex items-center justify-center rounded-full">
                       {favorites.length}
                     </span>
                   )}
@@ -202,7 +202,7 @@ export function Header() {
                     <motion.span
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      className="absolute top-1 right-1 w-4 h-4 bg-graphite text-cream text-[9px] flex items-center justify-center rounded-full"
+                      className="absolute top-1 right-1 w-4 h-4 bg-brand-green text-white text-[9px] flex items-center justify-center rounded-full"
                     >
                       {cartCount}
                     </motion.span>
@@ -316,7 +316,7 @@ export function Header() {
               >
                 <ShoppingBag className="w-5 h-5" strokeWidth={1.5} />
                 {cartCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-graphite text-cream text-[8px] flex items-center justify-center rounded-full">
+                  <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-brand-green text-white text-[8px] flex items-center justify-center rounded-full">
                     {cartCount}
                   </span>
                 )}
@@ -416,7 +416,7 @@ export function Header() {
                       <Heart className="w-5 h-5" strokeWidth={1.5} />
                       Favoritos
                       {favorites.length > 0 && (
-                        <span className="absolute top-2 right-1/2 translate-x-4 w-4 h-4 bg-graphite text-cream text-[8px] flex items-center justify-center rounded-full">
+                        <span className="absolute top-2 right-1/2 translate-x-4 w-4 h-4 bg-brand-green text-white text-[8px] flex items-center justify-center rounded-full">
                           {favorites.length}
                         </span>
                       )}

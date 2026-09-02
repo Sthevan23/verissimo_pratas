@@ -7,7 +7,6 @@ import { FeaturedCollection } from '../components/FeaturedCollection'
 import { Promotions } from '../components/Promotions'
 import { AboutSection } from '../components/AboutSection'
 import { ShoppingExperience } from '../components/ShoppingExperience'
-import { Testimonials } from '../components/Testimonials'
 import { InstagramFeed } from '../components/Instagram'
 import { Newsletter } from '../components/Newsletter'
 import { getFeaturedProducts } from '../data/products'
@@ -45,7 +44,6 @@ export function Home() {
       <Promotions />
       <AboutSection />
       <ShoppingExperience />
-      <Testimonials />
       <InstagramFeed />
       <Newsletter />
     </>

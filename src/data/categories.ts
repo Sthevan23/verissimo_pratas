@@ -225,11 +225,10 @@ export const homeCategories = categories
 
 /** Grid da home — categorias com fotos próprias */
 export const HOME_CATEGORY_NAV = [
-  { name: 'Anéis', slug: 'aneis', image: '/categories/aneis.png' },
-  { name: 'Pulseiras', slug: 'pulseiras', image: '/categories/pulseiras.png' },
-  { name: 'Colares', slug: 'colares', image: '/categories/colares.png' },
-  { name: 'Masculino', slug: 'masculinos', image: '/categories/masculinos.png' },
-  { name: 'Brincos', slug: 'brincos', image: '/categories/brincos.png' },
+  { name: 'Piercings', slug: 'piercings', image: '/categories/piercings.png' },
+  { name: 'Personalizados', slug: 'personalizados', image: '/categories/personalizados.png' },
+  { name: 'Tornozeleiras', slug: 'tornozeleiras', image: '/categories/tornozeleiras.png' },
   { name: 'Conjuntos', slug: 'conjuntos', image: '/categories/conjuntos.png' },
-  { name: 'Braceletes', slug: 'pulseiras-braceletes', image: '/categories/braceletes.png' },
+  { name: 'Correntes', slug: 'correntes', image: '/categories/correntes.png' },
+  { name: 'Berloques', slug: 'berloques', image: '/categories/berloques.png' },
 ] as const

@@ -342,8 +342,8 @@ export function Products() {
                     to={`/produtos?categoria=${tipo.slug}`}
                     className={`group border px-5 py-6 text-center transition-colors ${
                       active
-                        ? 'border-graphite bg-graphite text-cream'
-                        : 'border-border bg-cream hover:border-graphite'
+                        ? 'border-brand-green bg-brand-green text-white'
+                        : 'border-border bg-cream hover:border-brand-green'
                     }`}
                   >
                     <span className="block text-[11px] tracking-[0.2em] uppercase mb-2">
@@ -351,7 +351,7 @@ export function Products() {
                     </span>
                     <span
                       className={`block text-sm font-light ${
-                        active ? 'text-cream/80' : 'text-warm-gray'
+                        active ? 'text-white/80' : 'text-warm-gray'
                       }`}
                     >
                       {tipo.description}

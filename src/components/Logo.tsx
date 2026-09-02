@@ -7,9 +7,9 @@ interface LogoProps {
 
 export function Logo({ compact = false, variant = 'light' }: LogoProps) {
   const isDark = variant === 'dark'
-  const textColor = isDark ? 'text-cream' : 'text-graphite'
-  const subColor = isDark ? 'text-silver-dark' : 'text-muted'
-  const monogramColor = isDark ? 'text-silver' : 'text-graphite'
+  const textColor = isDark ? 'text-white' : 'text-graphite'
+  const subColor = isDark ? 'text-white/70' : 'text-muted'
+  const monogramColor = isDark ? 'text-white' : 'text-graphite'
 
   return (
     <Link to="/" className="inline-flex flex-col items-center select-none group">

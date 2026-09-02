@@ -188,7 +188,7 @@ export function Cart() {
                     />
                     <button
                       onClick={applyCoupon}
-                      className="px-4 py-3 border border-graphite text-[10px] tracking-widest uppercase hover:bg-graphite hover:text-cream transition-colors"
+                      className="px-4 py-3 border border-brand-green text-[10px] tracking-widest uppercase text-brand-green hover:bg-brand-green hover:text-white transition-colors"
                     >
                       Aplicar
                     </button>

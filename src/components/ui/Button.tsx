@@ -11,13 +11,13 @@ interface ButtonProps extends HTMLMotionProps<'button'> {
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    'bg-graphite text-cream hover:bg-charcoal border border-graphite',
+    'bg-brand-green text-white hover:bg-brand-green-dark border border-brand-green',
   secondary:
-    'bg-transparent text-graphite border border-graphite hover:bg-graphite hover:text-cream',
+    'bg-transparent text-brand-green border border-brand-green hover:bg-brand-green hover:text-white',
   ghost:
     'bg-transparent text-graphite hover:bg-off-white border border-transparent',
   outline:
-    'bg-transparent text-graphite border border-border hover:border-graphite',
+    'bg-transparent text-graphite border border-border hover:border-brand-green hover:text-brand-green',
 }
 
 const sizes = {
