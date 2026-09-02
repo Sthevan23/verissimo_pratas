@@ -164,8 +164,8 @@ export function Header() {
       <header
         className={`fixed top-0 left-0 right-0 z-50 safe-top transition-all duration-500 ${
           isScrolled
-            ? 'bg-cream/90 backdrop-blur-md shadow-[0_1px_0_0_rgba(0,0,0,0.05)]'
-            : 'bg-cream/80 backdrop-blur-sm lg:bg-cream/90'
+            ? 'bg-cream shadow-[0_1px_0_0_rgba(0,0,0,0.08)]'
+            : 'bg-cream'
         }`}
       >
         <PromoTicker />
@@ -180,11 +180,11 @@ export function Header() {
               <Logo />
               <div className="flex items-center gap-4">
                 <IconButton onClick={openSearch} label="Buscar">
-                  <Search className="w-[18px] h-[18px]" strokeWidth={1.5} />
+                  <Search className="w-[18px] h-[18px]" strokeWidth={2} />
                 </IconButton>
                 <Link to="/produtos" className="relative">
                   <IconButton label="Favoritos">
-                    <Heart className="w-[18px] h-[18px]" strokeWidth={1.5} />
+                    <Heart className="w-[18px] h-[18px]" strokeWidth={2} />
                   </IconButton>
                   {favorites.length > 0 && (
                     <span className="absolute -top-1 -right-1 w-4 h-4 bg-brand-green text-white text-[9px] flex items-center justify-center rounded-full">
@@ -194,10 +194,10 @@ export function Header() {
                 </Link>
                 <button
                   onClick={openCart}
-                  className="relative touch-target text-graphite hover:text-charcoal transition-colors"
+                  className="relative touch-target text-charcoal hover:text-brand-green transition-colors"
                   aria-label="Carrinho"
                 >
-                  <ShoppingBag className="w-[18px] h-[18px]" strokeWidth={1.5} />
+                  <ShoppingBag className="w-[18px] h-[18px]" strokeWidth={2} />
                   {cartCount > 0 && (
                     <motion.span
                       initial={{ scale: 0 }}
@@ -213,7 +213,7 @@ export function Header() {
 
             <nav
               ref={desktopRef}
-              className="mt-4 pt-3 border-t border-border/50 -mx-4 sm:-mx-6 lg:-mx-8"
+              className="mt-4 pt-3 border-t border-border -mx-4 sm:-mx-6 lg:-mx-8"
               aria-label="Categorias"
             >
               <div className="overflow-x-auto scrollbar-hide overscroll-x-contain px-4 sm:px-6 lg:px-8">
@@ -227,13 +227,13 @@ export function Header() {
                           if (desktopOpen === link.label) closeDesktopMenu()
                           else openDesktopMenu(link.label, e.currentTarget)
                         }}
-                        className="shrink-0 inline-flex items-center gap-0.5 text-[10px] xl:text-[11px] tracking-[0.08em] xl:tracking-[0.1em] uppercase text-warm-gray hover:text-graphite transition-colors duration-300 whitespace-nowrap"
+                        className="shrink-0 inline-flex items-center gap-0.5 text-xs xl:text-[13px] tracking-[0.06em] xl:tracking-[0.08em] uppercase text-charcoal hover:text-brand-green font-medium transition-colors duration-300 whitespace-nowrap"
                         aria-expanded={desktopOpen === link.label}
                         aria-haspopup="menu"
                       >
                         {link.label}
                         <ChevronDown
-                          className={`w-3 h-3 opacity-60 transition-transform ${
+                          className={`w-3.5 h-3.5 opacity-80 transition-transform ${
                             desktopOpen === link.label ? 'rotate-180' : ''
                           }`}
                           strokeWidth={1.5}
@@ -243,7 +243,7 @@ export function Header() {
                       <Link
                         key={link.href}
                         to={link.href}
-                        className="shrink-0 text-[10px] xl:text-[11px] tracking-[0.08em] xl:tracking-[0.1em] uppercase text-warm-gray hover:text-graphite transition-colors duration-300 link-underline whitespace-nowrap"
+                        className="shrink-0 text-xs xl:text-[13px] tracking-[0.06em] xl:tracking-[0.08em] uppercase text-charcoal hover:text-brand-green font-medium transition-colors duration-300 link-underline whitespace-nowrap"
                       >
                         {link.label}
                       </Link>
@@ -279,10 +279,10 @@ export function Header() {
                         to={child.href}
                         role="menuitem"
                         onClick={closeDesktopMenu}
-                        className={`block px-4 py-3 tracking-[0.12em] uppercase transition-colors border-b border-border/40 last:border-0 ${
+                        className={`block px-4 py-3 tracking-[0.1em] uppercase transition-colors border-b border-border/40 last:border-0 ${
                           child.subtle
-                            ? 'text-[10px] text-muted hover:text-graphite hover:bg-off-white'
-                            : 'text-[11px] text-graphite hover:bg-off-white font-medium'
+                            ? 'text-xs text-charcoal/80 hover:text-graphite hover:bg-off-white'
+                            : 'text-sm text-graphite hover:bg-off-white font-medium'
                         }`}
                       >
                         {child.label}
@@ -326,11 +326,11 @@ export function Header() {
             <button
               type="button"
               onClick={openSearch}
-              className="mt-3 w-full flex items-center gap-2 border border-border bg-cream px-3 py-2.5 text-left"
+              className="mt-3 w-full flex items-center gap-2 border border-border bg-white px-3 py-3 text-left"
               aria-label="Buscar produtos"
             >
-              <span className="flex-1 text-sm text-muted font-light">Buscar</span>
-              <Search className="w-4 h-4 text-silver-dark shrink-0" strokeWidth={1.5} />
+              <span className="flex-1 text-sm text-charcoal font-normal">Buscar</span>
+              <Search className="w-4 h-4 text-charcoal shrink-0" strokeWidth={2} />
             </button>
           </div>
         </div>
@@ -490,7 +490,7 @@ function IconButton({
   return (
     <button
       onClick={onClick}
-      className="touch-target text-graphite hover:text-charcoal transition-colors"
+      className="touch-target text-charcoal hover:text-brand-green transition-colors"
       aria-label={label}
     >
       {children}

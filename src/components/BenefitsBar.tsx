@@ -10,21 +10,21 @@ const benefits = [
 
 export function BenefitsBar() {
   return (
-    <section className="border-b border-border bg-off-white/50 header-offset">
-      <div className="container-brand py-3 sm:py-3.5">
+    <section className="border-b border-border bg-off-white header-offset">
+      <div className="container-brand py-3.5 sm:py-4">
         <AnimateIn>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-2.5 sm:gap-4 lg:gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-3 sm:gap-4 lg:gap-6">
             {benefits.map(({ icon: Icon, text }) => (
               <div
                 key={text}
-                className="flex items-center gap-2 min-h-[2rem]"
+                className="flex items-center gap-2.5 min-h-[2.25rem]"
               >
                 <Icon
-                  className="w-4 h-4 text-silver-dark shrink-0"
-                  strokeWidth={1.5}
+                  className="w-4 h-4 text-brand-green shrink-0"
+                  strokeWidth={2}
                   aria-hidden
                 />
-                <span className="text-[10px] sm:text-[11px] lg:text-xs tracking-wide text-warm-gray font-light leading-tight text-left">
+                <span className="text-xs sm:text-sm text-charcoal font-normal leading-snug text-left">
                   {text}
                 </span>
               </div>

@@ -9,7 +9,7 @@ export function PromoTicker() {
       role="region"
       aria-label="Promoções"
     >
-      <div className="promo-ticker flex w-max whitespace-nowrap py-2.5 text-[10px] sm:text-[11px] tracking-[0.14em] uppercase font-light text-white">
+      <div className="promo-ticker flex w-max whitespace-nowrap py-2.5 text-xs sm:text-sm tracking-[0.1em] uppercase font-normal text-white">
         {sequence.map((text, i) => (
           <span key={`${text}-${i}`} className="inline-flex items-center">
             <span className="px-5 sm:px-8">{text}</span>
