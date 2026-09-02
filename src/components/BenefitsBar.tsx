@@ -24,7 +24,7 @@ export function BenefitsBar() {
                   strokeWidth={2}
                   aria-hidden
                 />
-                <span className="text-xs sm:text-sm text-charcoal font-normal leading-snug text-left">
+                <span className="text-xs sm:text-sm text-warm-gray font-light leading-snug text-left">
                   {text}
                 </span>
               </div>

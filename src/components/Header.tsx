@@ -217,7 +217,7 @@ export function Header() {
               aria-label="Categorias"
             >
               <div className="overflow-x-auto scrollbar-hide overscroll-x-contain px-4 sm:px-6 lg:px-8">
-                <div className="flex w-max min-w-full items-center gap-x-3 xl:gap-x-3.5 2xl:gap-x-4 justify-start 2xl:justify-center">
+                <div className="flex w-max min-w-full items-center gap-x-3 xl:gap-x-3.5 2xl:gap-x-4 justify-start 2xl:justify-center pe-6">
                   {navLinks.map((link) =>
                     link.children ? (
                       <button
@@ -227,7 +227,7 @@ export function Header() {
                           if (desktopOpen === link.label) closeDesktopMenu()
                           else openDesktopMenu(link.label, e.currentTarget)
                         }}
-                        className="shrink-0 inline-flex items-center gap-0.5 text-xs xl:text-[13px] tracking-[0.06em] xl:tracking-[0.08em] uppercase text-charcoal hover:text-brand-green font-medium transition-colors duration-300 whitespace-nowrap"
+                        className="shrink-0 inline-flex items-center gap-0.5 text-xs xl:text-[13px] tracking-[0.05em] xl:tracking-[0.07em] uppercase text-warm-gray hover:text-brand-green font-light transition-colors duration-300 whitespace-nowrap"
                         aria-expanded={desktopOpen === link.label}
                         aria-haspopup="menu"
                       >
@@ -243,7 +243,7 @@ export function Header() {
                       <Link
                         key={link.href}
                         to={link.href}
-                        className="shrink-0 text-xs xl:text-[13px] tracking-[0.06em] xl:tracking-[0.08em] uppercase text-charcoal hover:text-brand-green font-medium transition-colors duration-300 link-underline whitespace-nowrap"
+                        className="shrink-0 text-xs xl:text-[13px] tracking-[0.05em] xl:tracking-[0.07em] uppercase text-warm-gray hover:text-brand-green font-light transition-colors duration-300 link-underline whitespace-nowrap"
                       >
                         {link.label}
                       </Link>
