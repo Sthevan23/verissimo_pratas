@@ -9,6 +9,8 @@
     font-weight: 400;
     -webkit-font-smoothing: antialiased;
     font-variant-numeric: tabular-nums;
+    overflow-x: hidden;
+    max-width: 100vw;
   }
 
   .admin-shell .font-serif {

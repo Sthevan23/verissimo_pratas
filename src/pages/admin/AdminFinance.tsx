@@ -63,7 +63,7 @@ export function AdminFinance() {
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2.5 sm:gap-3 mb-6 w-full min-w-0">
         <StatCard label="Faturamento bruto" value={stats.grossRevenue} icon={DollarSign} prefix="R$" />
         <StatCard label="Faturamento líquido" value={stats.netRevenue} icon={TrendingUp} prefix="R$" />
         <StatCard label="Custos" value={stats.costs} icon={TrendingDown} prefix="R$" />
@@ -72,9 +72,13 @@ export function AdminFinance() {
         <StatCard label="Ticket médio" value={stats.avgTicket} icon={DollarSign} prefix="R$" />
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="flex gap-2 mb-6 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
         {(['overview', 'fluxo', 'pagar', 'receber'] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-[11px] tracking-wider uppercase ${tab === t ? 'bg-graphite text-cream' : 'border border-border text-warm-gray'}`}>
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`shrink-0 px-3 sm:px-4 py-2 text-[10px] sm:text-[11px] tracking-wider uppercase ${tab === t ? 'bg-graphite text-cream' : 'border border-border text-warm-gray'}`}
+          >
             {t === 'overview' ? 'Visão geral' : t === 'fluxo' ? 'Fluxo de caixa' : t === 'pagar' ? 'Contas a pagar' : 'Contas a receber'}
           </button>
         ))}
@@ -94,12 +98,12 @@ export function AdminFinance() {
 
       {tab === 'fluxo' && (
         <>
-          <div className="admin-card p-6 mb-6 h-[300px]">
+          <div className="admin-card p-3 sm:p-6 mb-6 h-[280px] sm:h-[300px] w-full min-w-0 overflow-hidden">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
+              <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E3DF" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} width={36} />
                 <Tooltip formatter={(v) => formatPrice(Number(v))} />
                 <Legend />
                 <Bar dataKey="entradas" fill="#1A1A1A" name="Entradas" />
@@ -131,45 +135,51 @@ export function AdminFinance() {
 
 function TransactionsTable({ transactions }: { transactions: FinancialTransaction[] }) {
   return (
-    <div className="admin-card overflow-hidden">
-      <table className="w-full min-w-[600px]">
-        <thead><tr><th className="admin-table-th">Data</th><th className="admin-table-th">Descrição</th><th className="admin-table-th">Categoria</th><th className="admin-table-th">Tipo</th><th className="admin-table-th">Valor</th></tr></thead>
-        <tbody>
-          {transactions.map((t) => (
-            <tr key={t.id}><td className="admin-table-td">{new Date(t.date).toLocaleDateString('pt-BR')}</td><td className="admin-table-td">{t.description}</td><td className="admin-table-td">{t.category}</td><td className="admin-table-td capitalize">{t.type}</td><td className={`admin-table-td font-medium ${t.type === 'entrada' ? 'text-emerald-700' : 'text-red-700'}`}>{formatPrice(t.amount)}</td></tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="admin-card overflow-hidden w-full min-w-0">
+      <div className="overflow-x-auto overscroll-x-contain">
+        <table className="w-full min-w-[560px]">
+          <thead><tr><th className="admin-table-th">Data</th><th className="admin-table-th">Descrição</th><th className="admin-table-th">Categoria</th><th className="admin-table-th">Tipo</th><th className="admin-table-th">Valor</th></tr></thead>
+          <tbody>
+            {transactions.map((t) => (
+              <tr key={t.id}><td className="admin-table-td">{new Date(t.date).toLocaleDateString('pt-BR')}</td><td className="admin-table-td">{t.description}</td><td className="admin-table-td">{t.category}</td><td className="admin-table-td capitalize">{t.type}</td><td className={`admin-table-td font-medium ${t.type === 'entrada' ? 'text-emerald-700' : 'text-red-700'}`}>{formatPrice(t.amount)}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
 
 function PayablesTable({ payables }: { payables: Payable[] }) {
   return (
-    <div className="admin-card overflow-hidden">
-      <table className="w-full min-w-[600px]">
-        <thead><tr><th className="admin-table-th">Descrição</th><th className="admin-table-th">Fornecedor</th><th className="admin-table-th">Valor</th><th className="admin-table-th">Vencimento</th><th className="admin-table-th">Status</th></tr></thead>
-        <tbody>
-          {payables.map((p) => (
-            <tr key={p.id}><td className="admin-table-td">{p.description}</td><td className="admin-table-td">{p.supplier}</td><td className="admin-table-td">{formatPrice(p.amount)}</td><td className="admin-table-td">{new Date(p.dueDate).toLocaleDateString('pt-BR')}</td><td className="admin-table-td"><span className={`text-[10px] uppercase px-2 py-1 border ${p.status === 'atrasado' ? 'text-red-700 border-red-200' : 'text-amber-700 border-amber-200'}`}>{p.status}</span></td></tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="admin-card overflow-hidden w-full min-w-0">
+      <div className="overflow-x-auto overscroll-x-contain">
+        <table className="w-full min-w-[560px]">
+          <thead><tr><th className="admin-table-th">Descrição</th><th className="admin-table-th">Fornecedor</th><th className="admin-table-th">Valor</th><th className="admin-table-th">Vencimento</th><th className="admin-table-th">Status</th></tr></thead>
+          <tbody>
+            {payables.map((p) => (
+              <tr key={p.id}><td className="admin-table-td">{p.description}</td><td className="admin-table-td">{p.supplier}</td><td className="admin-table-td">{formatPrice(p.amount)}</td><td className="admin-table-td">{new Date(p.dueDate).toLocaleDateString('pt-BR')}</td><td className="admin-table-td"><span className={`text-[10px] uppercase px-2 py-1 border ${p.status === 'atrasado' ? 'text-red-700 border-red-200' : 'text-amber-700 border-amber-200'}`}>{p.status}</span></td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
 
 function ReceivablesTable({ receivables }: { receivables: Receivable[] }) {
   return (
-    <div className="admin-card overflow-hidden">
-      <table className="w-full min-w-[600px]">
-        <thead><tr><th className="admin-table-th">Cliente</th><th className="admin-table-th">Pedido</th><th className="admin-table-th">Valor</th><th className="admin-table-th">Vencimento</th><th className="admin-table-th">Status</th></tr></thead>
-        <tbody>
-          {receivables.map((r) => (
-            <tr key={r.id}><td className="admin-table-td">{r.customerName}</td><td className="admin-table-td">{r.orderId.slice(0, 8)}</td><td className="admin-table-td">{formatPrice(r.amount)}</td><td className="admin-table-td">{new Date(r.dueDate).toLocaleDateString('pt-BR')}</td><td className="admin-table-td capitalize">{r.status}</td></tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="admin-card overflow-hidden w-full min-w-0">
+      <div className="overflow-x-auto overscroll-x-contain">
+        <table className="w-full min-w-[560px]">
+          <thead><tr><th className="admin-table-th">Cliente</th><th className="admin-table-th">Pedido</th><th className="admin-table-th">Valor</th><th className="admin-table-th">Vencimento</th><th className="admin-table-th">Status</th></tr></thead>
+          <tbody>
+            {receivables.map((r) => (
+              <tr key={r.id}><td className="admin-table-td">{r.customerName}</td><td className="admin-table-td">{r.orderId.slice(0, 8)}</td><td className="admin-table-td">{formatPrice(r.amount)}</td><td className="admin-table-td">{new Date(r.dueDate).toLocaleDateString('pt-BR')}</td><td className="admin-table-td capitalize">{r.status}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

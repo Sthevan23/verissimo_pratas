@@ -84,12 +84,12 @@ export function EmptyState({ title, description, action }: { title: string; desc
 
 export function PageHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
-      <div>
+    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8 min-w-0 w-full">
+      <div className="min-w-0">
         <h1 className="font-serif text-2xl sm:text-3xl font-light text-graphite">{title}</h1>
         {subtitle && <p className="text-sm text-muted font-light mt-1">{subtitle}</p>}
       </div>
-      {action}
+      {action && <div className="flex flex-wrap gap-2 shrink-0">{action}</div>}
     </div>
   )
 }

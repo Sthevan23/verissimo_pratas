@@ -8,7 +8,7 @@ export function AdminLayout() {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
-    <div className="admin-shell min-h-screen bg-off-white/60 flex">
+    <div className="admin-shell min-h-screen bg-off-white/60 flex overflow-x-hidden w-full max-w-[100vw]">
       {/* Desktop sidebar */}
       <div className="hidden lg:block fixed inset-y-0 left-0 z-30">
         <AdminSidebar />
@@ -38,9 +38,9 @@ export function AdminLayout() {
         )}
       </AnimatePresence>
 
-      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
+      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen min-w-0 w-full overflow-x-hidden">
         <AdminHeader onMenuClick={() => setMobileOpen(true)} />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 w-full overflow-x-hidden">
           <Outlet />
         </main>
       </div>

@@ -73,7 +73,7 @@ export function AdminDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2.5 sm:gap-4 mb-8 w-full min-w-0">
         <StatCard label="Vendas hoje" value={stats.salesToday} icon={DollarSign} change={stats.salesTodayChange} prefix="R$" index={0} />
         <StatCard label="Vendas no mês" value={stats.salesMonth} icon={TrendingUp} change={stats.salesMonthChange} prefix="R$" index={1} />
         <StatCard label="Pedidos" value={stats.ordersCount} icon={ShoppingBag} change={stats.ordersChange} index={2} />
