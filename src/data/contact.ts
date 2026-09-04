@@ -13,4 +13,7 @@ export const STORE_CONTACT = {
   city: 'Boa Esperança',
 } as const
 
-export const whatsappLink = (_text?: string) => STORE_CONTACT.whatsappUrl
+export const whatsappLink = (text?: string) => {
+  if (!text?.trim()) return STORE_CONTACT.whatsappUrl
+  return `https://wa.me/${STORE_CONTACT.phoneWhatsApp}?text=${encodeURIComponent(text)}`
+}

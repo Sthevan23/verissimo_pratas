@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { formatPrice } from '../utils/format'
 import { cartLineKey, describeCartChoices } from '../utils/cart'
+import { openCheckoutWhatsApp } from '../utils/checkout'
 import { Button } from '../components/ui/Button'
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { STORE_COMMERCE } from '../data/commerce'
@@ -26,6 +27,17 @@ export function Cart() {
   const shipping = cartSubtotal >= freeShip ? 0 : cartSubtotal > 0 ? 19.9 : 0
   const total = cartSubtotal - discount + shipping
   const getsGift = cartSubtotal >= STORE_COMMERCE.giftMin
+
+  const handleCheckout = () => {
+    openCheckoutWhatsApp({
+      cart,
+      subtotal: cartSubtotal,
+      discount,
+      shipping,
+      total,
+      couponCode: couponDiscount > 0 ? couponCode : undefined,
+    })
+  }
 
   return (
     <>
@@ -236,9 +248,12 @@ export function Cart() {
                     <span>{formatPrice(total)}</span>
                   </div>
 
-                  <Button className="w-full" size="lg">
+                  <Button className="w-full" size="lg" onClick={handleCheckout}>
                     Finalizar compra
                   </Button>
+                  <p className="text-center text-[11px] text-muted mt-3 font-light">
+                    Você será direcionada ao WhatsApp para concluir o pedido.
+                  </p>
 
                   <Link
                     to="/produtos"
