@@ -22,4 +22,9 @@ return [
   'charset' => 'utf8mb4',
   /** Token para upload/salvar catálogo (mesmo valor da senha admin) */
   'api_token' => getenv('VERISSIMO_API_TOKEN') ?: 'Verissimo@2026',
+  'superfrete_token' => getenv('SUPERFRETE_TOKEN') ?: '',
+  'superfrete_env' => getenv('SUPERFRETE_ENV') ?: 'production',
+  'origin_cep' => getenv('VERISSIMO_ORIGIN_CEP') ?: '37170000',
+  'free_shipping_national' => 499,
+  'free_shipping_local' => 159,
 ];

@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async'
+import { useState } from 'react'
 import { Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
@@ -7,7 +8,9 @@ import { cartLineKey, describeCartChoices } from '../utils/cart'
 import { openCheckoutWhatsApp } from '../utils/checkout'
 import { Button } from '../components/ui/Button'
 import { AnimateIn } from '../components/ui/AnimateIn'
+import { ShippingCalculator } from '../components/ShippingCalculator'
 import { STORE_COMMERCE } from '../data/commerce'
+import type { ShippingAddress, ShippingOption } from '../services/shippingService'
 
 export function Cart() {
   const {
@@ -20,15 +23,23 @@ export function Cart() {
     setCouponCode,
     applyCoupon,
     couponDiscount,
+    showToast,
   } = useApp()
 
+  const [shippingOpt, setShippingOpt] = useState<ShippingOption | null>(null)
+  const [shippingCep, setShippingCep] = useState('')
+  const [shippingAddress, setShippingAddress] = useState<ShippingAddress | null>(null)
+
   const discount = cartSubtotal * couponDiscount
-  const freeShip = STORE_COMMERCE.freeShippingNationalMin
-  const shipping = cartSubtotal >= freeShip ? 0 : cartSubtotal > 0 ? 19.9 : 0
+  const shipping = shippingOpt?.price ?? 0
   const total = cartSubtotal - discount + shipping
   const getsGift = cartSubtotal >= STORE_COMMERCE.giftMin
 
   const handleCheckout = () => {
+    if (!shippingOpt || !shippingCep) {
+      showToast('Calcule o frete informando o CEP antes de finalizar.')
+      return
+    }
     openCheckoutWhatsApp({
       cart,
       subtotal: cartSubtotal,
@@ -36,6 +47,11 @@ export function Cart() {
       shipping,
       total,
       couponCode: couponDiscount > 0 ? couponCode : undefined,
+      cep: shippingCep,
+      shippingLabel: `${shippingOpt.company} — ${shippingOpt.name}`,
+      city: shippingAddress
+        ? [shippingAddress.localidade, shippingAddress.uf].filter(Boolean).join('/')
+        : undefined,
     })
   }
 
@@ -206,6 +222,19 @@ export function Cart() {
                     </button>
                   </div>
 
+                  <div className="mb-6 pb-6 border-b border-border">
+                    <ShippingCalculator
+                      subtotal={cartSubtotal}
+                      quantities={cart.map((i) => i.quantity)}
+                      selectedId={shippingOpt?.id}
+                      onSelect={(opt, meta) => {
+                        setShippingOpt(opt)
+                        setShippingCep(meta.cep)
+                        setShippingAddress(meta.address)
+                      }}
+                    />
+                  </div>
+
                   <div className="space-y-3 text-sm mb-6">
                     <div className="flex justify-between font-light">
                       <span className="text-warm-gray">Subtotal</span>
@@ -218,9 +247,15 @@ export function Cart() {
                       </div>
                     )}
                     <div className="flex justify-between font-light">
-                      <span className="text-warm-gray">Frete</span>
+                      <span className="text-warm-gray">
+                        Frete{shippingOpt ? ` · ${shippingOpt.name}` : ''}
+                      </span>
                       <span>
-                        {shipping === 0 ? 'Grátis' : formatPrice(shipping)}
+                        {!shippingOpt
+                          ? 'Informe o CEP'
+                          : shipping === 0
+                            ? 'Grátis'
+                            : formatPrice(shipping)}
                       </span>
                     </div>
                     {getsGift && (
@@ -234,11 +269,11 @@ export function Cart() {
                         {STORE_COMMERCE.giftLabel}
                       </p>
                     )}
-                    {cartSubtotal < freeShip && (
+                    {cartSubtotal < STORE_COMMERCE.freeShippingNationalMin && (
                       <p className="text-[11px] text-muted">
-                        Correios: frete grátis acima de R${' '}
-                        {STORE_COMMERCE.freeShippingNationalMin} · Boa Esperança:
-                        acima de R$ {STORE_COMMERCE.freeShippingLocalMin}
+                        Correios (SuperFrete): frete grátis acima de R${' '}
+                        {STORE_COMMERCE.freeShippingNationalMin} · Boa Esperança: acima de R${' '}
+                        {STORE_COMMERCE.freeShippingLocalMin}
                       </p>
                     )}
                   </div>

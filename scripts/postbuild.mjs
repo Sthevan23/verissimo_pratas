@@ -122,7 +122,7 @@ if (existsSync(join(apiSrc, 'data', 'images', '.gitkeep'))) {
     join(deploy, 'api', 'data', 'images', '.gitkeep')
   )
 }
-for (const file of ['helpers.php', 'upload.php', 'catalog.php', 'media.php']) {
+for (const file of ['helpers.php', 'upload.php', 'catalog.php', 'media.php', 'shipping.php']) {
   const src = join(apiSrc, file)
   if (existsSync(src)) {
     mkdirSync(join(deploy, 'api'), { recursive: true })

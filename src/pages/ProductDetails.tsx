@@ -24,6 +24,7 @@ import {
 import { ProductCard } from '../components/ProductCard'
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { Button } from '../components/ui/Button'
+import { ShippingCalculator } from '../components/ShippingCalculator'
 
 export function ProductDetails() {
   const { slug } = useParams<{ slug: string }>()
@@ -413,17 +414,25 @@ export function ProductDetails() {
                         exit={{ height: 0, opacity: 0 }}
                         className="overflow-hidden"
                       >
-                        <ul className="pb-4 text-sm text-warm-gray space-y-2 pl-6">
-                          <li>
-                            Boa Esperança: frete grátis acima de{' '}
-                            {formatPrice(STORE_COMMERCE.freeShippingLocalMin)}
-                          </li>
-                          <li>
-                            Correios: frete grátis acima de{' '}
-                            {formatPrice(STORE_COMMERCE.freeShippingNationalMin)}
-                          </li>
-                          <li>Prazo: {product.shippingDays}</li>
-                        </ul>
+                        <div className="pb-4 space-y-4">
+                          <ShippingCalculator
+                            compact
+                            subtotal={(product.salePrice ?? product.price) * quantity}
+                            quantities={[quantity]}
+                            onSelect={() => {}}
+                          />
+                          <ul className="text-sm text-warm-gray space-y-2 pl-1">
+                            <li>
+                              Boa Esperança: frete grátis acima de{' '}
+                              {formatPrice(STORE_COMMERCE.freeShippingLocalMin)}
+                            </li>
+                            <li>
+                              Correios (SuperFrete): frete grátis acima de{' '}
+                              {formatPrice(STORE_COMMERCE.freeShippingNationalMin)}
+                            </li>
+                            <li>Prazo: {product.shippingDays}</li>
+                          </ul>
+                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>

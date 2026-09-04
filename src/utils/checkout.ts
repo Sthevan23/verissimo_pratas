@@ -3,6 +3,7 @@ import { describeCartChoices } from './cart'
 import { formatPrice } from './format'
 import { STORE_COMMERCE } from '../data/commerce'
 import { whatsappLink } from '../data/contact'
+import { formatCep } from '../services/shippingService'
 
 export function buildCheckoutMessage(params: {
   cart: CartItem[]
@@ -11,8 +12,21 @@ export function buildCheckoutMessage(params: {
   shipping: number
   total: number
   couponCode?: string
+  cep?: string
+  shippingLabel?: string
+  city?: string
 }): string {
-  const { cart, subtotal, discount, shipping, total, couponCode } = params
+  const {
+    cart,
+    subtotal,
+    discount,
+    shipping,
+    total,
+    couponCode,
+    cep,
+    shippingLabel,
+    city,
+  } = params
   const lines = cart.map((item, i) => {
     const price = item.product.salePrice ?? item.product.price
     const size = item.selectedSize ? ` | Tamanho: ${item.selectedSize}` : ''
@@ -22,6 +36,9 @@ export function buildCheckoutMessage(params: {
   })
 
   const getsGift = subtotal >= STORE_COMMERCE.giftMin
+  const freteLine = shippingLabel
+    ? `Frete (${shippingLabel}): ${shipping === 0 ? 'Grátis' : formatPrice(shipping)}`
+    : `Frete: ${shipping === 0 ? 'Grátis' : formatPrice(shipping)}`
 
   return [
     '*Pedido — Verissimo Pratas 925*',
@@ -32,7 +49,8 @@ export function buildCheckoutMessage(params: {
     discount > 0
       ? `Desconto${couponCode ? ` (${couponCode})` : ''}: -${formatPrice(discount)}`
       : null,
-    `Frete: ${shipping === 0 ? 'Grátis' : formatPrice(shipping)}`,
+    cep ? `CEP: ${formatCep(cep)}${city ? ` (${city})` : ''}` : null,
+    freteLine,
     getsGift ? `Brinde: ${STORE_COMMERCE.giftLabel}` : null,
     `*Total: ${formatPrice(total)}*`,
     '',
@@ -49,6 +67,9 @@ export function openCheckoutWhatsApp(params: {
   shipping: number
   total: number
   couponCode?: string
+  cep?: string
+  shippingLabel?: string
+  city?: string
 }) {
   const message = buildCheckoutMessage(params)
   window.open(whatsappLink(message), '_blank', 'noopener,noreferrer')
