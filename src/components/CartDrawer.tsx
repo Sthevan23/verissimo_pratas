@@ -24,8 +24,7 @@ export function CartDrawer() {
 
   const discount = cartSubtotal * couponDiscount
   const freeShip = STORE_COMMERCE.freeShippingNationalMin
-  const shipping = cartSubtotal >= freeShip ? 0 : cartSubtotal > 0 ? 19.9 : 0
-  const total = cartSubtotal - discount + shipping
+  const total = cartSubtotal - discount
   const getsGift = cartSubtotal >= STORE_COMMERCE.giftMin
 
   return (
@@ -219,13 +218,7 @@ export function CartDrawer() {
                     )}
                     <div className="flex justify-between font-light">
                       <span className="text-warm-gray">Frete</span>
-                      <span>
-                        {shipping === 0 && cartSubtotal > 0
-                          ? 'Grátis'
-                          : cartSubtotal > 0
-                            ? formatPrice(shipping)
-                            : '—'}
-                      </span>
+                      <span className="text-muted text-xs">Calcular no carrinho</span>
                     </div>
                     {getsGift && (
                       <p className="text-[11px] text-graphite">
@@ -245,14 +238,14 @@ export function CartDrawer() {
                       </p>
                     )}
                     <div className="flex justify-between font-medium pt-2 border-t border-border">
-                      <span>Total</span>
+                      <span>Subtotal</span>
                       <span>{formatPrice(total)}</span>
                     </div>
                   </div>
 
                   <Link to="/carrinho" onClick={closeCart} className="block">
                     <Button className="w-full" size="lg">
-                      Finalizar compra
+                      Ir para o carrinho
                     </Button>
                   </Link>
                 </div>

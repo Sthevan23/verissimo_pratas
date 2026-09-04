@@ -98,7 +98,8 @@ $quotes = [];
 $error = null;
 
 if ($token === '') {
-  $error = 'Configure o token SuperFrete em api/config.local.php (superfrete_token).';
+  // Sem token: ainda permite finalizar com frete a combinar no WhatsApp
+  $error = 'Cotação SuperFrete pendente — frete a combinar no WhatsApp.';
 } else {
   $payload = [
     'from' => ['postal_code' => $originCep],
@@ -178,12 +179,26 @@ if ($token === '') {
 }
 
 $merged = array_merge($options, $quotes);
+
+// Sem cotação paga disponível: opção para combinar no WhatsApp (não bloqueia checkout)
+if (count($merged) === 0) {
+  $merged[] = [
+    'id' => 'combinar-whatsapp',
+    'name' => 'Frete a combinar no WhatsApp',
+    'company' => 'Verissimo',
+    'price' => 0,
+    'delivery_time' => null,
+    'currency' => 'R$',
+    'free' => false,
+  ];
+}
+
 usort($merged, static function ($a, $b) {
   return ($a['price'] <=> $b['price']) ?: strcmp((string) $a['name'], (string) $b['name']);
 });
 
 verissimo_json([
-  'ok' => count($merged) > 0 || $error === null,
+  'ok' => true,
   'cep' => $cep,
   'address' => $address,
   'origin_cep' => $originCep,

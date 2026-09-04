@@ -35,12 +35,13 @@ export function Cart() {
   const total = cartSubtotal - discount + shipping
   const getsGift = cartSubtotal >= STORE_COMMERCE.giftMin
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (!shippingOpt || !shippingCep) {
       showToast('Calcule o frete informando o CEP antes de finalizar.')
       return
     }
-    openCheckoutWhatsApp({
+    showToast('Abrindo WhatsApp e registrando pedido...')
+    const result = await openCheckoutWhatsApp({
       cart,
       subtotal: cartSubtotal,
       discount,
@@ -53,6 +54,11 @@ export function Cart() {
         ? [shippingAddress.localidade, shippingAddress.uf].filter(Boolean).join('/')
         : undefined,
     })
+    if (result.orderNumber) {
+      showToast(`Pedido ${result.orderNumber} registrado. Continue no WhatsApp.`)
+    } else {
+      showToast('WhatsApp aberto. Se o pedido não aparecer no painel, tente de novo.')
+    }
   }
 
   return (

@@ -4,6 +4,7 @@ import { formatPrice } from './format'
 import { STORE_COMMERCE } from '../data/commerce'
 import { whatsappLink } from '../data/contact'
 import { formatCep } from '../services/shippingService'
+import { createStoreOrder } from '../services/orderService'
 
 export function buildCheckoutMessage(params: {
   cart: CartItem[]
@@ -15,6 +16,7 @@ export function buildCheckoutMessage(params: {
   cep?: string
   shippingLabel?: string
   city?: string
+  orderNumber?: string
 }): string {
   const {
     cart,
@@ -26,6 +28,7 @@ export function buildCheckoutMessage(params: {
     cep,
     shippingLabel,
     city,
+    orderNumber,
   } = params
   const lines = cart.map((item, i) => {
     const price = item.product.salePrice ?? item.product.price
@@ -42,6 +45,7 @@ export function buildCheckoutMessage(params: {
 
   return [
     '*Pedido — Verissimo Pratas 925*',
+    orderNumber ? `Nº ${orderNumber}` : null,
     '',
     ...lines,
     '',
@@ -60,7 +64,7 @@ export function buildCheckoutMessage(params: {
     .join('\n')
 }
 
-export function openCheckoutWhatsApp(params: {
+export async function openCheckoutWhatsApp(params: {
   cart: CartItem[]
   subtotal: number
   discount: number
@@ -70,7 +74,12 @@ export function openCheckoutWhatsApp(params: {
   cep?: string
   shippingLabel?: string
   city?: string
-}) {
-  const message = buildCheckoutMessage(params)
+}): Promise<{ orderNumber?: string }> {
+  const order = await createStoreOrder(params)
+  const message = buildCheckoutMessage({
+    ...params,
+    orderNumber: order?.orderNumber,
+  })
   window.open(whatsappLink(message), '_blank', 'noopener,noreferrer')
+  return { orderNumber: order?.orderNumber }
 }

@@ -28,7 +28,7 @@ export function Home() {
             '@context': 'https://schema.org',
             '@type': 'Organization',
             name: 'Verissimo Pratas 925',
-            url: 'https://sthevandev.com.br',
+            url: 'https://verissimopratas.com.br',
             email: STORE_CONTACT.email,
             telephone: STORE_CONTACT.phoneDisplay,
             sameAs: [STORE_CONTACT.instagramUrl],

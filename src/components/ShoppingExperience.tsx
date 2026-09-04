@@ -10,7 +10,7 @@ const steps = [
   {
     icon: CreditCard,
     title: 'Finalize seu pedido',
-    description: 'Pagamento seguro com parcelamento em até 3x sem juros.',
+    description: 'Pagamento seguro com parcelamento em até 6x sem juros.',
   },
   {
     icon: Package,

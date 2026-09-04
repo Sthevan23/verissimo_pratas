@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import {
@@ -12,9 +12,18 @@ import {
 import { StatCard } from '../../components/admin/StatCard'
 import { SalesChart } from '../../components/admin/SalesChart'
 import { StatusBadge } from '../../components/admin/StatusBadge'
-import { getDashboardStats, getSalesChart, getTopProducts, getOrders } from '../../services/adminStore'
+import {
+  getDashboardStats,
+  getSalesChart,
+  getTopProducts,
+  getOrders,
+  getDatabase,
+  saveDb,
+} from '../../services/adminStore'
+import { fetchStoreOrders } from '../../services/orderService'
 import { formatPrice } from '../../utils/format'
 import { useAdminAuth } from '../../context/AdminAuthContext'
+import type { Order } from '../../types/admin'
 
 const PERIODS = [
   { label: 'Hoje', days: 1 },
@@ -28,10 +37,28 @@ const PERIODS = [
 export function AdminDashboard() {
   const { session } = useAdminAuth()
   const [period, setPeriod] = useState(30)
-  const stats = useMemo(() => getDashboardStats(), [])
-  const chartData = useMemo(() => getSalesChart(period), [period])
-  const topProducts = useMemo(() => getTopProducts(5), [])
-  const recentOrders = useMemo(() => getOrders().slice(0, 5), [])
+  const [tick, setTick] = useState(0)
+  const [recentOrders, setRecentOrders] = useState<Order[]>(() => getOrders().slice(0, 5))
+
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      const remote = await fetchStoreOrders()
+      if (!alive || remote.length === 0) return
+      const db = getDatabase()
+      db.orders = remote
+      saveDb(db)
+      setRecentOrders(remote.slice(0, 5))
+      setTick((t) => t + 1)
+    })()
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  const stats = useMemo(() => getDashboardStats(), [tick])
+  const chartData = useMemo(() => getSalesChart(period), [period, tick])
+  const topProducts = useMemo(() => getTopProducts(5), [tick])
 
   const greeting = () => {
     const h = new Date().getHours()

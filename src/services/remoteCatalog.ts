@@ -11,6 +11,8 @@ const WRITE_TOKEN =
   import.meta.env.VITE_API_TOKEN ||
   'Verissimo@2026'
 
+export { WRITE_TOKEN }
+
 function writeHeaders(): HeadersInit {
   return {
     'Content-Type': 'application/json',

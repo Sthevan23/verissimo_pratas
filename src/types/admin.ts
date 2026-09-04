@@ -9,7 +9,7 @@ export type OrderStatus =
   | 'enviado'
   | 'entregue'
   | 'cancelado'
-export type PaymentMethod = 'pix' | 'cartao' | 'boleto'
+export type PaymentMethod = 'pix' | 'cartao' | 'boleto' | 'whatsapp'
 export type CouponType = 'percentual' | 'valor_fixo'
 export type ReviewStatus = 'pendente' | 'aprovada' | 'oculta'
 export type TransactionType = 'entrada' | 'saida'
@@ -117,7 +117,11 @@ export interface Order {
   paymentStatus: 'pendente' | 'pago' | 'reembolsado'
   status: OrderStatus
   shippingAddress: string
+  shippingLabel?: string
+  cep?: string
   couponCode?: string
+  notes?: string
+  channel?: string
   createdAt: string
   updatedAt: string
 }
