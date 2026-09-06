@@ -52,6 +52,8 @@ export function AdminProductForm() {
   const { showToast } = useAdminToast()
   const isNew = id === 'novo' || !id
   const [product, setProduct] = useState<AdminProduct>(emptyProduct)
+  /** Texto bruto do textarea — evita apagar ao digitar antes do formato "Nome: a, b" */
+  const [optionsText, setOptionsText] = useState('')
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const galleryInputRef = useRef<HTMLInputElement>(null)
@@ -61,7 +63,12 @@ export function AdminProductForm() {
   useEffect(() => {
     if (!isNew && id) {
       const p = getAdminProduct(id)
-      if (p) setProduct(p)
+      if (p) {
+        setProduct(p)
+        setOptionsText(formatProductOptions(p.options))
+      }
+    } else {
+      setOptionsText('')
     }
   }, [id, isNew])
 
@@ -136,11 +143,13 @@ export function AdminProductForm() {
       if (/bracelete|bracelet/i.test(product.name) && category === 'aneis') {
         category = 'pulseiras-braceletes' as CategorySlug
       }
+      const parsedOptions = parseProductOptions(optionsText)
       const saved = saveProduct({
         ...product,
         category,
         slug,
         sku,
+        options: parsedOptions.length ? parsedOptions : undefined,
         seoTitle: product.seoTitle || `${product.name} | Verissimo Pratas 925`,
         inStock: product.stock > 0,
       })
@@ -372,9 +381,11 @@ export function AdminProductForm() {
               <label className="admin-label">Opções de escolha (fecho, cor, etc.)</label>
               <textarea
                 className="admin-input min-h-[88px] font-mono text-[12px]"
-                value={formatProductOptions(product.options)}
+                value={optionsText}
                 onChange={(e) => {
-                  const options = parseProductOptions(e.target.value)
+                  const text = e.target.value
+                  setOptionsText(text)
+                  const options = parseProductOptions(text)
                   update('options', options.length ? options : undefined)
                 }}
                 placeholder={'Fecho: Coração cravejado, Quadrado cravejado'}
