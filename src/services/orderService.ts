@@ -90,6 +90,29 @@ export async function updateStoreOrderStatus(
   id: string,
   status: OrderStatus
 ): Promise<Order | null> {
+  return updateStoreOrder({ id, status })
+}
+
+export type OrderUpdatePayload = {
+  id: string
+  status?: OrderStatus
+  customerName?: string
+  customerEmail?: string
+  customerPhone?: string
+  shippingAddress?: string
+  shippingLabel?: string
+  cep?: string
+  notes?: string
+  subtotal?: number
+  discount?: number
+  shipping?: number
+  total?: number
+  paymentStatus?: Order['paymentStatus']
+  paymentMethod?: Order['paymentMethod']
+  couponCode?: string | null
+}
+
+export async function updateStoreOrder(payload: OrderUpdatePayload): Promise<Order | null> {
   try {
     const res = await fetch(ORDERS_URL, {
       method: 'PUT',
@@ -97,7 +120,7 @@ export async function updateStoreOrderStatus(
         'Content-Type': 'application/json',
         'X-Verissimo-Token': WRITE_TOKEN,
       },
-      body: JSON.stringify({ id, status }),
+      body: JSON.stringify(payload),
     })
     const data = await res.json()
     if (!data?.ok || !data.order) return null

@@ -116,25 +116,73 @@ if ($method === 'PUT' || $method === 'PATCH') {
     verissimo_json(['ok' => false, 'error' => 'JSON inválido'], 400);
   }
   $id = (string) ($body['id'] ?? '');
-  $status = (string) ($body['status'] ?? '');
-  if ($id === '' || $status === '') {
-    verissimo_json(['ok' => false, 'error' => 'id e status obrigatórios'], 400);
+  if ($id === '') {
+    verissimo_json(['ok' => false, 'error' => 'id obrigatório'], 400);
   }
+
   $orders = verissimo_read_orders($path);
   $found = false;
+  $updated = null;
   foreach ($orders as &$o) {
-    if (($o['id'] ?? '') === $id) {
-      $o['status'] = $status;
-      $o['updatedAt'] = gmdate('c');
-      if ($status === 'pago') {
-        $o['paymentStatus'] = 'pago';
-      }
-      $found = true;
-      $updated = $o;
-      break;
+    if (($o['id'] ?? '') !== $id) {
+      continue;
     }
+
+    $stringFields = [
+      'customerName',
+      'customerEmail',
+      'customerPhone',
+      'shippingAddress',
+      'shippingLabel',
+      'cep',
+      'notes',
+      'status',
+      'paymentStatus',
+      'paymentMethod',
+    ];
+    foreach ($stringFields as $field) {
+      if (array_key_exists($field, $body)) {
+        $o[$field] = (string) $body[$field];
+      }
+    }
+
+    foreach (['subtotal', 'discount', 'shipping', 'total'] as $field) {
+      if (array_key_exists($field, $body)) {
+        $o[$field] = (float) $body[$field];
+      }
+    }
+
+    if (isset($body['couponCode'])) {
+      $o['couponCode'] = $body['couponCode'] === null || $body['couponCode'] === ''
+        ? null
+        : (string) $body['couponCode'];
+    }
+
+    if (($o['status'] ?? '') === 'pago') {
+      $o['paymentStatus'] = 'pago';
+    }
+    if (($o['status'] ?? '') === 'cancelado') {
+      $o['paymentStatus'] = $o['paymentStatus'] ?? 'pendente';
+    }
+
+    // Recalcula total se subtotal/desconto/frete vieram sem total explícito
+    if (
+      (array_key_exists('subtotal', $body) || array_key_exists('discount', $body) || array_key_exists('shipping', $body))
+      && !array_key_exists('total', $body)
+    ) {
+      $o['total'] = max(
+        0,
+        (float) ($o['subtotal'] ?? 0) - (float) ($o['discount'] ?? 0) + (float) ($o['shipping'] ?? 0)
+      );
+    }
+
+    $o['updatedAt'] = gmdate('c');
+    $found = true;
+    $updated = $o;
+    break;
   }
   unset($o);
+
   if (!$found) {
     verissimo_json(['ok' => false, 'error' => 'Pedido não encontrado'], 404);
   }

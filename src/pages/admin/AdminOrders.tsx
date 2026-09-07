@@ -1,34 +1,43 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-import { PageHeader } from '../../components/admin/Modal'
+import { Pencil, XCircle } from 'lucide-react'
+import { ConfirmDialog, PageHeader } from '../../components/admin/Modal'
 import { StatusBadge, ORDER_STATUS_OPTIONS } from '../../components/admin/StatusBadge'
 import { getDatabase, saveDb } from '../../services/adminStore'
-import { fetchStoreOrders } from '../../services/orderService'
+import { fetchStoreOrders, updateStoreOrder } from '../../services/orderService'
+import { useAdminToast } from '../../context/AdminToastContext'
 import type { Order } from '../../types/admin'
 import { formatPrice } from '../../utils/format'
 
 export function AdminOrders() {
+  const { showToast } = useAdminToast()
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
+  const [cancelId, setCancelId] = useState<string | null>(null)
+  const [busyId, setBusyId] = useState<string | null>(null)
+
+  const load = async () => {
+    setLoading(true)
+    const remote = await fetchStoreOrders()
+    if (remote.length > 0) {
+      const db = getDatabase()
+      db.orders = remote
+      saveDb(db)
+      setOrders(remote)
+    } else {
+      setOrders(getDatabase().orders)
+    }
+    setLoading(false)
+  }
 
   useEffect(() => {
     let alive = true
     ;(async () => {
-      setLoading(true)
-      const remote = await fetchStoreOrders()
+      await load()
       if (!alive) return
-      if (remote.length > 0) {
-        const db = getDatabase()
-        db.orders = remote
-        saveDb(db)
-        setOrders(remote)
-      } else {
-        setOrders(getDatabase().orders)
-      }
-      setLoading(false)
     })()
     return () => {
       alive = false
@@ -50,6 +59,25 @@ export function AdminOrders() {
       return true
     })
   }, [orders, filter, search])
+
+  const handleCancel = async () => {
+    if (!cancelId) return
+    setBusyId(cancelId)
+    const updated = await updateStoreOrder({ id: cancelId, status: 'cancelado' })
+    setBusyId(null)
+    setCancelId(null)
+    if (updated) {
+      setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)))
+      const db = getDatabase()
+      db.orders = db.orders.map((o) => (o.id === updated.id ? updated : o))
+      saveDb(db)
+      showToast('Pedido cancelado.')
+    } else {
+      showToast('Não foi possível cancelar o pedido.', 'error')
+    }
+  }
+
+  const cancelTarget = orders.find((o) => o.id === cancelId)
 
   return (
     <>
@@ -75,7 +103,7 @@ export function AdminOrders() {
 
       <div className="admin-card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[700px]">
+          <table className="w-full min-w-[780px]">
             <thead>
               <tr>
                 <th className="admin-table-th">Pedido</th>
@@ -85,12 +113,15 @@ export function AdminOrders() {
                 <th className="admin-table-th">Valor</th>
                 <th className="admin-table-th">Pagamento</th>
                 <th className="admin-table-th">Status</th>
+                <th className="admin-table-th">Ações</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((o) => (
-                <tr key={o.id} className="hover:bg-off-white/40 cursor-pointer">
-                  <td className="admin-table-td"><Link to={`/admin/pedidos/${o.id}`}>{o.orderNumber}</Link></td>
+                <tr key={o.id} className="hover:bg-off-white/40">
+                  <td className="admin-table-td">
+                    <Link to={`/admin/pedidos/${o.id}`} className="hover:underline">{o.orderNumber}</Link>
+                  </td>
                   <td className="admin-table-td">
                     <div>{o.customerName}</div>
                     {o.shippingAddress && (
@@ -102,6 +133,28 @@ export function AdminOrders() {
                   <td className="admin-table-td font-medium">{formatPrice(o.total)}</td>
                   <td className="admin-table-td capitalize">{o.paymentMethod === 'whatsapp' ? 'WhatsApp' : o.paymentMethod}</td>
                   <td className="admin-table-td"><StatusBadge status={o.status} /></td>
+                  <td className="admin-table-td">
+                    <div className="flex gap-1">
+                      <Link
+                        to={`/admin/pedidos/${o.id}`}
+                        className="p-2 hover:bg-off-white"
+                        title="Editar"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Link>
+                      {o.status !== 'cancelado' && (
+                        <button
+                          type="button"
+                          onClick={() => setCancelId(o.id)}
+                          className="p-2 hover:bg-off-white text-red-600"
+                          title="Cancelar"
+                          disabled={busyId === o.id}
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -111,17 +164,43 @@ export function AdminOrders() {
 
       <div className="md:hidden mt-4 space-y-3">
         {filtered.map((o) => (
-          <Link key={o.id} to={`/admin/pedidos/${o.id}`} className="admin-card p-4 block">
-            <div className="flex justify-between mb-2">
-              <span className="font-medium text-sm">{o.orderNumber}</span>
-              <StatusBadge status={o.status} />
+          <div key={o.id} className="admin-card p-4">
+            <Link to={`/admin/pedidos/${o.id}`} className="block">
+              <div className="flex justify-between mb-2">
+                <span className="font-medium text-sm">{o.orderNumber}</span>
+                <StatusBadge status={o.status} />
+              </div>
+              <p className="text-sm text-warm-gray">{o.customerName}</p>
+              {o.shippingAddress && <p className="text-[11px] text-muted mt-1">{o.shippingAddress}</p>}
+              <p className="text-sm font-medium mt-2">{formatPrice(o.total)}</p>
+            </Link>
+            <div className="flex gap-2 mt-3 pt-3 border-t border-border/50">
+              <Link to={`/admin/pedidos/${o.id}`} className="flex-1 admin-btn-secondary text-[10px] py-2 text-center">
+                Editar
+              </Link>
+              {o.status !== 'cancelado' && (
+                <button
+                  type="button"
+                  onClick={() => setCancelId(o.id)}
+                  className="flex-1 admin-btn-secondary text-[10px] py-2 text-red-700"
+                >
+                  Cancelar
+                </button>
+              )}
             </div>
-            <p className="text-sm text-warm-gray">{o.customerName}</p>
-            {o.shippingAddress && <p className="text-[11px] text-muted mt-1">{o.shippingAddress}</p>}
-            <p className="text-sm font-medium mt-2">{formatPrice(o.total)}</p>
-          </Link>
+          </div>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={!!cancelId}
+        onClose={() => setCancelId(null)}
+        onConfirm={() => void handleCancel()}
+        title="Cancelar pedido"
+        message={`Deseja cancelar o pedido ${cancelTarget?.orderNumber ?? ''}?`}
+        confirmLabel="Cancelar pedido"
+        danger
+      />
     </>
   )
 }
