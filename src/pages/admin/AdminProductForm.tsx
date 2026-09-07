@@ -31,7 +31,7 @@ const emptyProduct = (): AdminProduct => ({
   rating: 5,
   reviewCount: 0,
   stock: 0,
-  minStock: 5,
+  minStock: 0,
   trackStock: true,
   inStock: true,
   material: 'Prata 925',
@@ -343,12 +343,21 @@ export function AdminProductForm() {
           <section className="admin-card p-6 space-y-4">
             <h2 className="font-serif text-lg font-light border-b border-border pb-3">Estoque</h2>
             <div>
-              <label className="admin-label">Quantidade</label>
-              <input type="number" className="admin-input" value={product.stock} onChange={(e) => update('stock', parseInt(e.target.value) || 0)} />
-            </div>
-            <div>
-              <label className="admin-label">Estoque mínimo</label>
-              <input type="number" className="admin-input" value={product.minStock} onChange={(e) => update('minStock', parseInt(e.target.value) || 0)} />
+              <label className="admin-label">Quantidade disponível</label>
+              <input
+                type="number"
+                min={0}
+                className="admin-input"
+                value={product.stock}
+                onChange={(e) => {
+                  const stock = Math.max(0, parseInt(e.target.value, 10) || 0)
+                  setProduct((p) => ({ ...p, stock, inStock: stock > 0 }))
+                }}
+              />
+              <p className="text-[11px] text-muted mt-1">
+                Coloque o que você tem de verdade (ex.: 1). Com 1 ou mais, a peça aparece disponível no site.
+                Só fica esgotada com quantidade 0.
+              </p>
             </div>
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={product.trackStock} onChange={(e) => update('trackStock', e.target.checked)} className="accent-graphite" />

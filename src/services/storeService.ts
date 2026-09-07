@@ -105,7 +105,7 @@ function adminToStoreProduct(p: import('../types/admin').AdminProduct): Product 
     badge: p.badge,
     rating: p.rating,
     reviewCount: p.reviewCount,
-    inStock: p.inStock && p.stock > 0,
+    inStock: Number(p.stock) > 0,
     stock: p.stock,
     material: p.material,
     warranty: p.warranty,

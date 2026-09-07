@@ -78,8 +78,8 @@ function toAdminProduct(p: (typeof seedProducts)[0], index: number): AdminProduc
     badge: p.badge,
     rating: p.rating,
     reviewCount: p.reviewCount,
-    stock: p.inStock ? Math.floor(Math.random() * 20) + 3 : 0,
-    minStock: 5,
+    stock: p.inStock ? 1 : 0,
+    minStock: 0,
     trackStock: true,
     inStock: p.inStock,
     material: p.material,
@@ -263,7 +263,14 @@ export async function publishCatalogToServer(): Promise<{ ok: boolean; error?: s
     for (const p of db.products) {
       const normalized = normalizeProductImages(p)
       const needsUpload = normalized.images.some((img) => img.startsWith('data:'))
-      withUrls.push(needsUpload ? await ensurePublicImages(normalized) : normalized)
+      const withImages = needsUpload ? await ensurePublicImages(normalized) : normalized
+      const stock = Math.max(0, Number(withImages.stock) || 0)
+      withUrls.push({
+        ...withImages,
+        stock,
+        inStock: stock > 0,
+        minStock: 0,
+      })
     }
     db.products = withUrls
     saveDatabase(db)
@@ -477,6 +484,7 @@ export function adjustStock(productId: string, delta: number, reason: string): v
     createdAt: now(),
   })
   saveDatabase(db)
+  void publishCatalogToServer()
 }
 
 export function setStock(productId: string, quantity: number, reason: string): void {
@@ -500,6 +508,7 @@ export function setStock(productId: string, quantity: number, reason: string): v
     createdAt: now(),
   })
   saveDatabase(db)
+  void publishCatalogToServer()
 }
 
 // ─── Generic getters ───
