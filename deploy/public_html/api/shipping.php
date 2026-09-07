@@ -56,16 +56,14 @@ if ($totalQty < 1) {
 }
 
 /**
- * Pacote padrão joias — alinhado aos limites do Mini Envios (quando o peso cabe)
- * e próximo do que o app SuperFrete usa na calculadora.
- * Mini: altura ≤4, largura ≤16, comprimento ≤24, peso ≤0,3 kg, seguro ≤100.
+ * Pacote padrão joias nos mínimos dos Correios (PAC/SEDEX) —
+ * que também cabem no Mini Envios (máx. 4×16×24 cm e 0,3 kg).
  */
-$packageWeight = min(0.3, max(0.1, round(0.1 * $totalQty, 3)));
 $package = [
   'height' => 4,
-  'width' => 12,
-  'length' => 16,
-  'weight' => $packageWeight,
+  'width' => 16,
+  'length' => 24,
+  'weight' => 0.3,
 ];
 
 // Seguro no mínimo dos Correios (~R$25). Declarar o valor cheio do carrinho
