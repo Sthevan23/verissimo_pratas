@@ -68,12 +68,9 @@ $package = [
   'weight' => $packageWeight,
 ];
 
-// Seguro: o app não declara o valor cheio do carrinho (isso inflava PAC/SEDEX).
-// Usa o mínimo prático dos Correios e limita a R$100 para liberar Mini Envios.
+// Seguro no mínimo dos Correios (~R$25). Declarar o valor cheio do carrinho
+// deixava o frete bem mais caro que no app SuperFrete.
 $insuranceValue = 25.0;
-if ($subtotal > 0) {
-  $insuranceValue = min(100.0, max(25.0, $subtotal));
-}
 
 $options = [];
 
