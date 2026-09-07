@@ -359,13 +359,7 @@ export function ProductDetails() {
                     </span>
                     <button
                       type="button"
-                      onClick={() =>
-                        setQuantity(
-                          stock && stock > 0
-                            ? Math.min(stock, quantity + 1)
-                            : quantity + 1
-                        )
-                      }
+                      onClick={() => setQuantity(quantity + 1)}
                       className="w-11 h-[48px] flex items-center justify-center text-charcoal"
                       aria-label="Aumentar"
                     >

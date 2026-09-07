@@ -133,24 +133,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         showToast('Esta peça está esgotada')
         return
       }
-      const maxStock = product.stock && product.stock > 0 ? product.stock : Infinity
       const { size: selectedSize, choices: selectedChoices } =
         normalizeCartLineSelection(line)
-      const existing = cart.find((item) =>
-        sameCartLine(item, {
-          productId: product.id,
-          size: selectedSize,
-          choices: selectedChoices,
-        })
-      )
-      if (existing && existing.quantity >= maxStock) {
-        showToast(
-          maxStock === 1
-            ? 'Só há 1 unidade desta peça'
-            : `Só há ${maxStock} unidades disponíveis`
-        )
-        return
-      }
       setCart((prev) => {
         const lineItem = prev.find((item) =>
           sameCartLine(item, {
@@ -166,7 +150,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               size: selectedSize,
               choices: selectedChoices,
             })
-              ? { ...item, quantity: Math.min(maxStock, item.quantity + quantity) }
+              ? { ...item, quantity: item.quantity + quantity }
               : item
           )
         }
@@ -174,7 +158,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ...prev,
           {
             product,
-            quantity: Math.min(maxStock, quantity),
+            quantity,
             selectedSize,
             selectedChoices,
           },
@@ -182,7 +166,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       })
       showToast(`${product.name} adicionado ao carrinho`)
     },
-    [cart, showToast]
+    [showToast]
   )
 
   const removeFromCart = useCallback(
@@ -225,11 +209,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ) {
             return item
           }
-          const max =
-            item.product.stock && item.product.stock > 0
-              ? item.product.stock
-              : quantity
-          return { ...item, quantity: Math.min(quantity, max) }
+          return { ...item, quantity }
         })
       )
     },
