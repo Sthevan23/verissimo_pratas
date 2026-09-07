@@ -6,6 +6,7 @@ import { CatalogHydrator } from './components/CatalogHydrator'
 import { AdminAuthProvider } from './context/AdminAuthContext'
 import { AdminToastProvider } from './context/AdminToastContext'
 import { Layout } from './components/Layout'
+import { ScrollToTop } from './components/ScrollToTop'
 import { AdminLayout } from './components/admin/AdminLayout'
 import { ProtectedRoute } from './components/admin/ProtectedRoute'
 import { Home } from './pages/Home'
@@ -31,25 +32,28 @@ import { AdminSettings, AdminUsers } from './pages/admin/AdminSettings'
 function StoreRoutes() {
   const location = useLocation()
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={location.pathname}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <Routes location={location}>
-          <Route element={<Layout />}>
-            <Route index element={<Home />} />
-            <Route path="produtos" element={<Products />} />
-            <Route path="produto/:slug" element={<ProductDetails />} />
-            <Route path="carrinho" element={<Cart />} />
-            <Route path="sobre" element={<About />} />
-          </Route>
-        </Routes>
-      </motion.div>
-    </AnimatePresence>
+    <>
+      <ScrollToTop />
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={location.pathname}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Routes location={location}>
+            <Route element={<Layout />}>
+              <Route index element={<Home />} />
+              <Route path="produtos" element={<Products />} />
+              <Route path="produto/:slug" element={<ProductDetails />} />
+              <Route path="carrinho" element={<Cart />} />
+              <Route path="sobre" element={<About />} />
+            </Route>
+          </Routes>
+        </motion.div>
+      </AnimatePresence>
+    </>
   )
 }
 
