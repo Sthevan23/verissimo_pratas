@@ -32,28 +32,25 @@ import { AdminSettings, AdminUsers } from './pages/admin/AdminSettings'
 function StoreRoutes() {
   const location = useLocation()
   return (
-    <>
-      <ScrollToTop />
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={location.pathname}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <Routes location={location}>
-            <Route element={<Layout />}>
-              <Route index element={<Home />} />
-              <Route path="produtos" element={<Products />} />
-              <Route path="produto/:slug" element={<ProductDetails />} />
-              <Route path="carrinho" element={<Cart />} />
-              <Route path="sobre" element={<About />} />
-            </Route>
-          </Routes>
-        </motion.div>
-      </AnimatePresence>
-    </>
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={location.pathname}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Routes location={location}>
+          <Route element={<Layout />}>
+            <Route index element={<Home />} />
+            <Route path="produtos" element={<Products />} />
+            <Route path="produto/:slug" element={<ProductDetails />} />
+            <Route path="carrinho" element={<Cart />} />
+            <Route path="sobre" element={<About />} />
+          </Route>
+        </Routes>
+      </motion.div>
+    </AnimatePresence>
   )
 }
 
@@ -61,6 +58,7 @@ export default function App() {
   return (
     <HelmetProvider>
       <BrowserRouter>
+        <ScrollToTop />
         <AdminAuthProvider>
           <AdminToastProvider>
             <Routes>
