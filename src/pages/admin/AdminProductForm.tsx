@@ -30,7 +30,7 @@ const emptyProduct = (): AdminProduct => ({
   images: [],
   rating: 5,
   reviewCount: 0,
-  stock: 0,
+  stock: 1,
   minStock: 0,
   trackStock: true,
   inStock: true,
@@ -341,28 +341,55 @@ export function AdminProductForm() {
 
           {/* Stock */}
           <section className="admin-card p-6 space-y-4">
-            <h2 className="font-serif text-lg font-light border-b border-border pb-3">Estoque</h2>
-            <div>
-              <label className="admin-label">Quantidade disponível</label>
-              <input
-                type="number"
-                min={0}
-                className="admin-input"
-                value={product.stock}
-                onChange={(e) => {
-                  const stock = Math.max(0, parseInt(e.target.value, 10) || 0)
-                  setProduct((p) => ({ ...p, stock, inStock: stock > 0 }))
-                }}
-              />
-              <p className="text-[11px] text-muted mt-1">
-                Coloque o que você tem de verdade (ex.: 1). Com 1 ou mais, a peça aparece disponível no site.
-                Só fica esgotada com quantidade 0.
-              </p>
+            <h2 className="font-serif text-lg font-light border-b border-border pb-3">Disponibilidade</h2>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setProduct((p) => ({
+                    ...p,
+                    stock: p.stock > 0 ? p.stock : 1,
+                    inStock: true,
+                  }))
+                }
+                className={`py-3 text-[11px] tracking-widest uppercase border transition-colors ${
+                  product.stock > 0
+                    ? 'bg-emerald-700 text-white border-emerald-700'
+                    : 'border-border text-warm-gray hover:border-graphite'
+                }`}
+              >
+                Disponível
+              </button>
+              <button
+                type="button"
+                onClick={() => setProduct((p) => ({ ...p, stock: 0, inStock: false }))}
+                className={`py-3 text-[11px] tracking-widest uppercase border transition-colors ${
+                  product.stock <= 0
+                    ? 'bg-graphite text-cream border-graphite'
+                    : 'border-border text-warm-gray hover:border-graphite'
+                }`}
+              >
+                Esgotado
+              </button>
             </div>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={product.trackStock} onChange={(e) => update('trackStock', e.target.checked)} className="accent-graphite" />
-              <span className="text-sm font-light">Controlar estoque</span>
-            </label>
+            {product.stock > 0 && (
+              <div>
+                <label className="admin-label">Quantas unidades? (opcional)</label>
+                <input
+                  type="number"
+                  min={1}
+                  className="admin-input"
+                  value={product.stock}
+                  onChange={(e) => {
+                    const stock = Math.max(1, parseInt(e.target.value, 10) || 1)
+                    setProduct((p) => ({ ...p, stock, inStock: true }))
+                  }}
+                />
+                <p className="text-[11px] text-muted mt-1">
+                  Na maioria das peças deixe 1. Só aumente se tiver mais de uma igual.
+                </p>
+              </div>
+            )}
           </section>
 
           {/* Additional */}

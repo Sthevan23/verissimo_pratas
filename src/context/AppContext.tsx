@@ -98,32 +98,60 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const addToCart = useCallback(
     (product: Product, quantity = 1, line?: string | CartLineSelection) => {
+      if (!product.inStock || (product.stock !== undefined && product.stock <= 0)) {
+        showToast('Esta peça está esgotada')
+        return
+      }
+      const maxStock = product.stock && product.stock > 0 ? product.stock : Infinity
       const { size: selectedSize, choices: selectedChoices } =
         normalizeCartLineSelection(line)
+      const existing = cart.find((item) =>
+        sameCartLine(item, {
+          productId: product.id,
+          size: selectedSize,
+          choices: selectedChoices,
+        })
+      )
+      if (existing && existing.quantity >= maxStock) {
+        showToast(
+          maxStock === 1
+            ? 'Só há 1 unidade desta peça'
+            : `Só há ${maxStock} unidades disponíveis`
+        )
+        return
+      }
       setCart((prev) => {
-        const existing = prev.find((item) =>
+        const lineItem = prev.find((item) =>
           sameCartLine(item, {
             productId: product.id,
             size: selectedSize,
             choices: selectedChoices,
           })
         )
-        if (existing) {
+        if (lineItem) {
           return prev.map((item) =>
             sameCartLine(item, {
               productId: product.id,
               size: selectedSize,
               choices: selectedChoices,
             })
-              ? { ...item, quantity: item.quantity + quantity }
+              ? { ...item, quantity: Math.min(maxStock, item.quantity + quantity) }
               : item
           )
         }
-        return [...prev, { product, quantity, selectedSize, selectedChoices }]
+        return [
+          ...prev,
+          {
+            product,
+            quantity: Math.min(maxStock, quantity),
+            selectedSize,
+            selectedChoices,
+          },
+        ]
       })
       showToast(`${product.name} adicionado ao carrinho`)
     },
-    [showToast]
+    [cart, showToast]
   )
 
   const removeFromCart = useCallback(
@@ -166,7 +194,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ) {
             return item
           }
-          return { ...item, quantity }
+          const max =
+            item.product.stock && item.product.stock > 0
+              ? item.product.stock
+              : quantity
+          return { ...item, quantity: Math.min(quantity, max) }
         })
       )
     },

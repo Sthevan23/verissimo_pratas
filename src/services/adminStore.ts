@@ -390,7 +390,9 @@ export function getDashboardStats(): DashboardStats {
   const salesToday = todayOrders.reduce((s, o) => s + o.total, 0)
   const salesMonth = monthOrders.reduce((s, o) => s + o.total, 0)
   const avgTicket = paidOrders.length ? paidOrders.reduce((s, o) => s + o.total, 0) / paidOrders.length : 0
-  const lowStock = db.products.filter((p) => p.trackStock && p.stock <= p.minStock && p.stock > 0).length
+  const lowStock = db.products.filter(
+    (p) => p.status === 'active' && Number(p.stock) <= 0
+  ).length
 
   const costs = monthOrders.reduce((s, o) => {
     return s + o.items.reduce((cs, item) => {

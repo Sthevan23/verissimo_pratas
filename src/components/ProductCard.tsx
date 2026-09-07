@@ -28,6 +28,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const primarySrc = !imgBroken && product.images[0] ? product.images[0] : undefined
 
   const handleBuy = () => {
+    if (!product.inStock) return
     if (needsSelection) return
     addToCart(product)
   }
@@ -50,6 +51,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
               alt={product.name}
               className={cn(
                 'absolute inset-0 w-full h-full object-cover transition-all duration-700 active:scale-105',
+                !product.inStock && 'opacity-60',
                 hovered && hasSecondImage ? 'opacity-0 scale-105' : 'opacity-100 scale-100 lg:group-hover:scale-105'
               )}
               loading="lazy"
@@ -73,7 +75,11 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
           )}
         </Link>
 
-        {product.badge && (
+        {!product.inStock ? (
+          <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-graphite text-cream text-[8px] sm:text-[9px] tracking-[0.15em] uppercase px-2 py-1 sm:px-3 sm:py-1.5">
+            Esgotado
+          </span>
+        ) : product.badge ? (
           <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-brand-green text-white text-[8px] sm:text-[9px] tracking-[0.15em] uppercase px-2 py-1 sm:px-3 sm:py-1.5">
             {product.badge === 'novidade'
               ? 'Novidade'
@@ -81,7 +87,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
                 ? 'Oferta especial'
                 : 'Promoção'}
           </span>
-        )}
+        ) : null}
 
         <button
           onClick={() => toggleFavorite(product.id)}
@@ -103,7 +109,14 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
         </button>
 
         <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-500 hidden lg:block">
-          {needsSelection ? (
+          {!product.inStock ? (
+            <Link
+              to={`/produto/${product.slug}`}
+              className="w-full flex items-center justify-center gap-2 bg-graphite/80 text-cream py-3 text-[10px] tracking-[0.2em] uppercase"
+            >
+              Esgotado
+            </Link>
+          ) : needsSelection ? (
             <Link
               to={`/produto/${product.slug}`}
               className="w-full flex items-center justify-center gap-2 bg-brand-green text-white py-3 text-[10px] tracking-[0.2em] uppercase hover:bg-brand-green-dark transition-colors"
@@ -154,7 +167,14 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
           {formatInstallments(currentPrice)}
         </p>
 
-        {needsSelection ? (
+        {!product.inStock ? (
+          <Link
+            to={`/produto/${product.slug}`}
+            className="lg:hidden w-full mt-2 min-h-11 py-2.5 border border-border text-[10px] tracking-[0.2em] uppercase text-muted flex items-center justify-center"
+          >
+            Esgotado
+          </Link>
+        ) : needsSelection ? (
           <Link
             to={`/produto/${product.slug}`}
             className="lg:hidden w-full mt-2 min-h-11 py-2.5 border border-border text-[10px] tracking-[0.2em] uppercase text-graphite active:border-graphite active:bg-off-white transition-colors flex items-center justify-center"

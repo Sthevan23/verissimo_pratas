@@ -106,7 +106,7 @@ export function AdminDashboard() {
         <StatCard label="Pedidos" value={stats.ordersCount} icon={ShoppingBag} change={stats.ordersChange} index={2} />
         <StatCard label="Ticket médio" value={stats.avgTicket} icon={Receipt} change={stats.ticketChange} prefix="R$" index={3} />
         <StatCard label="Produtos" value={stats.productsCount} icon={Package} index={4} />
-        <StatCard label="Estoque baixo" value={stats.lowStockCount} icon={AlertTriangle} index={5} />
+        <StatCard label="Esgotados" value={stats.lowStockCount} icon={AlertTriangle} index={5} />
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">

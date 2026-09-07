@@ -13,10 +13,26 @@ import {
   bulkUpdateProducts,
   hydrateCatalogFromServer,
   publishCatalogToServer,
+  setStock,
 } from '../../services/adminStore'
 import { useAdminToast } from '../../context/AdminToastContext'
 import { formatPrice } from '../../utils/format'
 import type { AdminProduct } from '../../types/admin'
+
+function AvailabilityBadge({ stock }: { stock: number }) {
+  const available = stock > 0
+  return (
+    <span
+      className={`inline-flex text-[10px] tracking-wider uppercase px-2 py-0.5 border ${
+        available
+          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+          : 'bg-red-50 text-red-700 border-red-200'
+      }`}
+    >
+      {available ? 'Disponível' : 'Esgotado'}
+    </span>
+  )
+}
 
 export function AdminProducts() {
   const { showToast } = useAdminToast()
@@ -57,6 +73,17 @@ export function AdminProducts() {
       result.ok ? 'Produtos publicados no site!' : result.error || 'Falha ao publicar',
       result.ok ? 'success' : 'error'
     )
+  }
+
+  const toggleAvailability = (p: AdminProduct) => {
+    if (p.stock > 0) {
+      setStock(p.id, 0, 'Marcado como esgotado')
+      showToast('Marcado como esgotado no site.')
+    } else {
+      setStock(p.id, 1, 'Marcado como disponível')
+      showToast('Marcado como disponível no site.')
+    }
+    refresh()
   }
 
   const filtered = useMemo(() => {
@@ -157,7 +184,7 @@ export function AdminProducts() {
                   <th className="admin-table-th">Categoria</th>
                   <th className="admin-table-th">Preço</th>
                   <th className="admin-table-th">Promo</th>
-                  <th className="admin-table-th">Estoque</th>
+                  <th className="admin-table-th">Disponibilidade</th>
                   <th className="admin-table-th">Status</th>
                   <th className="admin-table-th">Ações</th>
                 </tr>
@@ -194,7 +221,18 @@ export function AdminProducts() {
                       )}
                     </td>
                     <td className="admin-table-td">{p.salePrice ? formatPrice(p.salePrice) : '—'}</td>
-                    <td className="admin-table-td">{p.stock}</td>
+                    <td className="admin-table-td">
+                      <div className="flex flex-col gap-1 items-start">
+                        <AvailabilityBadge stock={p.stock} />
+                        <button
+                          type="button"
+                          onClick={() => toggleAvailability(p)}
+                          className="text-[10px] text-muted underline underline-offset-2 hover:text-graphite"
+                        >
+                          {p.stock > 0 ? 'Marcar esgotado' : 'Marcar disponível'}
+                        </button>
+                      </div>
+                    </td>
                     <td className="admin-table-td"><StatusBadge status={p.status} /></td>
                     <td className="admin-table-td">
                       <div className="flex gap-1">
@@ -220,15 +258,22 @@ export function AdminProducts() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-light truncate">{p.name}</p>
                     <p className="text-xs text-muted">{p.sku}</p>
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
                       <span className="font-medium text-sm">{formatPrice(p.price)}</span>
                       <StatusBadge status={p.status} />
+                      <AvailabilityBadge stock={p.stock} />
                     </div>
-                    <p className="text-xs text-muted mt-1">Estoque: {p.stock}</p>
                   </div>
                 </div>
                 <div className="flex gap-2 mt-3 pt-3 border-t border-border/50">
                   <Link to={`/admin/produtos/${p.id}`} className="flex-1 admin-btn-secondary text-[10px] py-2 text-center">Editar</Link>
+                  <button
+                    type="button"
+                    onClick={() => toggleAvailability(p)}
+                    className="flex-1 admin-btn-secondary text-[10px] py-2"
+                  >
+                    {p.stock > 0 ? 'Esgotar' : 'Disponibilizar'}
+                  </button>
                   <button onClick={() => setDeleteId(p.id)} className="p-2 border border-border text-red-600"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
