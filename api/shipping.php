@@ -45,30 +45,13 @@ $isLocal =
     || (string) ($address['ibge'] ?? '') === '3107109'
   );
 
-$products = [];
 $totalQty = 0;
 foreach ($items as $item) {
-  $qty = max(1, (int) ($item['quantity'] ?? 1));
-  $totalQty += $qty;
+  $totalQty += max(1, (int) ($item['quantity'] ?? 1));
 }
 if ($totalQty < 1) {
   $totalQty = 1;
 }
-
-/**
- * Pacote padrão joias nos mínimos dos Correios (PAC/SEDEX) —
- * que também cabem no Mini Envios (máx. 4×16×24 cm e 0,3 kg).
- */
-$package = [
-  'height' => 4,
-  'width' => 16,
-  'length' => 24,
-  'weight' => 0.3,
-];
-
-// Seguro no mínimo dos Correios (~R$25). Declarar o valor cheio do carrinho
-// deixava o frete bem mais caro que no app SuperFrete.
-$insuranceValue = 25.0;
 
 $options = [];
 
@@ -103,80 +86,121 @@ if ($token === '') {
   // Sem token: ainda permite finalizar com frete a combinar no WhatsApp
   $error = 'Cotação SuperFrete pendente — frete a combinar no WhatsApp.';
 } else {
-  $payload = [
-    'from' => ['postal_code' => $originCep],
-    'to' => ['postal_code' => $cep],
-    'services' => '1,2,17',
-    'options' => [
-      'own_hand' => false,
-      'receipt' => false,
-      'insurance_value' => $insuranceValue,
-      'use_insurance_value' => true,
-    ],
-    'package' => $package,
-  ];
-
   $env = strtolower((string) ($cfg['superfrete_env'] ?? 'production'));
   $base = $env === 'sandbox'
     ? 'https://sandbox.superfrete.com'
     : 'https://api.superfrete.com';
 
-  $ch = curl_init($base . '/api/v0/calculator');
-  curl_setopt_array($ch, [
-    CURLOPT_POST => true,
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_HTTPHEADER => [
-      'Accept: application/json',
-      'Content-Type: application/json',
-      'Authorization: Bearer ' . $token,
-      'User-Agent: VerissimoPratas/1.0 (verissimopratass@gmail.com)',
-    ],
-    CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
-    CURLOPT_TIMEOUT => 25,
-  ]);
-  $resp = curl_exec($ch);
-  $http = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-  $curlErr = curl_error($ch);
-  curl_close($ch);
+  $headers = [
+    'Accept: application/json',
+    'Content-Type: application/json',
+    'Authorization: Bearer ' . $token,
+    'User-Agent: VerissimoPratas/1.0 (verissimopratass@gmail.com)',
+  ];
 
-  if ($resp === false) {
-    $error = 'Falha ao consultar SuperFrete: ' . ($curlErr ?: 'sem resposta');
-  } else {
+  // Duas cotações: Mini (pacote pequeno) + PAC/SEDEX (mínimos Correios)
+  $requests = [
+    [
+      'services' => '17',
+      'package' => [
+        'height' => 4,
+        'width' => 12,
+        'length' => 16,
+        'weight' => 0.3,
+      ],
+      'insurance' => 25.0,
+    ],
+    [
+      'services' => '1,2',
+      'package' => [
+        'height' => 4,
+        'width' => 16,
+        'length' => 24,
+        'weight' => 0.3,
+      ],
+      'insurance' => 25.0,
+    ],
+  ];
+
+  $errors = [];
+  foreach ($requests as $req) {
+    $payload = [
+      'from' => ['postal_code' => $originCep],
+      'to' => ['postal_code' => $cep],
+      'services' => $req['services'],
+      'options' => [
+        'own_hand' => false,
+        'receipt' => false,
+        'insurance_value' => $req['insurance'],
+        'use_insurance_value' => true,
+      ],
+      'package' => $req['package'],
+    ];
+
+    $ch = curl_init($base . '/api/v0/calculator');
+    curl_setopt_array($ch, [
+      CURLOPT_POST => true,
+      CURLOPT_RETURNTRANSFER => true,
+      CURLOPT_HTTPHEADER => $headers,
+      CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
+      CURLOPT_TIMEOUT => 25,
+    ]);
+    $resp = curl_exec($ch);
+    $http = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+
+    if ($resp === false) {
+      $errors[] = $curlErr ?: 'sem resposta';
+      continue;
+    }
+
     $data = json_decode($resp, true);
     if ($http >= 400 || !is_array($data)) {
-      $msg = is_array($data)
+      $errors[] = is_array($data)
         ? (string) ($data['message'] ?? $data['error'] ?? 'Erro na cotação')
         : 'Erro na cotação SuperFrete';
-      $error = $msg;
-    } else {
-      $list = isset($data[0]) ? $data : (isset($data['data']) && is_array($data['data']) ? $data['data'] : [$data]);
-      foreach ($list as $row) {
-        if (!is_array($row)) continue;
-        if (!empty($row['error']) || isset($row['price']) === false) continue;
-        $price = (float) $row['price'];
-        if ($subtotal >= $freeNational) {
-          $price = 0;
-        }
-        $company = '';
-        if (isset($row['company']) && is_array($row['company'])) {
-          $company = (string) ($row['company']['name'] ?? '');
-        } elseif (isset($row['company']) && is_string($row['company'])) {
-          $company = $row['company'];
-        }
-        $quotes[] = [
-          'id' => (string) ($row['id'] ?? $row['service'] ?? uniqid('sf_', true)),
-          'name' => (string) ($row['name'] ?? 'Correios'),
-          'company' => $company !== '' ? $company : 'Correios / SuperFrete',
-          'price' => round($price, 2),
-          'delivery_time' => isset($row['delivery_time']) ? (int) $row['delivery_time'] : null,
-          'currency' => (string) ($row['currency'] ?? 'R$'),
-          'free' => $price <= 0,
-        ];
-      }
-      if (count($quotes) === 0 && $error === null) {
-        $error = 'Nenhuma opção de frete disponível para este CEP.';
-      }
+      continue;
     }
+
+    $list = isset($data[0]) ? $data : (isset($data['data']) && is_array($data['data']) ? $data['data'] : [$data]);
+    foreach ($list as $row) {
+      if (!is_array($row)) continue;
+      if (!empty($row['error']) || isset($row['price']) === false) continue;
+      $price = (float) $row['price'];
+      if ($subtotal >= $freeNational) {
+        $price = 0;
+      }
+      $company = '';
+      if (isset($row['company']) && is_array($row['company'])) {
+        $company = (string) ($row['company']['name'] ?? '');
+      } elseif (isset($row['company']) && is_string($row['company'])) {
+        $company = $row['company'];
+      }
+      $id = (string) ($row['id'] ?? $row['service'] ?? uniqid('sf_', true));
+      // Evita duplicar o mesmo serviço
+      $exists = false;
+      foreach ($quotes as $q) {
+        if ((string) $q['id'] === $id) {
+          $exists = true;
+          break;
+        }
+      }
+      if ($exists) continue;
+      $quotes[] = [
+        'id' => $id,
+        'name' => (string) ($row['name'] ?? 'Correios'),
+        'company' => $company !== '' ? $company : 'Correios / SuperFrete',
+        'price' => round($price, 2),
+        'delivery_time' => isset($row['delivery_time']) ? (int) $row['delivery_time'] : null,
+        'currency' => (string) ($row['currency'] ?? 'R$'),
+        'free' => $price <= 0,
+      ];
+    }
+  }
+
+  if (count($quotes) === 0) {
+    $error = count($errors) ? implode(' · ', array_unique($errors)) : 'Nenhuma opção de frete disponível para este CEP.';
   }
 }
 
