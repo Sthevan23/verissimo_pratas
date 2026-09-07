@@ -307,8 +307,10 @@ export function ProductDetails() {
                 )}
 
                 {options.map((opt) => (
-                  <div key={opt.id} className="mb-3">
-                    <p className="block text-[14px] text-charcoal mb-2">{opt.label}</p>
+                  <div key={opt.id} className="mb-4">
+                    <p className="block text-[14px] text-charcoal mb-2 font-medium">
+                      Escolha o {opt.label.toLowerCase()}
+                    </p>
                     <div className="flex flex-wrap gap-2">
                       {opt.values.map((value) => (
                         <button
@@ -318,7 +320,7 @@ export function ProductDetails() {
                             setSelectedChoices((prev) => ({ ...prev, [opt.id]: value }))
                           }
                           className={cn(
-                            'px-3 py-2.5 text-[13px] border rounded-sm transition-colors text-left',
+                            'min-w-[7.5rem] px-3 py-3 text-[13px] border rounded-sm transition-colors text-center',
                             selectedChoices[opt.id] === value
                               ? 'border-brand-green bg-brand-green text-white'
                               : 'border-border text-charcoal hover:border-brand-green bg-cream'

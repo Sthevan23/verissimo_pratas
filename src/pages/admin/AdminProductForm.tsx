@@ -414,7 +414,7 @@ export function AdminProductForm() {
               </p>
             </div>
             <div>
-              <label className="admin-label">Opções de escolha (fecho, cor, etc.)</label>
+              <label className="admin-label">Variações para o cliente escolher</label>
               <textarea
                 className="admin-input min-h-[88px] font-mono text-[12px]"
                 value={optionsText}
@@ -424,14 +424,35 @@ export function AdminProductForm() {
                   const options = parseProductOptions(text)
                   update('options', options.length ? options : undefined)
                 }}
-                placeholder={'Fecho: Coração cravejado, Quadrado cravejado'}
+                placeholder={'Modelo: Corações, Círculos'}
               />
               <p className="text-[11px] text-muted mt-1">
-                Uma opção por linha. Formato: <strong>Nome: valor1, valor2</strong>
+                Uma linha por tipo de escolha. Formato:{' '}
+                <strong>Nome: opção1, opção2</strong>
                 <br />
-                Exemplo para braceletes:{' '}
+                Exemplos:
+                <br />
+                <code className="text-[10px]">Modelo: Corações, Círculos</code>
+                <br />
                 <code className="text-[10px]">Fecho: Coração cravejado, Quadrado cravejado</code>
+                <br />
+                Também aceita só{' '}
+                <code className="text-[10px]">Corações, Círculos</code> (aparece como Modelo).
               </p>
+              {parseProductOptions(optionsText).length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {parseProductOptions(optionsText).flatMap((opt) =>
+                    opt.values.map((v) => (
+                      <span
+                        key={`${opt.id}-${v}`}
+                        className="inline-flex px-2 py-1 text-[11px] border border-brand-green/40 bg-brand-green/5 text-graphite rounded-sm"
+                      >
+                        {opt.label}: {v}
+                      </span>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
             {(['material', 'silverType', 'weight', 'size', 'dimensions', 'warranty'] as const).map((field) => (
               <div key={field}>
