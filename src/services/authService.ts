@@ -7,13 +7,21 @@ export interface AdminSession {
   email: string
   name: string
   role: AdminRole
+  /** Token de sessão emitido por /api/auth.php (não é a senha) */
   token: string
   expiresAt: number
   remember: boolean
 }
 
-function generateToken(): string {
-  return crypto.randomUUID() + '-' + Date.now()
+function persistSession(session: AdminSession): void {
+  const raw = JSON.stringify(session)
+  if (session.remember) {
+    localStorage.setItem(SESSION_KEY, raw)
+    sessionStorage.removeItem(SESSION_KEY)
+  } else {
+    sessionStorage.setItem(SESSION_KEY, raw)
+    localStorage.removeItem(SESSION_KEY)
+  }
 }
 
 export async function loginAdmin(
@@ -21,43 +29,34 @@ export async function loginAdmin(
   password: string,
   remember = false
 ): Promise<{ success: true; session: AdminSession } | { success: false; error: string }> {
-  await delay(800)
-
-  const adminEmail = import.meta.env.VITE_ADMIN_EMAIL
-  const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD
-
-  if (!adminEmail || !adminPassword) {
-    return {
-      success: false,
-      error: 'Credenciais não configuradas. Defina VITE_ADMIN_EMAIL e VITE_ADMIN_PASSWORD no arquivo .env',
+  try {
+    const res = await fetch('/api/auth.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, remember }),
+    })
+    const data = await res.json()
+    if (!res.ok || !data?.ok || !data.token || !data.session) {
+      return {
+        success: false,
+        error: (data?.error as string) || 'Email ou senha inválidos.',
+      }
     }
+
+    const session: AdminSession = {
+      userId: String(data.session.userId ?? 'admin'),
+      email: String(data.session.email),
+      name: String(data.session.name ?? 'Administrador'),
+      role: (data.session.role as AdminRole) || 'administrador',
+      token: String(data.token),
+      expiresAt: Number(data.session.expiresAt) || Date.now() + 8 * 60 * 60 * 1000,
+      remember,
+    }
+    persistSession(session)
+    return { success: true, session }
+  } catch {
+    return { success: false, error: 'Não foi possível conectar ao servidor. Tente de novo.' }
   }
-
-  if (email.toLowerCase() !== adminEmail.toLowerCase() || password !== adminPassword) {
-    return { success: false, error: 'Email ou senha inválidos.' }
-  }
-
-  const { getDatabase } = await import('./adminStore')
-  const db = getDatabase()
-  const user = db.adminUsers.find((u) => u.email.toLowerCase() === email.toLowerCase()) ?? db.adminUsers[0]
-
-  const session: AdminSession = {
-    userId: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-    token: generateToken(),
-    expiresAt: Date.now() + (remember ? 30 * 24 * 60 * 60 * 1000 : 8 * 60 * 60 * 1000),
-    remember,
-  }
-
-  if (remember) {
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session))
-  } else {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(session))
-  }
-
-  return { success: true, session }
 }
 
 export function getSession(): AdminSession | null {
@@ -65,7 +64,7 @@ export function getSession(): AdminSession | null {
   if (!raw) return null
   try {
     const session: AdminSession = JSON.parse(raw)
-    if (session.expiresAt < Date.now()) {
+    if (!session.token || session.expiresAt < Date.now()) {
       logoutAdmin()
       return null
     }
@@ -75,21 +74,51 @@ export function getSession(): AdminSession | null {
   }
 }
 
-export function logoutAdmin(): void {
+/** Header de autenticação para APIs admin (catálogo, upload, pedidos). */
+export function getAdminAuthHeaders(json = true): HeadersInit {
+  const token = getSession()?.token
+  const headers: Record<string, string> = {}
+  if (json) headers['Content-Type'] = 'application/json'
+  if (token) headers['X-Verissimo-Token'] = token
+  return headers
+}
+
+export async function logoutAdmin(): Promise<void> {
+  const token = getSession()?.token
   sessionStorage.removeItem(SESSION_KEY)
   localStorage.removeItem(SESSION_KEY)
+  if (!token) return
+  try {
+    await fetch('/api/auth.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Verissimo-Token': token,
+      },
+      body: JSON.stringify({ action: 'logout' }),
+    })
+  } catch {
+    /* ignore */
+  }
 }
 
 export function hasPermission(role: AdminRole, module: string): boolean {
   const perms: Record<string, string[]> = {
     administrador: ['*'],
-    gerente: ['dashboard', 'products', 'orders', 'inventory', 'finance', 'customers', 'coupons', 'reviews', 'reports', 'categories'],
+    gerente: [
+      'dashboard',
+      'products',
+      'orders',
+      'inventory',
+      'finance',
+      'customers',
+      'coupons',
+      'reviews',
+      'reports',
+      'categories',
+    ],
     editor: ['dashboard', 'products', 'categories', 'reviews'],
   }
   const allowed = perms[role] ?? []
   return allowed.includes('*') || allowed.includes(module)
-}
-
-function delay(ms: number) {
-  return new Promise((r) => setTimeout(r, ms))
 }

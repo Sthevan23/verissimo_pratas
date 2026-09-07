@@ -18,6 +18,7 @@ export function Cart() {
     removeFromCart,
     updateQuantity,
     updateCartSize,
+    clearCart,
     cartSubtotal,
     couponCode,
     setCouponCode,
@@ -45,7 +46,7 @@ export function Cart() {
       showToast('Informe o número da casa para entrega.')
       return
     }
-    showToast('Abrindo WhatsApp e registrando pedido...')
+    showToast('Registrando pedido...')
     const result = await openCheckoutWhatsApp({
       cart,
       subtotal: cartSubtotal,
@@ -62,10 +63,13 @@ export function Cart() {
       streetNumber: streetNumber.trim(),
       neighborhood: shippingAddress?.bairro || undefined,
     })
+    if (result.error) {
+      showToast(result.error)
+      return
+    }
+    clearCart()
     if (result.orderNumber) {
       showToast(`Pedido ${result.orderNumber} registrado. Continue no WhatsApp.`)
-    } else {
-      showToast('WhatsApp aberto. Se o pedido não aparecer no painel, tente de novo.')
     }
   }
 

@@ -23,8 +23,28 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    setSession(getSession())
-    setLoading(false)
+    const existing = getSession()
+    if (!existing) {
+      setLoading(false)
+      return
+    }
+    // Valida sessão no servidor (tokens antigos / senha embutida no JS param de valer)
+    void fetch('/api/auth.php', {
+      headers: { 'X-Verissimo-Token': existing.token },
+      cache: 'no-store',
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          await logoutAdmin()
+          setSession(null)
+          return
+        }
+        setSession(existing)
+      })
+      .catch(() => {
+        setSession(existing)
+      })
+      .finally(() => setLoading(false))
   }, [])
 
   const login = useCallback(async (email: string, password: string, remember = false) => {
@@ -37,7 +57,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const logout = useCallback(() => {
-    logoutAdmin()
+    void logoutAdmin()
     setSession(null)
   }, [])
 

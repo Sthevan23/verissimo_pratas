@@ -1,4 +1,5 @@
 import type { AdminCategory, AdminProduct, StoreSettings } from '../types/admin'
+import { getAdminAuthHeaders, getSession } from './authService'
 
 export interface RemoteSiteCatalog {
   products: AdminProduct[]
@@ -6,18 +7,8 @@ export interface RemoteSiteCatalog {
   settings: StoreSettings | null
 }
 
-const WRITE_TOKEN =
-  import.meta.env.VITE_ADMIN_PASSWORD ||
-  import.meta.env.VITE_API_TOKEN ||
-  'Verissimo@2026'
-
-export { WRITE_TOKEN }
-
 function writeHeaders(): HeadersInit {
-  return {
-    'Content-Type': 'application/json',
-    'X-Verissimo-Token': WRITE_TOKEN,
-  }
+  return getAdminAuthHeaders(true)
 }
 
 /** Baixa catálogo + categorias + configurações do servidor */
@@ -43,6 +34,7 @@ export async function pushCatalogToServer(payload: {
   categories?: AdminCategory[]
   settings?: StoreSettings
 }): Promise<boolean> {
+  if (!getSession()?.token) return false
   try {
     const res = await fetch('/api/catalog.php', {
       method: 'POST',
@@ -59,11 +51,14 @@ export async function pushCatalogToServer(payload: {
 
 /** Envia arquivo de imagem para o servidor */
 export async function uploadProductFile(file: File): Promise<string> {
+  if (!getSession()?.token) {
+    throw new Error('Faça login no admin para enviar fotos.')
+  }
   const form = new FormData()
   form.append('file', file, file.name || 'foto.jpg')
   const res = await fetch('/api/upload.php', {
     method: 'POST',
-    headers: { 'X-Verissimo-Token': WRITE_TOKEN },
+    headers: getAdminAuthHeaders(false),
     body: form,
   })
   const raw = await res.text()

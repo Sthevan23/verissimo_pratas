@@ -1,6 +1,6 @@
 import type { Order, OrderItem, OrderStatus } from '../types/admin'
 import type { CartItem } from '../types'
-import { WRITE_TOKEN } from './remoteCatalog'
+import { getAdminAuthHeaders, getSession } from './authService'
 
 const ORDERS_URL = '/api/orders.php'
 
@@ -27,10 +27,13 @@ function cartToOrderItems(cart: CartItem[]): OrderItem[] {
     quantity: item.quantity,
     unitPrice: item.product.salePrice ?? item.product.price,
     size: item.selectedSize,
+    choices: item.selectedChoices,
   }))
 }
 
-export async function createStoreOrder(payload: CheckoutOrderPayload): Promise<Order | null> {
+export async function createStoreOrder(
+  payload: CheckoutOrderPayload
+): Promise<{ order: Order | null; error?: string }> {
   const streetLine = payload.street
     ? `${payload.street}${payload.streetNumber ? `, nº ${payload.streetNumber}` : ''}`
     : payload.streetNumber
@@ -66,17 +69,20 @@ export async function createStoreOrder(payload: CheckoutOrderPayload): Promise<O
       }),
     })
     const data = await res.json()
-    if (!data?.ok || !data.order) return null
-    return data.order as Order
+    if (!data?.ok || !data.order) {
+      return { order: null, error: (data?.error as string) || 'Não foi possível registrar o pedido.' }
+    }
+    return { order: data.order as Order }
   } catch {
-    return null
+    return { order: null, error: 'Erro de conexão ao registrar o pedido.' }
   }
 }
 
 export async function fetchStoreOrders(): Promise<Order[]> {
+  if (!getSession()?.token) return []
   try {
     const res = await fetch(ORDERS_URL, {
-      headers: { 'X-Verissimo-Token': WRITE_TOKEN },
+      headers: getAdminAuthHeaders(false),
     })
     const data = await res.json()
     if (!data?.ok || !Array.isArray(data.orders)) return []
@@ -113,13 +119,11 @@ export type OrderUpdatePayload = {
 }
 
 export async function updateStoreOrder(payload: OrderUpdatePayload): Promise<Order | null> {
+  if (!getSession()?.token) return null
   try {
     const res = await fetch(ORDERS_URL, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Verissimo-Token': WRITE_TOKEN,
-      },
+      headers: getAdminAuthHeaders(true),
       body: JSON.stringify(payload),
     })
     const data = await res.json()

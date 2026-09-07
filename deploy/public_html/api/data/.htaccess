@@ -1,5 +1,7 @@
-# Bloqueia acesso HTTP direto aos JSON (só via PHP)
+# Bloqueia acesso HTTP aos dados sensíveis
 <IfModule mod_authz_core.c>
   Require all denied
 </IfModule>
-Deny from all
+<IfModule !mod_authz_core.c>
+  Deny from all
+</IfModule>

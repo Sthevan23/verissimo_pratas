@@ -87,12 +87,19 @@ export function buildCheckoutMessage(params: CheckoutParams): string {
 
 export async function openCheckoutWhatsApp(
   params: Omit<CheckoutParams, 'orderNumber'>
-): Promise<{ orderNumber?: string }> {
-  const order = await createStoreOrder(params)
+): Promise<{ orderNumber?: string; error?: string }> {
+  const { order, error } = await createStoreOrder(params)
+  if (!order) {
+    return { error: error || 'Não foi possível registrar o pedido.' }
+  }
   const message = buildCheckoutMessage({
     ...params,
-    orderNumber: order?.orderNumber,
+    orderNumber: order.orderNumber,
+    subtotal: order.subtotal,
+    discount: order.discount,
+    shipping: order.shipping,
+    total: order.total,
   })
   window.open(whatsappLink(message), '_blank', 'noopener,noreferrer')
-  return { orderNumber: order?.orderNumber }
+  return { orderNumber: order.orderNumber }
 }

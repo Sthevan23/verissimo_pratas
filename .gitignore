@@ -16,14 +16,22 @@ dist-ssr
 .env.*.local
 api/config.local.php
 api/data/catalog.json
+api/data/orders.json
+api/data/sessions.json
+api/data/rate/
 api/data/images/*
 !api/data/images/.gitkeep
 !api/data/images/.htaccess
+!api/data/.htaccess
 deploy/public_html/api/config.local.php
 deploy/public_html/api/data/catalog.json
+deploy/public_html/api/data/orders.json
+deploy/public_html/api/data/sessions.json
+deploy/public_html/api/data/rate/
 deploy/public_html/api/data/images/*
 !deploy/public_html/api/data/images/.gitkeep
 !deploy/public_html/api/data/images/.htaccess
+!deploy/public_html/api/data/.htaccess
 deploy/.ftp-credentials.json
 
 

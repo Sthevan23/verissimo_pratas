@@ -99,6 +99,7 @@ export interface OrderItem {
   quantity: number
   unitPrice: number
   size?: string
+  choices?: Record<string, string>
 }
 
 export interface Order {

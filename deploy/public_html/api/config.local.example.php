@@ -1,9 +1,11 @@
 <?php
 /**
- * Exemplo — copie para config.local.php e preencha a senha.
+ * Exemplo — copie para config.local.php e preencha.
  *
  * Servidor Hostinger → host localhost
  * PC local → host = hostname do Remote MySQL no hPanel
+ *
+ * Login do admin: admin_email + admin_password (NÃO vão no JavaScript do site).
  */
 $httpHost = $_SERVER['HTTP_HOST'] ?? 'cli';
 $isLocalDev = (bool) preg_match('/^(localhost|127\.0\.0\.1)(:\d+)?$/i', $httpHost);
@@ -16,12 +18,25 @@ return [
   'user' => 'u586160337_verissimo',
   'pass' => 'COLOQUE_A_SENHA_DO_MYSQL_AQUI',
   'charset' => 'utf8mb4',
-  'api_token' => 'Verissimo@2026',
-  /** Token SuperFrete da CONTA DA LOJA (cliente) — Produção → Desenvolvedores */
+
+  /** Credenciais do painel /admin (ficam só no servidor) */
+  'admin_email' => 'verissimopratass@gmail.com',
+  'admin_password' => 'COLOQUE_UMA_SENHA_FORTE',
+
+  /** Token legado interno (não use no frontend). Login usa admin_password. */
+  'api_token' => 'GERE_UM_TOKEN_ALEATORIO_LONGO',
+
+  'site_origin' => 'https://verissimopratas.com.br',
+  'allowed_origins' => [
+    'https://verissimopratas.com.br',
+    'https://www.verissimopratas.com.br',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+  ],
+
+  /** Token SuperFrete da CONTA DA LOJA — Produção → Desenvolvedores */
   'superfrete_token' => '',
-  /** production | sandbox */
   'superfrete_env' => 'production',
-  /** CEP de origem da loja (Boa Esperança — MG) */
   'origin_cep' => '37170000',
   'free_shipping_national' => 499,
   'free_shipping_local' => 159,

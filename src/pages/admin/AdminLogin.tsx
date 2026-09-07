@@ -130,7 +130,7 @@ export function AdminLogin() {
           </form>
 
           <p className="text-center text-[11px] text-muted mt-6 font-light">
-            Configure VITE_ADMIN_EMAIL e VITE_ADMIN_PASSWORD no arquivo .env
+            Use o e-mail e a senha do servidor (config.local.php).
           </p>
         </motion.div>
       </div>
