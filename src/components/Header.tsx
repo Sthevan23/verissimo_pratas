@@ -76,6 +76,7 @@ const navLinks: NavItem[] = [
   },
   { label: 'Piercings', href: '/produtos?categoria=piercings' },
   { label: 'Tornozeleiras', href: '/produtos?categoria=tornozeleiras' },
+  { label: 'Acessórios', href: '/produtos?categoria=acessorios' },
   {
     label: 'Masculinos',
     href: '/produtos?categoria=masculinos',

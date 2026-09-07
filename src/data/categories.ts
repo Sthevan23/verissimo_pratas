@@ -156,8 +156,8 @@ export const categories: Category[] = [
   {
     slug: 'acessorios',
     name: 'Acessórios',
-    description: 'Porta-joias, organizadores e complementos para sua coleção',
-    image: `${CDN}/products/img_4633-9c3c043dc188f7692c17807857126302-480-0.webp`,
+    description: 'Limpa pratas, porta-joias, organizadores e complementos para cuidar das suas peças',
+    image: '/categories/acessorios.png',
   },
   {
     slug: 'novidades',
@@ -217,7 +217,6 @@ export const homeCategories = categories
         'masculinos-corrente',
         'masculinos-pulseira',
         'masculinos-pingente',
-        'acessorios',
         'novidades',
       ].includes(c.slug)
   )
@@ -237,4 +236,5 @@ export const HOME_CATEGORY_NAV = [
   { name: 'Tornozeleiras', slug: 'tornozeleiras', image: '/categories/tornozeleiras.png' },
   { name: 'Correntes', slug: 'correntes', image: '/categories/correntes.png' },
   { name: 'Berloques', slug: 'berloques', image: '/categories/berloques.png' },
+  { name: 'Acessórios', slug: 'acessorios', image: '/categories/acessorios.png' },
 ] as const

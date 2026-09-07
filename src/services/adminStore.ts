@@ -44,7 +44,6 @@ const HOME_HIDDEN_SLUGS = new Set([
   'masculinos-corrente',
   'masculinos-pulseira',
   'masculinos-pingente',
-  'acessorios',
   'novidades',
   'promocoes',
 ])
@@ -58,6 +57,50 @@ function migrateCategory(cat: AdminCategory): AdminCategory {
     ...cat,
     showOnHome: cat.showOnHome ?? defaultShowOnHome(String(cat.slug)),
   }
+}
+
+/** Garante categorias novas do código (ex.: Acessórios) no painel/catálogo */
+function ensureSeedCategories(db: AdminDatabase): boolean {
+  const existing = new Set(db.categories.map((c) => String(c.slug)))
+  let changed = false
+  const maxOrder = db.categories.reduce((m, c) => Math.max(m, c.order ?? 0), 0)
+  let order = maxOrder + 1
+  for (const c of seedCategories) {
+    if (existing.has(c.slug)) continue
+    db.categories.push({
+      id: uid(),
+      slug: c.slug,
+      name: c.name,
+      image: c.image.startsWith('/') ? c.image : `/categories/${c.slug}.png`,
+      description: c.description,
+      order: order++,
+      active: true,
+      showOnHome: defaultShowOnHome(c.slug),
+    })
+    changed = true
+  }
+  const acessorios = db.categories.find((c) => c.slug === 'acessorios')
+  const seed = seedCategories.find((c) => c.slug === 'acessorios')
+  if (acessorios && seed) {
+    if (acessorios.description !== seed.description) {
+      acessorios.description = seed.description
+      acessorios.name = seed.name
+      changed = true
+    }
+    if (!acessorios.image || String(acessorios.image).includes('mitiendanube')) {
+      acessorios.image = '/categories/acessorios.png'
+      changed = true
+    }
+    if (acessorios.showOnHome === false) {
+      acessorios.showOnHome = true
+      changed = true
+    }
+    if (!acessorios.active) {
+      acessorios.active = true
+      changed = true
+    }
+  }
+  return changed
 }
 
 function toAdminProduct(p: (typeof seedProducts)[0], index: number): AdminProduct {
@@ -194,6 +237,7 @@ export function getDatabase(): AdminDatabase {
       const db = JSON.parse(raw) as AdminDatabase
       db.categories = (db.categories ?? []).map(migrateCategory)
       if (!db.settings.heroImage) db.settings.heroImage = ''
+      if (ensureSeedCategories(db)) saveDatabase(db)
       return db
     } catch {
       /* fall through */
@@ -309,7 +353,11 @@ export async function hydrateCatalogFromServer(options?: {
     if (remote.settings) {
       db.settings = { ...db.settings, ...remote.settings }
     }
+    const categoriesAdded = ensureSeedCategories(db)
     saveDatabase(db)
+    if (categoriesAdded && options?.pushIfEmpty) {
+      void publishCatalogToServer()
+    }
     return true
   }
 
