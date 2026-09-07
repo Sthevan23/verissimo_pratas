@@ -67,18 +67,6 @@ if ($isLocal && $subtotal >= $freeLocal) {
   ];
 }
 
-if ($subtotal >= $freeNational) {
-  $options[] = [
-    'id' => 'correios-gratis',
-    'name' => 'Correios — frete grátis',
-    'company' => 'Correios / SuperFrete',
-    'price' => 0,
-    'delivery_time' => null,
-    'currency' => 'R$',
-    'free' => true,
-  ];
-}
-
 $quotes = [];
 $error = null;
 
@@ -172,9 +160,6 @@ if ($token === '') {
       }
       if (isset($row['price']) === false) continue;
       $price = (float) $row['price'];
-      if ($subtotal >= $freeNational) {
-        $price = 0;
-      }
       $company = '';
       if (isset($row['company']) && is_array($row['company'])) {
         $company = (string) ($row['company']['name'] ?? '');
@@ -198,13 +183,44 @@ if ($token === '') {
         'price' => round($price, 2),
         'delivery_time' => isset($row['delivery_time']) ? (int) $row['delivery_time'] : null,
         'currency' => (string) ($row['currency'] ?? 'R$'),
-        'free' => $price <= 0,
+        'free' => false,
       ];
     }
   }
 
   if (count($quotes) === 0) {
     $error = count($errors) ? implode(' · ', array_unique($errors)) : 'Nenhuma opção de frete disponível para este CEP.';
+  }
+}
+
+// Frete grátis nacional: zera só a opção mais barata (PAC/Mini); SEDEX e demais ficam pagos
+if ($subtotal >= $freeNational) {
+  if (count($quotes) > 0) {
+    $cheapestIdx = 0;
+    $cheapestPrice = (float) $quotes[0]['price'];
+    for ($i = 1, $n = count($quotes); $i < $n; $i++) {
+      $p = (float) $quotes[$i]['price'];
+      if ($p < $cheapestPrice) {
+        $cheapestPrice = $p;
+        $cheapestIdx = $i;
+      }
+    }
+    $quotes[$cheapestIdx]['price'] = 0;
+    $quotes[$cheapestIdx]['free'] = true;
+    $baseName = (string) $quotes[$cheapestIdx]['name'];
+    if (stripos($baseName, 'grátis') === false && stripos($baseName, 'gratis') === false) {
+      $quotes[$cheapestIdx]['name'] = $baseName . ' — frete grátis';
+    }
+  } else {
+    $options[] = [
+      'id' => 'correios-gratis',
+      'name' => 'Correios — frete grátis',
+      'company' => 'Correios / SuperFrete',
+      'price' => 0,
+      'delivery_time' => null,
+      'currency' => 'R$',
+      'free' => true,
+    ];
   }
 }
 
