@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Truck } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { Loader2, Truck } from 'lucide-react'
 import { formatPrice } from '../utils/format'
 import {
   formatCep,
@@ -54,6 +55,9 @@ export function ShippingCalculator({
     }
     setLoading(true)
     setError(null)
+    setOptions([])
+    setAddress(null)
+    onSelect(null, { cep: digits, address: null, streetNumber: streetNumber.trim() })
     try {
       const result = await quoteShipping({
         cep: digits,
@@ -123,15 +127,23 @@ export function ShippingCalculator({
           }}
           placeholder="CEP"
           aria-label="CEP"
-          className="flex-1 px-4 py-3 border border-border text-sm font-light bg-cream focus:outline-none focus:border-brand-green"
+          disabled={loading}
+          className="flex-1 px-4 py-3 border border-border text-sm font-light bg-cream focus:outline-none focus:border-brand-green disabled:opacity-60"
         />
         <button
           type="button"
           onClick={() => void handleQuote()}
           disabled={loading}
-          className="px-4 py-3 border border-brand-green text-[10px] tracking-widest uppercase text-brand-green hover:bg-brand-green hover:text-white transition-colors disabled:opacity-50"
+          className="min-w-[7.5rem] px-4 py-3 border border-brand-green text-[10px] tracking-widest uppercase text-brand-green hover:bg-brand-green hover:text-white transition-colors disabled:opacity-70 disabled:hover:bg-transparent disabled:hover:text-brand-green inline-flex items-center justify-center gap-2"
         >
-          {loading ? '...' : 'Calcular'}
+          {loading ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={2} />
+              Buscando
+            </>
+          ) : (
+            'Calcular'
+          )}
         </button>
       </div>
 
@@ -143,7 +155,8 @@ export function ShippingCalculator({
           onChange={(e) => updateNumber(e.target.value)}
           placeholder={requireNumber ? 'Nº da casa *' : 'Nº da casa'}
           aria-label="Número da casa"
-          className="w-full max-w-[9rem] px-4 py-3 border border-border text-sm font-light bg-cream focus:outline-none focus:border-brand-green"
+          disabled={loading}
+          className="w-full max-w-[9rem] px-4 py-3 border border-border text-sm font-light bg-cream focus:outline-none focus:border-brand-green disabled:opacity-60"
         />
         {requireNumber && (
           <p className="text-[11px] text-muted mt-1 font-light">
@@ -152,7 +165,54 @@ export function ShippingCalculator({
         )}
       </div>
 
-      {address && (
+      <AnimatePresence mode="wait">
+        {loading && (
+          <motion.div
+            key="shipping-loading"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.25 }}
+            className="rounded-sm border border-brand-green/25 bg-brand-green/5 px-4 py-4"
+            role="status"
+            aria-live="polite"
+          >
+            <div className="flex items-center gap-3">
+              <motion.div
+                animate={{ x: [0, 6, 0] }}
+                transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                className="shrink-0"
+              >
+                <Truck className="w-5 h-5 text-brand-green" strokeWidth={1.75} />
+              </motion.div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-graphite font-light">Consultando frete…</p>
+                <p className="text-[11px] text-muted mt-0.5">Buscando opções na SuperFrete</p>
+                <div className="mt-3 h-1 overflow-hidden rounded-full bg-border/70">
+                  <motion.div
+                    className="h-full w-1/3 rounded-full bg-brand-green"
+                    animate={{ x: ['-10%', '220%'] }}
+                    transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut' }}
+                  />
+                </div>
+              </div>
+              <Loader2 className="w-4 h-4 text-brand-green animate-spin shrink-0" strokeWidth={2} />
+            </div>
+            <div className="mt-3 space-y-2">
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  className="h-10 rounded-sm bg-cream/80 border border-border/60"
+                  animate={{ opacity: [0.45, 0.9, 0.45] }}
+                  transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.15 }}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {!loading && address && (
         <p className="text-[11px] text-muted font-light">
           {[address.logradouro, address.bairro].filter(Boolean).join(' · ')}
           {(address.logradouro || address.bairro) && ' — '}
@@ -160,9 +220,9 @@ export function ShippingCalculator({
         </p>
       )}
 
-      {error && <p className="text-[11px] text-red-700 font-light">{error}</p>}
+      {!loading && error && <p className="text-[11px] text-red-700 font-light">{error}</p>}
 
-      {options.length > 0 && (
+      {!loading && options.length > 0 && (
         <ul className="space-y-2">
           {options.map((opt) => {
             const active = selectedId === opt.id
