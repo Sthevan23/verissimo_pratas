@@ -1,6 +1,5 @@
-import { motion } from 'framer-motion'
 import { Heart, ShoppingBag } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import type { Product } from '../types'
@@ -27,6 +26,11 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const hasSecondImage = product.images.length > 1 && !imgBroken
   const needsSelection = productRequiresSelection(product)
 
+  useEffect(() => {
+    setImgSrc(product.images[0] || '')
+    setImgBroken(false)
+  }, [product.id, product.images])
+
   const handleBuy = () => {
     if (!product.inStock) return
     if (needsSelection) return
@@ -35,8 +39,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
 
   const handleImgError = () => {
     const original = product.images[0]
-    if (original && imgSrc === original && original.includes('media.php')) {
-      // 1ª falha: tenta de novo sem cache
+    if (original && !imgSrc.includes('retry=1') && original.includes('media.php')) {
       const join = original.includes('?') ? '&' : '?'
       setImgSrc(`${original}${join}retry=1`)
       return
@@ -45,11 +48,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
   }
 
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-40px' }}
-      transition={{ duration: 0.5, delay: index * 0.06 }}
+    <article
       className="group"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -60,15 +59,16 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
             <img
               src={imgSrc}
               alt={product.name}
+              width={480}
+              height={640}
               className={cn(
-                'absolute inset-0 z-0 w-full h-full object-cover transition-all duration-700',
+                'absolute inset-0 z-0 w-full h-full object-cover transition-opacity duration-300',
                 !product.inStock && 'opacity-60',
-                hovered && hasSecondImage
-                  ? 'lg:opacity-0 lg:scale-105'
-                  : 'opacity-100 scale-100 lg:group-hover:scale-105'
+                hovered && hasSecondImage ? 'lg:opacity-0' : 'opacity-100'
               )}
-              loading={index < 4 ? 'eager' : 'lazy'}
+              loading={index < 8 ? 'eager' : 'lazy'}
               decoding="async"
+              fetchPriority={index < 4 ? 'high' : 'auto'}
               onError={handleImgError}
             />
           ) : (
@@ -76,18 +76,20 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
               Foto indisponível
             </div>
           )}
-          {hasSecondImage && (
+          {hasSecondImage ? (
             <img
               src={product.images[1]}
-              alt={`${product.name} — vista alternativa`}
+              alt=""
+              width={480}
+              height={640}
               className={cn(
-                'absolute inset-0 z-0 w-full h-full object-cover transition-all duration-700 hidden lg:block',
-                hovered ? 'opacity-100 scale-105' : 'opacity-0 scale-100'
+                'absolute inset-0 z-0 w-full h-full object-cover transition-opacity duration-300 hidden lg:block',
+                hovered ? 'opacity-100' : 'opacity-0'
               )}
               loading="lazy"
               decoding="async"
             />
-          )}
+          ) : null}
         </Link>
 
         {!product.inStock ? (
@@ -105,25 +107,21 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
         ) : null}
 
         <button
+          type="button"
           onClick={() => toggleFavorite(product.id)}
           className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 touch-target bg-cream/80 backdrop-blur-sm hover:bg-cream active:bg-cream transition-colors"
           aria-label={favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
         >
-          <motion.div
-            animate={favorite ? { scale: [1, 1.3, 1] } : {}}
-            transition={{ duration: 0.3 }}
-          >
-            <Heart
-              className={cn(
-                'w-4 h-4 transition-colors',
-                favorite ? 'fill-graphite text-graphite' : 'text-graphite'
-              )}
-              strokeWidth={1.5}
-            />
-          </motion.div>
+          <Heart
+            className={cn(
+              'w-4 h-4 transition-colors',
+              favorite ? 'fill-graphite text-graphite' : 'text-graphite'
+            )}
+            strokeWidth={1.5}
+          />
         </button>
 
-        <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-500 hidden lg:block">
+        <div className="absolute bottom-0 left-0 right-0 z-10 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300 hidden lg:block">
           {!product.inStock ? (
             <Link
               to={`/produto/${product.slug}`}
@@ -141,6 +139,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
             </Link>
           ) : (
             <button
+              type="button"
               onClick={handleBuy}
               className="w-full flex items-center justify-center gap-2 bg-brand-green text-white py-3 text-[10px] tracking-[0.2em] uppercase hover:bg-brand-green-dark transition-colors"
             >
@@ -198,6 +197,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
           </Link>
         ) : (
           <button
+            type="button"
             onClick={handleBuy}
             className="lg:hidden w-full mt-2 min-h-11 py-2.5 border border-border text-[10px] tracking-[0.2em] uppercase text-graphite active:border-graphite active:bg-off-white transition-colors"
           >
@@ -205,6 +205,6 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
           </button>
         )}
       </div>
-    </motion.article>
+    </article>
   )
 }

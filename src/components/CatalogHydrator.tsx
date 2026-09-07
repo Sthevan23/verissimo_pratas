@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import { hydrateCatalogFromServer } from '../services/adminStore'
+import { fetchRemoteCatalog, normalizeProductImages } from '../services/remoteCatalog'
+import { setStorefrontCatalog } from '../services/catalogMemory'
 
 /**
- * Carrega o catálogo do servidor para a vitrine (todos os visitantes veem as mesmas fotos/produtos).
+ * Carrega o catálogo do servidor para a vitrine.
+ * Prioridade: memória (fotos corretas) → depois sincroniza localStorage do admin.
  */
 export function CatalogHydrator({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false)
@@ -12,6 +15,12 @@ export function CatalogHydrator({ children }: { children: React.ReactNode }) {
     let alive = true
     ;(async () => {
       try {
+        const remote = await fetchRemoteCatalog()
+        if (remote?.products?.length) {
+          const normalized = remote.products.map((p) => normalizeProductImages(p))
+          setStorefrontCatalog(normalized)
+        }
+        // Espelha no localStorage (admin); se falhar, a vitrine já tem as fotos na memória
         await hydrateCatalogFromServer()
       } catch (err) {
         console.error('Falha ao hidratar catálogo', err)

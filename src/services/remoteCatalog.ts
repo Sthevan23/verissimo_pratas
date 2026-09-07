@@ -217,7 +217,7 @@ export function normalizeProductImageUrl(url: string): string {
   if (url.startsWith('/api/media.php')) {
     try {
       const u = new URL(url, 'https://verissimopratas.com.br')
-      u.searchParams.set('v', '20260907b')
+      u.searchParams.set('v', '20260907c')
       return `${u.pathname}?${u.searchParams.toString()}`
     } catch {
       return url
@@ -225,7 +225,7 @@ export function normalizeProductImageUrl(url: string): string {
   }
   const m = url.match(/\/uploads\/products\/([^/?#]+)$/i)
   if (m) {
-    return `/api/media.php?f=${encodeURIComponent(m[1])}&v=20260907b`
+    return `/api/media.php?f=${encodeURIComponent(m[1])}&v=20260907c`
   }
   return url
 }

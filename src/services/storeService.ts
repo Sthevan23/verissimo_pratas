@@ -1,13 +1,17 @@
 import type { Product, Category } from '../types'
 import { getDatabase } from './adminStore'
+import { getStorefrontCatalog } from './catalogMemory'
 import { categoryLabels, homeCategories as fallbackHomeCategories } from '../data/categories'
 import { resolveProductSizes } from '../data/sizes'
 import { normalizeProductImageUrl } from './remoteCatalog'
 
-/** Bridge: storefront reads from admin store (localStorage) when available */
+function sourceProducts() {
+  return getStorefrontCatalog() ?? getDatabase().products
+}
+
+/** Bridge: vitrine lê memória (API) ou localStorage */
 export function getStoreProducts(): Product[] {
-  const db = getDatabase()
-  return db.products
+  return sourceProducts()
     .filter((p) => p.status === 'active')
     .map(adminToStoreProduct)
 }
@@ -55,12 +59,11 @@ export function getStoreCategories(): Category[] {
     .map((c) => ({
       slug: c.slug as Category['slug'],
       name: c.name,
-      image: normalizeProductImageUrl(c.image),
+      image: publicImageUrl(c.image),
       description: c.description,
     }))
 }
 
-/** Grid "Nossas categorias" na página inicial — editável no painel */
 export function getHomeCategories(): Category[] {
   const fromDb = getDatabase()
     .categories.filter((c) => c.active && c.showOnHome !== false)
@@ -68,7 +71,7 @@ export function getHomeCategories(): Category[] {
     .map((c) => ({
       slug: c.slug as Category['slug'],
       name: c.name,
-      image: normalizeProductImageUrl(c.image),
+      image: publicImageUrl(c.image),
       description: c.description,
     }))
 
@@ -82,24 +85,16 @@ export function getStoreSettings() {
 export function getStoreCategoryLabels(): Record<string, string> {
   const db = getDatabase()
   const labels: Record<string, string> = { ...categoryLabels }
-  db.categories.forEach((c) => { labels[c.slug] = c.name })
+  db.categories.forEach((c) => {
+    labels[c.slug] = c.name
+  })
   return labels
 }
 
 function adminToStoreProduct(p: import('../types/admin').AdminProduct): Product {
   const images = (Array.isArray(p.images) ? p.images : [])
     .filter((img): img is string => typeof img === 'string' && img.trim().length > 0)
-    .map((img) => {
-      const trimmed = img.trim()
-      if (trimmed.startsWith('/uploads/products/')) {
-        const f = trimmed.split('/').pop() || ''
-        return bustMediaCache(`/api/media.php?f=${encodeURIComponent(f)}`)
-      }
-      if (trimmed.includes('/api/media.php')) {
-        return bustMediaCache(trimmed)
-      }
-      return trimmed
-    })
+    .map((img) => publicImageUrl(img.trim()))
 
   return {
     id: p.id,
@@ -127,14 +122,20 @@ function adminToStoreProduct(p: import('../types/admin').AdminProduct): Product 
   }
 }
 
-/** Quebra cache CDN/Hostinger de fotos quebradas */
-function bustMediaCache(url: string): string {
-  try {
-    const u = new URL(url, 'https://verissimopratas.com.br')
-    if (!u.pathname.includes('media.php')) return url
-    u.searchParams.set('v', '20260907b')
-    return `${u.pathname}?${u.searchParams.toString()}`
-  } catch {
-    return url
+/** URL pública absoluta das fotos (evita path relativo quebrado) */
+function publicImageUrl(url: string): string {
+  if (!url) return url
+  let next = url.trim()
+  if (next.startsWith('/uploads/products/')) {
+    const f = next.split('/').pop() || ''
+    next = `/api/media.php?f=${encodeURIComponent(f)}`
   }
+  next = normalizeProductImageUrl(next)
+  if (next.startsWith('http://') || next.startsWith('https://') || next.startsWith('data:')) {
+    return next
+  }
+  if (next.startsWith('/') && typeof window !== 'undefined' && window.location?.origin) {
+    return `${window.location.origin}${next}`
+  }
+  return next
 }

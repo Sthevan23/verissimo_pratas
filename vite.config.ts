@@ -4,4 +4,17 @@ import { defineConfig } from 'vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/recharts')) return 'recharts'
+          if (id.includes('node_modules/framer-motion')) return 'motion'
+          if (id.includes('/pages/admin/') || id.includes('/components/admin/')) {
+            return 'admin'
+          }
+        },
+      },
+    },
+  },
 })
