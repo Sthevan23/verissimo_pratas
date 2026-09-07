@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -13,6 +14,28 @@ import {
   sameCartLine,
   type CartLineSelection,
 } from '../utils/cart'
+
+const CART_STORAGE_KEY = 'verissimo-cart'
+
+function loadCartFromStorage(): CartItem[] {
+  try {
+    const saved = localStorage.getItem(CART_STORAGE_KEY)
+    if (!saved) return []
+    const parsed = JSON.parse(saved) as unknown
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter(
+      (item): item is CartItem =>
+        !!item &&
+        typeof item === 'object' &&
+        typeof (item as CartItem).quantity === 'number' &&
+        (item as CartItem).quantity > 0 &&
+        !!(item as CartItem).product &&
+        typeof (item as CartItem).product.id === 'string'
+    )
+  } catch {
+    return []
+  }
+}
 
 interface Toast {
   id: string
@@ -72,7 +95,7 @@ const VALID_COUPONS: Record<string, number> = {
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [cart, setCart] = useState<CartItem[]>([])
+  const [cart, setCart] = useState<CartItem[]>(loadCartFromStorage)
   const [favorites, setFavorites] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('verissimo-favorites')
@@ -87,6 +110,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
   const [couponCode, setCouponCode] = useState('')
   const [couponDiscount, setCouponDiscount] = useState(0)
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart))
+    } catch {
+      /* ignore quota / private mode */
+    }
+  }, [cart])
 
   const showToast = useCallback((message: string) => {
     const id = crypto.randomUUID()
