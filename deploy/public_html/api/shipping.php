@@ -108,7 +108,7 @@ if ($token === '') {
         'length' => 16,
         'weight' => 0.3,
       ],
-      'insurance' => 25.0,
+      'insurance' => 26.0,
     ],
     [
       'services' => '1,2',
@@ -118,7 +118,7 @@ if ($token === '') {
         'length' => 24,
         'weight' => 0.3,
       ],
-      'insurance' => 25.0,
+      'insurance' => 26.0,
     ],
   ];
 
@@ -236,7 +236,6 @@ verissimo_json([
   'options' => $merged,
   'error' => $error,
   'configured' => $token !== '',
-  'quote_errors' => isset($errors) ? array_values(array_unique($errors)) : [],
 ]);
 
 function verissimo_lookup_cep(string $cep): ?array {
