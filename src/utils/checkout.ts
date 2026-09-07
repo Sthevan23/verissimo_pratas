@@ -6,7 +6,7 @@ import { whatsappLink } from '../data/contact'
 import { formatCep } from '../services/shippingService'
 import { createStoreOrder } from '../services/orderService'
 
-export function buildCheckoutMessage(params: {
+export type CheckoutParams = {
   cart: CartItem[]
   subtotal: number
   discount: number
@@ -16,8 +16,13 @@ export function buildCheckoutMessage(params: {
   cep?: string
   shippingLabel?: string
   city?: string
+  street?: string
+  streetNumber?: string
+  neighborhood?: string
   orderNumber?: string
-}): string {
+}
+
+export function buildCheckoutMessage(params: CheckoutParams): string {
   const {
     cart,
     subtotal,
@@ -28,6 +33,9 @@ export function buildCheckoutMessage(params: {
     cep,
     shippingLabel,
     city,
+    street,
+    streetNumber,
+    neighborhood,
     orderNumber,
   } = params
   const lines = cart.map((item, i) => {
@@ -43,6 +51,18 @@ export function buildCheckoutMessage(params: {
     ? `Frete (${shippingLabel}): ${shipping === 0 ? 'Grátis' : formatPrice(shipping)}`
     : `Frete: ${shipping === 0 ? 'Grátis' : formatPrice(shipping)}`
 
+  const addressLine = [
+    street
+      ? `${street}${streetNumber ? `, nº ${streetNumber}` : ''}`
+      : streetNumber
+        ? `nº ${streetNumber}`
+        : null,
+    neighborhood,
+    city,
+  ]
+    .filter(Boolean)
+    .join(' — ')
+
   return [
     '*Pedido — Verissimo Pratas 925*',
     orderNumber ? `Nº ${orderNumber}` : null,
@@ -53,7 +73,8 @@ export function buildCheckoutMessage(params: {
     discount > 0
       ? `Desconto${couponCode ? ` (${couponCode})` : ''}: -${formatPrice(discount)}`
       : null,
-    cep ? `CEP: ${formatCep(cep)}${city ? ` (${city})` : ''}` : null,
+    addressLine ? `Endereço: ${addressLine}` : null,
+    cep ? `CEP: ${formatCep(cep)}` : null,
     freteLine,
     getsGift ? `Brinde: ${STORE_COMMERCE.giftLabel}` : null,
     `*Total: ${formatPrice(total)}*`,
@@ -64,17 +85,9 @@ export function buildCheckoutMessage(params: {
     .join('\n')
 }
 
-export async function openCheckoutWhatsApp(params: {
-  cart: CartItem[]
-  subtotal: number
-  discount: number
-  shipping: number
-  total: number
-  couponCode?: string
-  cep?: string
-  shippingLabel?: string
-  city?: string
-}): Promise<{ orderNumber?: string }> {
+export async function openCheckoutWhatsApp(
+  params: Omit<CheckoutParams, 'orderNumber'>
+): Promise<{ orderNumber?: string }> {
   const order = await createStoreOrder(params)
   const message = buildCheckoutMessage({
     ...params,

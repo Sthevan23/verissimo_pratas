@@ -9,12 +9,20 @@ import {
   type ShippingOption,
 } from '../services/shippingService'
 
+export type ShippingMeta = {
+  cep: string
+  address: ShippingAddress | null
+  streetNumber: string
+}
+
 type Props = {
   subtotal: number
   quantities: number[]
   selectedId?: string | null
-  onSelect: (option: ShippingOption | null, meta: { cep: string; address: ShippingAddress | null }) => void
+  onSelect: (option: ShippingOption | null, meta: ShippingMeta) => void
   compact?: boolean
+  /** Exige número da casa (carrinho / checkout) */
+  requireNumber?: boolean
 }
 
 export function ShippingCalculator({
@@ -23,12 +31,20 @@ export function ShippingCalculator({
   selectedId,
   onSelect,
   compact = false,
+  requireNumber = false,
 }: Props) {
   const [cep, setCep] = useState('')
+  const [streetNumber, setStreetNumber] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [address, setAddress] = useState<ShippingAddress | null>(null)
   const [options, setOptions] = useState<ShippingOption[]>([])
+
+  const meta = (addr: ShippingAddress | null = address): ShippingMeta => ({
+    cep: onlyDigits(cep),
+    address: addr,
+    streetNumber: streetNumber.trim(),
+  })
 
   const handleQuote = async () => {
     const digits = onlyDigits(cep)
@@ -46,13 +62,18 @@ export function ShippingCalculator({
       })
       setAddress(result.address)
       setOptions(result.options)
+      const nextMeta: ShippingMeta = {
+        cep: digits,
+        address: result.address,
+        streetNumber: streetNumber.trim(),
+      }
       if (result.options.length === 0) {
-        onSelect(null, { cep: digits, address: result.address })
+        onSelect(null, nextMeta)
         setError(result.error || 'Nenhuma opção de frete para este CEP.')
       } else {
         const preferred =
           result.options.find((o) => o.id === selectedId) ?? result.options[0]
-        onSelect(preferred, { cep: digits, address: result.address })
+        onSelect(preferred, nextMeta)
         if (result.error && !result.configured) {
           setError(result.error)
         } else {
@@ -62,9 +83,22 @@ export function ShippingCalculator({
     } catch {
       setError('Erro ao calcular frete. Tente novamente.')
       setOptions([])
-      onSelect(null, { cep: digits, address: null })
+      onSelect(null, { cep: digits, address: null, streetNumber: streetNumber.trim() })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const updateNumber = (value: string) => {
+    setStreetNumber(value)
+    const trimmed = value.trim()
+    const current = options.find((o) => o.id === selectedId) ?? options[0] ?? null
+    if (current || address) {
+      onSelect(current, {
+        cep: onlyDigits(cep),
+        address,
+        streetNumber: trimmed,
+      })
     }
   }
 
@@ -101,10 +135,28 @@ export function ShippingCalculator({
         </button>
       </div>
 
+      <div>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={streetNumber}
+          onChange={(e) => updateNumber(e.target.value)}
+          placeholder={requireNumber ? 'Nº da casa *' : 'Nº da casa'}
+          aria-label="Número da casa"
+          className="w-full max-w-[9rem] px-4 py-3 border border-border text-sm font-light bg-cream focus:outline-none focus:border-brand-green"
+        />
+        {requireNumber && (
+          <p className="text-[11px] text-muted mt-1 font-light">
+            Informe o número para entrega.
+          </p>
+        )}
+      </div>
+
       {address && (
         <p className="text-[11px] text-muted font-light">
-          {[address.localidade, address.uf].filter(Boolean).join(' — ')}
-          {address.bairro ? ` · ${address.bairro}` : ''}
+          {[address.logradouro, address.bairro].filter(Boolean).join(' · ')}
+          {(address.logradouro || address.bairro) && ' — '}
+          {[address.localidade, address.uf].filter(Boolean).join('/')}
         </p>
       )}
 
@@ -118,7 +170,7 @@ export function ShippingCalculator({
               <li key={opt.id}>
                 <button
                   type="button"
-                  onClick={() => onSelect(opt, { cep: onlyDigits(cep), address })}
+                  onClick={() => onSelect(opt, meta())}
                   className={`w-full text-left px-3 py-3 border transition-colors ${
                     active
                       ? 'border-brand-green bg-brand-green/5'

@@ -14,6 +14,9 @@ export type CheckoutOrderPayload = {
   cep?: string
   shippingLabel?: string
   city?: string
+  street?: string
+  streetNumber?: string
+  neighborhood?: string
 }
 
 function cartToOrderItems(cart: CartItem[]): OrderItem[] {
@@ -28,9 +31,17 @@ function cartToOrderItems(cart: CartItem[]): OrderItem[] {
 }
 
 export async function createStoreOrder(payload: CheckoutOrderPayload): Promise<Order | null> {
+  const streetLine = payload.street
+    ? `${payload.street}${payload.streetNumber ? `, nº ${payload.streetNumber}` : ''}`
+    : payload.streetNumber
+      ? `nº ${payload.streetNumber}`
+      : null
+
   const addressParts = [
-    payload.cep ? `CEP ${payload.cep}` : null,
+    streetLine,
+    payload.neighborhood,
     payload.city,
+    payload.cep ? `CEP ${payload.cep}` : null,
     payload.shippingLabel,
   ].filter(Boolean)
 
