@@ -30,7 +30,6 @@ export function Cart() {
   const [shippingOpt, setShippingOpt] = useState<ShippingOption | null>(null)
   const [shippingCep, setShippingCep] = useState('')
   const [shippingAddress, setShippingAddress] = useState<ShippingAddress | null>(null)
-  const [streetNumber, setStreetNumber] = useState('')
 
   const discount = cartSubtotal * couponDiscount
   const shipping = shippingOpt?.price ?? 0
@@ -40,11 +39,6 @@ export function Cart() {
   const handleCheckout = async () => {
     if (!shippingOpt || !shippingCep) {
       showToast('Calcule o frete informando o CEP antes de finalizar.')
-      return
-    }
-    const isPickup = shippingOpt.id === 'retirada-loja'
-    if (!isPickup && !streetNumber.trim()) {
-      showToast('Informe o número da casa para entrega.')
       return
     }
     showToast('Registrando pedido...')
@@ -61,7 +55,6 @@ export function Cart() {
         ? [shippingAddress.localidade, shippingAddress.uf].filter(Boolean).join('/')
         : undefined,
       street: shippingAddress?.logradouro || undefined,
-      streetNumber: streetNumber.trim(),
       neighborhood: shippingAddress?.bairro || undefined,
     })
     if (result.error) {
@@ -246,12 +239,10 @@ export function Cart() {
                       subtotal={cartSubtotal}
                       quantities={cart.map((i) => i.quantity)}
                       selectedId={shippingOpt?.id}
-                      requireNumber
                       onSelect={(opt, meta) => {
                         setShippingOpt(opt)
                         setShippingCep(meta.cep)
                         setShippingAddress(meta.address)
-                        setStreetNumber(meta.streetNumber)
                       }}
                     />
                   </div>
