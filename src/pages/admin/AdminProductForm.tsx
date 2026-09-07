@@ -153,11 +153,19 @@ export function AdminProductForm() {
         seoTitle: product.seoTitle || `${product.name} | Verissimo Pratas 925`,
         inStock: product.stock > 0,
       })
+      setOptionsText(formatProductOptions(parsedOptions))
       const pub = await publishCatalogToServer()
       if (!pub.ok) {
         showToast(
-          'Produto salvo neste aparelho, mas não publicou no site. Verifique a internet e tente de novo.',
+          pub.error ||
+            'Produto salvo neste aparelho, mas não publicou no site. Entre de novo no admin e salve outra vez.',
           'error'
+        )
+      } else if (parsedOptions.length) {
+        showToast(
+          isNew
+            ? `Produto publicado com ${parsedOptions[0].values.length} opções de escolha!`
+            : `Atualizado no site com opções: ${parsedOptions.map((o) => o.values.join('/')).join(', ')}`
         )
       } else {
         showToast(isNew ? 'Produto publicado no site!' : 'Produto atualizado no site!')
@@ -413,46 +421,96 @@ export function AdminProductForm() {
                 Anéis e pulseiras: informe os tamanhos disponíveis na loja.
               </p>
             </div>
-            <div>
-              <label className="admin-label">Variações para o cliente escolher</label>
-              <textarea
-                className="admin-input min-h-[88px] font-mono text-[12px]"
-                value={optionsText}
-                onChange={(e) => {
-                  const text = e.target.value
-                  setOptionsText(text)
-                  const options = parseProductOptions(text)
-                  update('options', options.length ? options : undefined)
-                }}
-                placeholder={'Modelo: Corações, Círculos'}
-              />
-              <p className="text-[11px] text-muted mt-1">
-                Uma linha por tipo de escolha. Formato:{' '}
-                <strong>Nome: opção1, opção2</strong>
-                <br />
-                Exemplos:
-                <br />
-                <code className="text-[10px]">Modelo: Corações, Círculos</code>
-                <br />
-                <code className="text-[10px]">Fecho: Coração cravejado, Quadrado cravejado</code>
-                <br />
-                Também aceita só{' '}
-                <code className="text-[10px]">Corações, Círculos</code> (aparece como Modelo).
-              </p>
-              {parseProductOptions(optionsText).length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {parseProductOptions(optionsText).flatMap((opt) =>
-                    opt.values.map((v) => (
-                      <span
-                        key={`${opt.id}-${v}`}
-                        className="inline-flex px-2 py-1 text-[11px] border border-brand-green/40 bg-brand-green/5 text-graphite rounded-sm"
-                      >
-                        {opt.label}: {v}
-                      </span>
-                    ))
-                  )}
+            <div className="rounded-sm border border-brand-green/30 bg-brand-green/5 p-4 space-y-3">
+              <div>
+                <label className="admin-label">Variações para o cliente escolher *</label>
+                <p className="text-[11px] text-muted mb-2">
+                  Sem isso, o site não mostra botões de escolha (ex.: Corações / Círculos).
+                  Preencha e <strong>salve estando logada</strong> para publicar.
+                </p>
+                <div className="grid sm:grid-cols-[8rem_1fr] gap-2 mb-2">
+                  <input
+                    className="admin-input"
+                    value={
+                      optionsText.includes(':')
+                        ? optionsText.split('\n')[0]?.split(':')[0]?.trim() || 'Modelo'
+                        : 'Modelo'
+                    }
+                    onChange={(e) => {
+                      const label = e.target.value.trim() || 'Modelo'
+                      const firstLine = optionsText.split('\n')[0] ?? ''
+                      const valuesPart = firstLine.includes(':')
+                        ? firstLine.slice(firstLine.indexOf(':') + 1).trim()
+                        : firstLine.trim()
+                      const rest = optionsText.split('\n').slice(1).join('\n')
+                      const next = [`${label}: ${valuesPart}`, rest].filter(Boolean).join('\n')
+                      setOptionsText(next)
+                      const options = parseProductOptions(next)
+                      update('options', options.length ? options : undefined)
+                    }}
+                    placeholder="Modelo"
+                    aria-label="Nome da variação"
+                  />
+                  <input
+                    className="admin-input"
+                    value={
+                      (() => {
+                        const firstLine = optionsText.split('\n')[0] ?? ''
+                        return firstLine.includes(':')
+                          ? firstLine.slice(firstLine.indexOf(':') + 1).trim()
+                          : firstLine.trim()
+                      })()
+                    }
+                    onChange={(e) => {
+                      const label =
+                        optionsText.includes(':')
+                          ? optionsText.split('\n')[0]?.split(':')[0]?.trim() || 'Modelo'
+                          : 'Modelo'
+                      const rest = optionsText.split('\n').slice(1).join('\n')
+                      const next = [`${label}: ${e.target.value}`, rest]
+                        .filter(Boolean)
+                        .join('\n')
+                      setOptionsText(next)
+                      const options = parseProductOptions(next)
+                      update('options', options.length ? options : undefined)
+                    }}
+                    placeholder="Corações, Círculos"
+                    aria-label="Opções separadas por vírgula"
+                  />
                 </div>
-              )}
+                <textarea
+                  className="admin-input min-h-[64px] font-mono text-[12px]"
+                  value={optionsText}
+                  onChange={(e) => {
+                    const text = e.target.value
+                    setOptionsText(text)
+                    const options = parseProductOptions(text)
+                    update('options', options.length ? options : undefined)
+                  }}
+                  placeholder={'Modelo: Corações, Círculos'}
+                />
+                <p className="text-[11px] text-muted mt-1">
+                  Formato: <strong>Nome: opção1, opção2</strong> — uma linha por tipo.
+                </p>
+                {parseProductOptions(optionsText).length > 0 ? (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {parseProductOptions(optionsText).flatMap((opt) =>
+                      opt.values.map((v) => (
+                        <span
+                          key={`${opt.id}-${v}`}
+                          className="inline-flex px-2 py-1 text-[11px] border border-brand-green/40 bg-white text-graphite rounded-sm"
+                        >
+                          {opt.label}: {v}
+                        </span>
+                      ))
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-red-700 mt-2">
+                    Nenhuma opção válida ainda — o cliente não verá escolha neste produto.
+                  </p>
+                )}
+              </div>
             </div>
             {(['material', 'silverType', 'weight', 'size', 'dimensions', 'warranty'] as const).map((field) => (
               <div key={field}>

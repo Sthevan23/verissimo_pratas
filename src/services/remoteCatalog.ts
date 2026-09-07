@@ -41,12 +41,17 @@ export async function pushCatalogToServer(payload: {
       headers: writeHeaders(),
       body: JSON.stringify(payload),
     })
+    if (res.status === 401) return false
     if (!res.ok) return false
     const data = await res.json()
     return Boolean(data?.ok)
   } catch {
     return false
   }
+}
+
+export function isAdminLoggedIn(): boolean {
+  return Boolean(getSession()?.token)
 }
 
 /** Envia arquivo de imagem para o servidor */

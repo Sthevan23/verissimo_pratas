@@ -55,6 +55,17 @@ if ($totalQty < 1) {
 
 $options = [];
 
+// Retirada na loja — sempre disponível (Boa Esperança/MG)
+$options[] = [
+  'id' => 'retirada-loja',
+  'name' => 'Retirar na loja',
+  'company' => 'Verissimo — Boa Esperança/MG',
+  'price' => 0,
+  'delivery_time' => 0,
+  'currency' => 'R$',
+  'free' => true,
+];
+
 if ($isLocal && $subtotal >= $freeLocal) {
   $options[] = [
     'id' => 'local-gratis',

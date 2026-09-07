@@ -153,14 +153,25 @@ export function ShippingCalculator({
           inputMode="numeric"
           value={streetNumber}
           onChange={(e) => updateNumber(e.target.value)}
-          placeholder={requireNumber ? 'Nº da casa *' : 'Nº da casa'}
+          placeholder={
+            selectedId === 'retirada-loja'
+              ? 'Nº (opcional)'
+              : requireNumber
+                ? 'Nº da casa *'
+                : 'Nº da casa'
+          }
           aria-label="Número da casa"
           disabled={loading}
           className="w-full max-w-[9rem] px-4 py-3 border border-border text-sm font-light bg-cream focus:outline-none focus:border-brand-green disabled:opacity-60"
         />
-        {requireNumber && (
+        {requireNumber && selectedId !== 'retirada-loja' && (
           <p className="text-[11px] text-muted mt-1 font-light">
             Informe o número para entrega.
+          </p>
+        )}
+        {selectedId === 'retirada-loja' && (
+          <p className="text-[11px] text-brand-green mt-1 font-light">
+            Retirada na loja em Boa Esperança/MG — sem frete.
           </p>
         )}
       </div>
@@ -242,9 +253,11 @@ export function ShippingCalculator({
                       <p className="text-sm text-graphite">{opt.name}</p>
                       <p className="text-[11px] text-muted mt-0.5">
                         {opt.company}
-                        {opt.delivery_time
-                          ? ` · ${opt.delivery_time} dia${opt.delivery_time > 1 ? 's' : ''} úteis`
-                          : ''}
+                        {opt.id === 'retirada-loja'
+                          ? ' · Retire em Boa Esperança/MG'
+                          : opt.delivery_time
+                            ? ` · ${opt.delivery_time} dia${opt.delivery_time > 1 ? 's' : ''} úteis`
+                            : ''}
                       </p>
                     </div>
                     <span className="text-sm font-medium text-graphite shrink-0">

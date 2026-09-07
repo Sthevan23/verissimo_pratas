@@ -15,6 +15,7 @@ import { getSession } from './authService'
 import {
   ensurePublicImages,
   fetchRemoteCatalog,
+  isAdminLoggedIn,
   normalizeProductImages,
   pushCatalogToServer,
 } from './remoteCatalog'
@@ -301,6 +302,12 @@ export function saveProduct(product: AdminProduct): AdminProduct {
 
 /** Sobe fotos base64 + publica catálogo no servidor (visível no site) */
 export async function publishCatalogToServer(): Promise<{ ok: boolean; error?: string }> {
+  if (!isAdminLoggedIn()) {
+    return {
+      ok: false,
+      error: 'Faça login de novo no admin para publicar no site (sessão expirada).',
+    }
+  }
   try {
     const db = getDatabase()
     const withUrls: AdminProduct[] = []
@@ -309,11 +316,14 @@ export async function publishCatalogToServer(): Promise<{ ok: boolean; error?: s
       const needsUpload = normalized.images.some((img) => img.startsWith('data:'))
       const withImages = needsUpload ? await ensurePublicImages(normalized) : normalized
       const stock = Math.max(0, Number(withImages.stock) || 0)
+      // Preserva options/sizes explicitamente
       withUrls.push({
         ...withImages,
         stock,
         inStock: stock > 0,
         minStock: 0,
+        options: withImages.options?.length ? withImages.options : undefined,
+        sizes: withImages.sizes?.length ? withImages.sizes : undefined,
       })
     }
     db.products = withUrls
@@ -323,7 +333,9 @@ export async function publishCatalogToServer(): Promise<{ ok: boolean; error?: s
       categories: db.categories.map(migrateCategory),
       settings: db.settings,
     })
-    return ok ? { ok: true } : { ok: false, error: 'Servidor não aceitou o catálogo' }
+    return ok
+      ? { ok: true }
+      : { ok: false, error: 'Servidor não aceitou o catálogo. Faça login de novo e tente publicar.' }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Erro ao publicar' }
   }

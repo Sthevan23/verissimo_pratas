@@ -42,7 +42,8 @@ export function Cart() {
       showToast('Calcule o frete informando o CEP antes de finalizar.')
       return
     }
-    if (!streetNumber.trim()) {
+    const isPickup = shippingOpt.id === 'retirada-loja'
+    if (!isPickup && !streetNumber.trim()) {
       showToast('Informe o número da casa para entrega.')
       return
     }
