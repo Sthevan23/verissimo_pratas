@@ -34,13 +34,18 @@ if (strlen($origin) !== 8) {
 }
 
 $path = __DIR__ . '/config.local.php';
-if (!is_file($path)) {
-  verissimo_json(['ok' => false, 'error' => 'config.local.php não encontrado no servidor'], 500);
+$example = __DIR__ . '/config.local.example.php';
+
+if (is_file($path)) {
+  $src = file_get_contents($path);
+} elseif (is_file($example)) {
+  $src = file_get_contents($example);
+} else {
+  verissimo_json(['ok' => false, 'error' => 'config.local.php / example não encontrado no servidor'], 500);
 }
 
-$src = file_get_contents($path);
 if ($src === false) {
-  verissimo_json(['ok' => false, 'error' => 'Não foi possível ler config.local.php'], 500);
+  verissimo_json(['ok' => false, 'error' => 'Não foi possível ler o arquivo de config'], 500);
 }
 
 $escape = static function (string $v): string {
