@@ -30,7 +30,7 @@ export function ProductDetails() {
   const { slug } = useParams<{ slug: string }>()
   const product = slug ? getProductBySlug(slug) : undefined
   const navigate = useNavigate()
-  const { addToCart, openCart } = useApp()
+  const { addToCart, openCart, showToast } = useApp()
   const [selectedImage, setSelectedImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [selectedSize, setSelectedSize] = useState<string | undefined>()
@@ -48,11 +48,7 @@ export function ProductDetails() {
     } else {
       setSelectedSize(undefined)
     }
-    const defaults: Record<string, string> = {}
-    product?.options?.forEach((opt) => {
-      if (opt.values[0]) defaults[opt.id] = opt.values[0]
-    })
-    setSelectedChoices(defaults)
+    setSelectedChoices({})
     setQuantity(1)
     setSelectedImage(0)
     setPaymentOpen(false)
@@ -83,8 +79,14 @@ export function ProductDetails() {
     product.inStock && stock !== undefined && stock > 1 && stock <= 3
 
   const handleBuy = () => {
-    if (sizes?.length && !selectedSize) return
-    if (!optionsComplete) return
+    if (sizes?.length && !selectedSize) {
+      showToast('Escolha o tamanho')
+      return
+    }
+    if (!optionsComplete) {
+      showToast('Escolha o modelo antes de comprar')
+      return
+    }
     addToCart(product, quantity, {
       size: selectedSize,
       choices: Object.keys(selectedChoices).length ? selectedChoices : undefined,
@@ -228,33 +230,6 @@ export function ProductDetails() {
                   {product.name}
                 </h1>
 
-                {options.map((opt) => (
-                  <div key={opt.id} className="mb-4">
-                    <p className="block text-[14px] text-charcoal mb-2 font-medium">
-                      Escolha o {opt.label.toLowerCase()}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {opt.values.map((value) => (
-                        <button
-                          key={value}
-                          type="button"
-                          onClick={() =>
-                            setSelectedChoices((prev) => ({ ...prev, [opt.id]: value }))
-                          }
-                          className={cn(
-                            'min-w-[7.5rem] px-3 py-3 text-[13px] border rounded-sm transition-colors text-center',
-                            selectedChoices[opt.id] === value
-                              ? 'border-brand-green bg-brand-green text-white'
-                              : 'border-border text-charcoal hover:border-brand-green bg-cream'
-                          )}
-                        >
-                          {value}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-
                 {/* Preços */}
                 <div className="mb-3">
                   <p className="text-[15px] text-muted line-through decoration-muted/80">
@@ -330,6 +305,48 @@ export function ProductDetails() {
                         strokeWidth={1.5}
                       />
                     </div>
+                  </div>
+                )}
+
+                {options.length > 0 && (
+                  <div className="mb-4 rounded-sm border border-brand-green/35 bg-brand-green/5 px-3 py-3">
+                    {options.map((opt) => (
+                      <div key={opt.id} className="mb-2 last:mb-0">
+                        <p className="block text-[14px] text-charcoal mb-2 font-semibold">
+                          Escolha o modelo
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {opt.values.map((value, valueIndex) => (
+                            <button
+                              key={value}
+                              type="button"
+                              onClick={() => {
+                                setSelectedChoices((prev) => ({
+                                  ...prev,
+                                  [opt.id]: value,
+                                }))
+                                if (product.images[valueIndex]) {
+                                  setSelectedImage(valueIndex)
+                                }
+                              }}
+                              className={cn(
+                                'min-w-[6.5rem] flex-1 px-3 py-3 text-[13px] border rounded-sm transition-colors text-center font-medium',
+                                selectedChoices[opt.id] === value
+                                  ? 'border-brand-green bg-brand-green text-white'
+                                  : 'border-border text-charcoal hover:border-brand-green bg-cream'
+                              )}
+                            >
+                              {value}
+                            </button>
+                          ))}
+                        </div>
+                        {!selectedChoices[opt.id] && (
+                          <p className="text-[11px] text-red-700 mt-2">
+                            Selecione uma opção para continuar.
+                          </p>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
 

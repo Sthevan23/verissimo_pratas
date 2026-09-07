@@ -13,7 +13,6 @@ import {
 export type ShippingMeta = {
   cep: string
   address: ShippingAddress | null
-  streetNumber: string
 }
 
 type Props = {
@@ -22,8 +21,6 @@ type Props = {
   selectedId?: string | null
   onSelect: (option: ShippingOption | null, meta: ShippingMeta) => void
   compact?: boolean
-  /** Exige número da casa (carrinho / checkout) */
-  requireNumber?: boolean
 }
 
 export function ShippingCalculator({
@@ -32,10 +29,8 @@ export function ShippingCalculator({
   selectedId,
   onSelect,
   compact = false,
-  requireNumber = false,
 }: Props) {
   const [cep, setCep] = useState('')
-  const [streetNumber, setStreetNumber] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [address, setAddress] = useState<ShippingAddress | null>(null)
@@ -44,7 +39,6 @@ export function ShippingCalculator({
   const meta = (addr: ShippingAddress | null = address): ShippingMeta => ({
     cep: onlyDigits(cep),
     address: addr,
-    streetNumber: streetNumber.trim(),
   })
 
   const handleQuote = async () => {
@@ -57,7 +51,7 @@ export function ShippingCalculator({
     setError(null)
     setOptions([])
     setAddress(null)
-    onSelect(null, { cep: digits, address: null, streetNumber: streetNumber.trim() })
+    onSelect(null, { cep: digits, address: null })
     try {
       const result = await quoteShipping({
         cep: digits,
@@ -69,7 +63,6 @@ export function ShippingCalculator({
       const nextMeta: ShippingMeta = {
         cep: digits,
         address: result.address,
-        streetNumber: streetNumber.trim(),
       }
       if (result.options.length === 0) {
         onSelect(null, nextMeta)
@@ -87,22 +80,9 @@ export function ShippingCalculator({
     } catch {
       setError('Erro ao calcular frete. Tente novamente.')
       setOptions([])
-      onSelect(null, { cep: digits, address: null, streetNumber: streetNumber.trim() })
+      onSelect(null, { cep: digits, address: null })
     } finally {
       setLoading(false)
-    }
-  }
-
-  const updateNumber = (value: string) => {
-    setStreetNumber(value)
-    const trimmed = value.trim()
-    const current = options.find((o) => o.id === selectedId) ?? options[0] ?? null
-    if (current || address) {
-      onSelect(current, {
-        cep: onlyDigits(cep),
-        address,
-        streetNumber: trimmed,
-      })
     }
   }
 
@@ -145,35 +125,6 @@ export function ShippingCalculator({
             'Calcular'
           )}
         </button>
-      </div>
-
-      <div>
-        <input
-          type="text"
-          inputMode="numeric"
-          value={streetNumber}
-          onChange={(e) => updateNumber(e.target.value)}
-          placeholder={
-            selectedId === 'retirada-loja'
-              ? 'Nº (opcional)'
-              : requireNumber
-                ? 'Nº da casa *'
-                : 'Nº da casa'
-          }
-          aria-label="Número da casa"
-          disabled={loading}
-          className="w-full max-w-[9rem] px-4 py-3 border border-border text-sm font-light bg-cream focus:outline-none focus:border-brand-green disabled:opacity-60"
-        />
-        {requireNumber && selectedId !== 'retirada-loja' && (
-          <p className="text-[11px] text-muted mt-1 font-light">
-            Informe o número para entrega.
-          </p>
-        )}
-        {selectedId === 'retirada-loja' && (
-          <p className="text-[11px] text-brand-green mt-1 font-light">
-            Retirada na loja em Boa Esperança/MG — sem frete.
-          </p>
-        )}
       </div>
 
       <AnimatePresence mode="wait">
@@ -254,7 +205,7 @@ export function ShippingCalculator({
                       <p className="text-[11px] text-muted mt-0.5">
                         {opt.company}
                         {opt.id === 'retirada-loja'
-                          ? ' · Retire em Boa Esperança/MG'
+                          ? ' · Combinar retirada'
                           : opt.delivery_time
                             ? ` · ${opt.delivery_time} dia${opt.delivery_time > 1 ? 's' : ''} úteis`
                             : ''}

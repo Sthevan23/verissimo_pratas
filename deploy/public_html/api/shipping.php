@@ -55,11 +55,11 @@ if ($totalQty < 1) {
 
 $options = [];
 
-// Retirada na loja — sempre disponível (Boa Esperança/MG)
+// Retirada — sempre disponível
 $options[] = [
   'id' => 'retirada-loja',
-  'name' => 'Retirar na loja',
-  'company' => 'Verissimo — Boa Esperança/MG',
+  'name' => 'Retirar',
+  'company' => 'Verissimo',
   'price' => 0,
   'delivery_time' => 0,
   'currency' => 'R$',
