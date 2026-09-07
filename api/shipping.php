@@ -166,7 +166,11 @@ if ($token === '') {
     $list = isset($data[0]) ? $data : (isset($data['data']) && is_array($data['data']) ? $data['data'] : [$data]);
     foreach ($list as $row) {
       if (!is_array($row)) continue;
-      if (!empty($row['error']) || isset($row['price']) === false) continue;
+      if (!empty($row['error'])) {
+        $errors[] = (string) ($row['name'] ?? 'serviço') . ': ' . (is_string($row['error']) ? $row['error'] : json_encode($row['error'], JSON_UNESCAPED_UNICODE));
+        continue;
+      }
+      if (isset($row['price']) === false) continue;
       $price = (float) $row['price'];
       if ($subtotal >= $freeNational) {
         $price = 0;
@@ -232,6 +236,7 @@ verissimo_json([
   'options' => $merged,
   'error' => $error,
   'configured' => $token !== '',
+  'quote_errors' => isset($errors) ? array_values(array_unique($errors)) : [],
 ]);
 
 function verissimo_lookup_cep(string $cep): ?array {
