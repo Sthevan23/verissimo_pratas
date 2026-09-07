@@ -50,22 +50,29 @@ $totalQty = 0;
 foreach ($items as $item) {
   $qty = max(1, (int) ($item['quantity'] ?? 1));
   $totalQty += $qty;
-  $products[] = [
-    'quantity' => $qty,
-    'height' => (float) ($item['height'] ?? 3),
-    'width' => (float) ($item['width'] ?? 12),
-    'length' => (float) ($item['length'] ?? 16),
-    'weight' => (float) ($item['weight'] ?? 0.15),
-  ];
 }
 if ($totalQty < 1) {
-  $products = [[
-    'quantity' => 1,
-    'height' => 3,
-    'width' => 12,
-    'length' => 16,
-    'weight' => 0.15,
-  ]];
+  $totalQty = 1;
+}
+
+/**
+ * Pacote padrão joias — alinhado aos limites do Mini Envios (quando o peso cabe)
+ * e próximo do que o app SuperFrete usa na calculadora.
+ * Mini: altura ≤4, largura ≤16, comprimento ≤24, peso ≤0,3 kg, seguro ≤100.
+ */
+$packageWeight = min(0.3, max(0.1, round(0.1 * $totalQty, 3)));
+$package = [
+  'height' => 4,
+  'width' => 12,
+  'length' => 16,
+  'weight' => $packageWeight,
+];
+
+// Seguro: o app não declara o valor cheio do carrinho (isso inflava PAC/SEDEX).
+// Usa o mínimo prático dos Correios e limita a R$100 para liberar Mini Envios.
+$insuranceValue = 25.0;
+if ($subtotal > 0) {
+  $insuranceValue = min(100.0, max(25.0, $subtotal));
 }
 
 $options = [];
@@ -108,10 +115,10 @@ if ($token === '') {
     'options' => [
       'own_hand' => false,
       'receipt' => false,
-      'insurance_value' => max(0, $subtotal),
-      'use_insurance_value' => $subtotal > 0,
+      'insurance_value' => $insuranceValue,
+      'use_insurance_value' => true,
     ],
-    'products' => $products,
+    'package' => $package,
   ];
 
   $env = strtolower((string) ($cfg['superfrete_env'] ?? 'production'));
