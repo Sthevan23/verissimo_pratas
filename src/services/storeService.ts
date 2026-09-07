@@ -87,6 +87,20 @@ export function getStoreCategoryLabels(): Record<string, string> {
 }
 
 function adminToStoreProduct(p: import('../types/admin').AdminProduct): Product {
+  const images = (Array.isArray(p.images) ? p.images : [])
+    .filter((img): img is string => typeof img === 'string' && img.trim().length > 0)
+    .map((img) => {
+      const trimmed = img.trim()
+      if (trimmed.startsWith('/uploads/products/')) {
+        const f = trimmed.split('/').pop() || ''
+        return bustMediaCache(`/api/media.php?f=${encodeURIComponent(f)}`)
+      }
+      if (trimmed.includes('/api/media.php')) {
+        return bustMediaCache(trimmed)
+      }
+      return trimmed
+    })
+
   return {
     id: p.id,
     slug: p.slug,
@@ -94,13 +108,7 @@ function adminToStoreProduct(p: import('../types/admin').AdminProduct): Product 
     description: p.description,
     price: p.price,
     salePrice: p.salePrice,
-    images: p.images.map((img) => {
-      if (img.startsWith('/uploads/products/')) {
-        const f = img.split('/').pop() || ''
-        return `/api/media.php?f=${encodeURIComponent(f)}`
-      }
-      return img
-    }),
+    images,
     category: p.category,
     badge: p.badge,
     rating: p.rating,
@@ -116,5 +124,17 @@ function adminToStoreProduct(p: import('../types/admin').AdminProduct): Product 
     isNew: p.isNew,
     isFeatured: p.isFeatured,
     isOnSale: p.isOnSale,
+  }
+}
+
+/** Quebra cache CDN/Hostinger de fotos quebradas */
+function bustMediaCache(url: string): string {
+  try {
+    const u = new URL(url, 'https://verissimopratas.com.br')
+    if (!u.pathname.includes('media.php')) return url
+    u.searchParams.set('v', '20260907b')
+    return `${u.pathname}?${u.searchParams.toString()}`
+  } catch {
+    return url
   }
 }

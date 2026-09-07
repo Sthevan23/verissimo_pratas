@@ -85,8 +85,9 @@ try {
 
   header('Content-Type: ' . $mime);
   header('Content-Length: ' . (string) strlen($data));
-  header('Cache-Control: public, max-age=86400');
+  header('Cache-Control: public, max-age=3600, must-revalidate');
   header('Access-Control-Allow-Origin: *');
+  header('X-Content-Type-Options: nosniff');
   echo $data;
   exit;
 } catch (Throwable $e) {

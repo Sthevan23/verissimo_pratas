@@ -8,8 +8,11 @@ Options -MultiViews
   RewriteEngine On
   RewriteBase /
 
-  # API PHP
+  # API PHP (nunca vira index.html)
   RewriteRule ^api/ - [L]
+
+  # Arquivos estáticos de mídia
+  RewriteRule \.(?:jpg|jpeg|png|webp|gif|svg|css|js|woff2?|ico)$ - [L]
 
   # Arquivos e pastas reais
   RewriteCond %{REQUEST_FILENAME} -f [OR]
@@ -19,6 +22,3 @@ Options -MultiViews
   # React Router: /admin/login, /produtos, etc.
   RewriteRule ^ index.html [L]
 </IfModule>
-
-# Fallback Hostinger quando mod_rewrite não aplica
-ErrorDocument 404 /index.html

@@ -21,16 +21,27 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const { addToCart, toggleFavorite, isFavorite } = useApp()
   const [hovered, setHovered] = useState(false)
   const [imgBroken, setImgBroken] = useState(false)
+  const [imgSrc, setImgSrc] = useState(product.images[0] || '')
   const favorite = isFavorite(product.id)
   const currentPrice = product.salePrice ?? product.price
   const hasSecondImage = product.images.length > 1 && !imgBroken
   const needsSelection = productRequiresSelection(product)
-  const primarySrc = !imgBroken && product.images[0] ? product.images[0] : undefined
 
   const handleBuy = () => {
     if (!product.inStock) return
     if (needsSelection) return
     addToCart(product)
+  }
+
+  const handleImgError = () => {
+    const original = product.images[0]
+    if (original && imgSrc === original && original.includes('media.php')) {
+      // 1ª falha: tenta de novo sem cache
+      const join = original.includes('?') ? '&' : '?'
+      setImgSrc(`${original}${join}retry=1`)
+      return
+    }
+    setImgBroken(true)
   }
 
   return (
@@ -44,21 +55,24 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
       onMouseLeave={() => setHovered(false)}
     >
       <div className="relative aspect-[3/4] bg-off-white overflow-hidden mb-3 sm:mb-4">
-        <Link to={`/produto/${product.slug}`}>
-          {primarySrc ? (
+        <Link to={`/produto/${product.slug}`} className="absolute inset-0 block">
+          {!imgBroken && imgSrc ? (
             <img
-              src={primarySrc}
+              src={imgSrc}
               alt={product.name}
               className={cn(
-                'absolute inset-0 w-full h-full object-cover transition-all duration-700 active:scale-105',
+                'absolute inset-0 z-0 w-full h-full object-cover transition-all duration-700',
                 !product.inStock && 'opacity-60',
-                hovered && hasSecondImage ? 'opacity-0 scale-105' : 'opacity-100 scale-100 lg:group-hover:scale-105'
+                hovered && hasSecondImage
+                  ? 'lg:opacity-0 lg:scale-105'
+                  : 'opacity-100 scale-100 lg:group-hover:scale-105'
               )}
-              loading="lazy"
-              onError={() => setImgBroken(true)}
+              loading={index < 4 ? 'eager' : 'lazy'}
+              decoding="async"
+              onError={handleImgError}
             />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-off-white text-muted text-[10px] tracking-widest uppercase px-4 text-center">
+            <div className="absolute inset-0 z-0 flex items-center justify-center bg-off-white text-muted text-[10px] tracking-widest uppercase px-4 text-center">
               Foto indisponível
             </div>
           )}
@@ -67,20 +81,21 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
               src={product.images[1]}
               alt={`${product.name} — vista alternativa`}
               className={cn(
-                'absolute inset-0 w-full h-full object-cover transition-all duration-700 hidden lg:block',
+                'absolute inset-0 z-0 w-full h-full object-cover transition-all duration-700 hidden lg:block',
                 hovered ? 'opacity-100 scale-105' : 'opacity-0 scale-100'
               )}
               loading="lazy"
+              decoding="async"
             />
           )}
         </Link>
 
         {!product.inStock ? (
-          <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-graphite text-cream text-[8px] sm:text-[9px] tracking-[0.15em] uppercase px-2 py-1 sm:px-3 sm:py-1.5">
+          <span className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 bg-graphite text-cream text-[8px] sm:text-[9px] tracking-[0.15em] uppercase px-2 py-1 sm:px-3 sm:py-1.5">
             Esgotado
           </span>
         ) : product.badge ? (
-          <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-brand-green text-white text-[8px] sm:text-[9px] tracking-[0.15em] uppercase px-2 py-1 sm:px-3 sm:py-1.5">
+          <span className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 bg-brand-green text-white text-[8px] sm:text-[9px] tracking-[0.15em] uppercase px-2 py-1 sm:px-3 sm:py-1.5">
             {product.badge === 'novidade'
               ? 'Novidade'
               : product.badge === 'oferta-especial'
@@ -91,7 +106,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
 
         <button
           onClick={() => toggleFavorite(product.id)}
-          className="absolute top-2 right-2 sm:top-3 sm:right-3 touch-target bg-cream/80 backdrop-blur-sm hover:bg-cream active:bg-cream transition-colors"
+          className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 touch-target bg-cream/80 backdrop-blur-sm hover:bg-cream active:bg-cream transition-colors"
           aria-label={favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
         >
           <motion.div

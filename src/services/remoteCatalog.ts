@@ -214,15 +214,28 @@ export async function ensurePublicImages(product: AdminProduct): Promise<AdminPr
 /** Normaliza URL antiga /uploads/... para o proxy PHP (evita 500 na Hostinger) */
 export function normalizeProductImageUrl(url: string): string {
   if (!url) return url
-  if (url.startsWith('/api/media.php')) return url
+  if (url.startsWith('/api/media.php')) {
+    try {
+      const u = new URL(url, 'https://verissimopratas.com.br')
+      u.searchParams.set('v', '20260907b')
+      return `${u.pathname}?${u.searchParams.toString()}`
+    } catch {
+      return url
+    }
+  }
   const m = url.match(/\/uploads\/products\/([^/?#]+)$/i)
-  if (m) return `/api/media.php?f=${encodeURIComponent(m[1])}`
+  if (m) {
+    return `/api/media.php?f=${encodeURIComponent(m[1])}&v=20260907b`
+  }
   return url
 }
 
-export function normalizeProductImages<T extends { images: string[] }>(product: T): T {
+export function normalizeProductImages<T extends { images?: string[] }>(product: T): T {
+  const images = (Array.isArray(product.images) ? product.images : [])
+    .filter((img): img is string => typeof img === 'string' && img.trim().length > 0)
+    .map((img) => normalizeProductImageUrl(img.trim()))
   return {
     ...product,
-    images: product.images.map(normalizeProductImageUrl),
+    images,
   }
 }

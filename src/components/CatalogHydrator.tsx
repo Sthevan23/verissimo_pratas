@@ -13,6 +13,8 @@ export function CatalogHydrator({ children }: { children: React.ReactNode }) {
     ;(async () => {
       try {
         await hydrateCatalogFromServer()
+      } catch (err) {
+        console.error('Falha ao hidratar catálogo', err)
       } finally {
         if (alive) {
           setVersion((v) => v + 1)
