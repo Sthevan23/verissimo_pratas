@@ -119,4 +119,34 @@
       transform: translateX(-50%);
     }
   }
+
+  .hero-photo-marquee {
+    width: max-content;
+    animation: hero-photo-scroll 42s linear infinite;
+  }
+
+  .hero-photo-marquee:hover {
+    animation-play-state: paused;
+  }
+
+  .hero-photo-marquee-mobile {
+    width: max-content;
+    animation: hero-photo-scroll 28s linear infinite;
+  }
+
+  @keyframes hero-photo-scroll {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-photo-marquee,
+    .hero-photo-marquee-mobile {
+      animation: none;
+    }
+  }
 }
