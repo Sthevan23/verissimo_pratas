@@ -228,10 +228,6 @@ export interface StoreSettings {
   heroTitle: string
   heroSubtitle: string
   heroImage: string
-  /** Produtos cujo 1º foto aparece no carrossel tombado do banner */
-  homeHeroProductIds: string[]
-  /** Produtos cujo 1º foto aparece na seção Coleção exclusiva */
-  homeCollectionProductIds: string[]
 }
 
 export interface AdminDatabase {

@@ -214,8 +214,6 @@ function createSeedDatabase(): AdminDatabase {
       heroTitle: 'Elegância que permanece.',
       heroSubtitle: 'Descubra peças em prata pensadas para transformar momentos em memórias.',
       heroImage: '',
-      homeHeroProductIds: [],
-      homeCollectionProductIds: [],
     },
     auditLog: [],
   }
@@ -240,10 +238,6 @@ export function getDatabase(): AdminDatabase {
       const db = JSON.parse(raw) as AdminDatabase
       db.categories = (db.categories ?? []).map(migrateCategory)
       if (!db.settings.heroImage) db.settings.heroImage = ''
-      if (!Array.isArray(db.settings.homeHeroProductIds)) db.settings.homeHeroProductIds = []
-      if (!Array.isArray(db.settings.homeCollectionProductIds)) {
-        db.settings.homeCollectionProductIds = []
-      }
       if (ensureSeedCategories(db)) saveDatabase(db)
       return db
     } catch {

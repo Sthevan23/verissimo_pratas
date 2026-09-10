@@ -1,158 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Helmet } from 'react-helmet-async'
-import { ChevronDown, ChevronUp, ImageIcon, Loader2, X } from 'lucide-react'
+import { ImageIcon, Loader2 } from 'lucide-react'
 import { PageHeader } from '../../components/admin/Modal'
 import { getDatabase, saveDb, publishCatalogToServer } from '../../services/adminStore'
 import { useAdminToast } from '../../context/AdminToastContext'
 import { compressImageFile, uploadProductFile } from '../../services/remoteCatalog'
 import type { StoreSettings } from '../../types/admin'
-import { cn } from '../../utils/format'
-
-type PickerField = 'homeHeroProductIds' | 'homeCollectionProductIds'
-
-function HomePhotoPicker({
-  label,
-  hint,
-  field,
-  selectedIds,
-  onChange,
-}: {
-  label: string
-  hint: string
-  field: PickerField
-  selectedIds: string[]
-  onChange: (ids: string[]) => void
-}) {
-  const products = useMemo(
-    () =>
-      getDatabase()
-        .products.filter((p) => p.status === 'active' && p.images?.[0])
-        .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')),
-    []
-  )
-  const [query, setQuery] = useState('')
-  const selected = selectedIds
-    .map((id) => products.find((p) => p.id === id))
-    .filter(Boolean) as typeof products
-  const filtered = products.filter(
-    (p) =>
-      !selectedIds.includes(p.id) &&
-      (query.trim() === '' ||
-        p.name.toLowerCase().includes(query.trim().toLowerCase()) ||
-        p.category.toLowerCase().includes(query.trim().toLowerCase()))
-  )
-
-  const move = (index: number, dir: -1 | 1) => {
-    const next = [...selectedIds]
-    const j = index + dir
-    if (j < 0 || j >= next.length) return
-    ;[next[index], next[j]] = [next[j], next[index]]
-    onChange(next)
-  }
-
-  return (
-    <div className="space-y-3 border-t border-border pt-5" data-field={field}>
-      <div>
-        <label className="admin-label">{label}</label>
-        <p className="text-xs text-muted mb-3">{hint}</p>
-      </div>
-
-      {selected.length > 0 ? (
-        <ul className="space-y-2 mb-3">
-          {selected.map((p, i) => (
-            <li
-              key={p.id}
-              className="flex items-center gap-3 border border-border bg-cream/50 p-2"
-            >
-              <img
-                src={p.images[0]}
-                alt=""
-                className="w-12 h-14 object-cover bg-off-white shrink-0"
-              />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm truncate">{p.name}</p>
-                <p className="text-[10px] text-muted uppercase tracking-wider">{p.category}</p>
-              </div>
-              <div className="flex items-center gap-0.5 shrink-0">
-                <button
-                  type="button"
-                  className="p-1.5 hover:bg-off-white disabled:opacity-30"
-                  disabled={i === 0}
-                  onClick={() => move(i, -1)}
-                  aria-label="Subir"
-                >
-                  <ChevronUp className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  className="p-1.5 hover:bg-off-white disabled:opacity-30"
-                  disabled={i === selected.length - 1}
-                  onClick={() => move(i, 1)}
-                  aria-label="Descer"
-                >
-                  <ChevronDown className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  className="p-1.5 hover:bg-off-white text-muted hover:text-graphite"
-                  onClick={() => onChange(selectedIds.filter((id) => id !== p.id))}
-                  aria-label="Remover"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-xs text-muted mb-3 italic">
-          Nenhuma foto escolhida — o site usa produtos em destaque automaticamente.
-        </p>
-      )}
-
-      <input
-        type="search"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Buscar produto para adicionar…"
-        className="admin-input mb-2"
-      />
-
-      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-56 overflow-y-auto p-1 border border-border">
-        {filtered.slice(0, 48).map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => onChange([...selectedIds, p.id])}
-            className={cn(
-              'text-left border border-transparent hover:border-brand-green focus:border-brand-green p-1 bg-cream'
-            )}
-            title={`Adicionar ${p.name}`}
-          >
-            <img src={p.images[0]} alt="" className="aspect-[3/4] w-full object-cover mb-1" />
-            <span className="block text-[9px] leading-tight line-clamp-2 text-muted">{p.name}</span>
-          </button>
-        ))}
-        {filtered.length === 0 ? (
-          <p className="col-span-full text-xs text-muted p-3 text-center">
-            Nenhum produto disponível
-          </p>
-        ) : null}
-      </div>
-    </div>
-  )
-}
 
 export function AdminSettings() {
   const { showToast } = useAdminToast()
-  const [settings, setSettings] = useState<StoreSettings>(() => {
-    const s = getDatabase().settings
-    return {
-      ...s,
-      homeHeroProductIds: s.homeHeroProductIds ?? [],
-      homeCollectionProductIds: s.homeCollectionProductIds ?? [],
-    }
-  })
+  const [settings, setSettings] = useState<StoreSettings>(getDatabase().settings)
   const [tab, setTab] = useState<'loja' | 'venda' | 'aparencia'>('loja')
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -160,11 +17,7 @@ export function AdminSettings() {
   const save = async () => {
     setSaving(true)
     const db = getDatabase()
-    db.settings = {
-      ...settings,
-      homeHeroProductIds: settings.homeHeroProductIds ?? [],
-      homeCollectionProductIds: settings.homeCollectionProductIds ?? [],
-    }
+    db.settings = settings
     saveDb(db)
     const pub = await publishCatalogToServer()
     setSaving(false)
@@ -174,7 +27,7 @@ export function AdminSettings() {
     )
   }
 
-  const update = (field: keyof StoreSettings, value: string | number | string[]) => {
+  const update = (field: keyof StoreSettings, value: string | number) => {
     setSettings((s) => ({ ...s, [field]: value }))
   }
 
@@ -336,24 +189,7 @@ export function AdminSettings() {
                 onChange={(e) => update('heroSubtitle', e.target.value)}
               />
             </div>
-
-            <HomePhotoPicker
-              field="homeHeroProductIds"
-              label="Fotos que passam no banner (tombadas)"
-              hint="Clique nos produtos para adicionar. Use as setas para ordenar. Depois Salvar e publicar."
-              selectedIds={settings.homeHeroProductIds ?? []}
-              onChange={(ids) => update('homeHeroProductIds', ids)}
-            />
-
-            <HomePhotoPicker
-              field="homeCollectionProductIds"
-              label="Fotos da Coleção exclusiva (reta)"
-              hint="Essas fotos aparecem no carrossel ao lado de “Peças para contar a sua história”."
-              selectedIds={settings.homeCollectionProductIds ?? []}
-              onChange={(ids) => update('homeCollectionProductIds', ids)}
-            />
-
-            <p className="text-xs text-muted pt-2">
+            <p className="text-xs text-muted">
               Para editar o grid de categorias (Anéis, Brincos…), vá em{' '}
               <strong>Categorias</strong> no menu.
             </p>

@@ -82,40 +82,6 @@ export function getStoreSettings() {
   return getDatabase().settings
 }
 
-/** Fotos da home a partir dos IDs escolhidos no painel (ou fallback automático). */
-export function getHomeShowcasePhotos(
-  which: 'hero' | 'collection',
-  limit: number
-): { id: string; slug: string; name: string; src: string }[] {
-  const settings = getStoreSettings()
-  const ids =
-    which === 'hero'
-      ? settings.homeHeroProductIds ?? []
-      : settings.homeCollectionProductIds ?? []
-
-  const byId = new Map(getStoreProducts().map((p) => [p.id, p]))
-  const fromSettings = ids
-    .map((id) => byId.get(id))
-    .filter((p): p is Product => Boolean(p?.images?.[0]))
-    .map((p) => ({ id: p.id, slug: p.slug, name: p.name, src: p.images[0] }))
-
-  if (fromSettings.length > 0) return fromSettings.slice(0, limit)
-
-  const featured = getStoreFeaturedProducts()
-    .map((p) => ({ id: p.id, slug: p.slug, name: p.name, src: p.images[0] }))
-    .filter((p) => Boolean(p.src))
-
-  if (featured.length >= (which === 'hero' ? 4 : 3)) {
-    return featured.slice(0, limit)
-  }
-
-  const rest = getStoreProducts()
-    .map((p) => ({ id: p.id, slug: p.slug, name: p.name, src: p.images[0] }))
-    .filter((p) => Boolean(p.src) && !featured.some((f) => f.id === p.id))
-
-  return [...featured, ...rest].slice(0, limit)
-}
-
 export function getStoreCategoryLabels(): Record<string, string> {
   const db = getDatabase()
   const labels: Record<string, string> = { ...categoryLabels }

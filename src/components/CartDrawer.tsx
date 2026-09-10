@@ -145,33 +145,29 @@ export function CartDrawer() {
                           <div className="flex items-center gap-3 mt-3">
                             <div className="flex items-center border border-border">
                               <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.preventDefault()
+                                onClick={() =>
                                   updateQuantity(
                                     item.product.id,
                                     item.quantity - 1,
                                     line
                                   )
-                                }}
+                                }
                                 className="touch-target hover:bg-off-white active:bg-off-white transition-colors"
                                 aria-label="Diminuir quantidade"
                               >
                                 <Minus className="w-4 h-4" strokeWidth={1.5} />
                               </button>
-                              <span className="px-3 text-sm min-w-[2rem] text-center tabular-nums">
+                              <span className="px-3 text-sm min-w-[2rem] text-center">
                                 {item.quantity}
                               </span>
                               <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.preventDefault()
+                                onClick={() =>
                                   updateQuantity(
                                     item.product.id,
                                     item.quantity + 1,
                                     line
                                   )
-                                }}
+                                }
                                 className="touch-target hover:bg-off-white active:bg-off-white transition-colors"
                                 aria-label="Aumentar quantidade"
                               >
@@ -179,11 +175,7 @@ export function CartDrawer() {
                               </button>
                             </div>
                             <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault()
-                                removeFromCart(item.product.id, line)
-                              }}
+                              onClick={() => removeFromCart(item.product.id, line)}
                               className="touch-target text-muted hover:text-graphite active:text-graphite transition-colors"
                               aria-label="Remover item"
                             >
