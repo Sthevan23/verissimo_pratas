@@ -1,20 +1,10 @@
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { getStoreFeaturedProducts, getStoreProducts, getStoreSettings } from '../services/storeService'
+import { getHomeShowcasePhotos, getStoreSettings } from '../services/storeService'
 import { Button } from './ui/Button'
 
 function heroProductImages() {
-  const featured = getStoreFeaturedProducts()
-    .map((p) => ({ id: p.id, slug: p.slug, name: p.name, src: p.images[0] }))
-    .filter((p) => Boolean(p.src))
-
-  if (featured.length >= 4) return featured.slice(0, 10)
-
-  const rest = getStoreProducts()
-    .map((p) => ({ id: p.id, slug: p.slug, name: p.name, src: p.images[0] }))
-    .filter((p) => Boolean(p.src) && !featured.some((f) => f.id === p.id))
-
-  return [...featured, ...rest].slice(0, 10)
+  return getHomeShowcasePhotos('hero', 10)
 }
 
 function HeroPhotoParade() {

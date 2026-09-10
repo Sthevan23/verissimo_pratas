@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Loader2, Truck } from 'lucide-react'
 import { formatPrice } from '../utils/format'
@@ -32,32 +32,53 @@ export function ShippingCalculator({
 }: Props) {
   const [cep, setCep] = useState('')
   const [loading, setLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [address, setAddress] = useState<ShippingAddress | null>(null)
   const [options, setOptions] = useState<ShippingOption[]>([])
+  const [hasQuoted, setHasQuoted] = useState(false)
+  const onSelectRef = useRef(onSelect)
+  const selectedIdRef = useRef(selectedId)
+
+  useEffect(() => {
+    onSelectRef.current = onSelect
+  }, [onSelect])
+
+  useEffect(() => {
+    selectedIdRef.current = selectedId
+  }, [selectedId])
+
+  const quantitiesKey = quantities.join(',')
 
   const meta = (addr: ShippingAddress | null = address): ShippingMeta => ({
     cep: onlyDigits(cep),
     address: addr,
   })
 
-  const handleQuote = async () => {
+  const runQuote = async (mode: 'full' | 'soft' = 'full') => {
     const digits = onlyDigits(cep)
     if (digits.length !== 8) {
-      setError('Digite um CEP válido com 8 dígitos.')
+      if (mode === 'full') setError('Digite um CEP válido com 8 dígitos.')
       return
     }
-    setLoading(true)
-    setError(null)
-    setOptions([])
-    setAddress(null)
-    onSelect(null, { cep: digits, address: null })
+
+    if (mode === 'full') {
+      setLoading(true)
+      setError(null)
+      setOptions([])
+      setAddress(null)
+      onSelectRef.current(null, { cep: digits, address: null })
+    } else {
+      setRefreshing(true)
+    }
+
     try {
       const result = await quoteShipping({
         cep: digits,
         subtotal,
         quantities: quantities.length ? quantities : [1],
       })
+      setHasQuoted(true)
       setAddress(result.address)
       setOptions(result.options)
       const nextMeta: ShippingMeta = {
@@ -65,12 +86,12 @@ export function ShippingCalculator({
         address: result.address,
       }
       if (result.options.length === 0) {
-        onSelect(null, nextMeta)
+        onSelectRef.current(null, nextMeta)
         setError(result.error || 'Nenhuma opção de frete para este CEP.')
       } else {
         const preferred =
-          result.options.find((o) => o.id === selectedId) ?? result.options[0]
-        onSelect(preferred, nextMeta)
+          result.options.find((o) => o.id === selectedIdRef.current) ?? result.options[0]
+        onSelectRef.current(preferred, nextMeta)
         if (result.error && !result.configured) {
           setError(result.error)
         } else {
@@ -78,19 +99,36 @@ export function ShippingCalculator({
         }
       }
     } catch {
-      setError('Erro ao calcular frete. Tente novamente.')
-      setOptions([])
-      onSelect(null, { cep: digits, address: null })
+      if (mode === 'full') {
+        setError('Erro ao calcular frete. Tente novamente.')
+        setOptions([])
+        onSelectRef.current(null, { cep: digits, address: null })
+      }
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
+
+  // Recalcula frete em silêncio quando muda qtd/subtotal (sem recarregar a página)
+  useEffect(() => {
+    if (!hasQuoted) return
+    if (onlyDigits(cep).length !== 8) return
+    const timer = window.setTimeout(() => {
+      void runQuote('soft')
+    }, 350)
+    return () => window.clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- só reage a carrinho/CEP já cotado
+  }, [subtotal, quantitiesKey, hasQuoted, cep])
 
   return (
     <div className={compact ? 'space-y-3' : 'space-y-4'}>
       <div className="flex items-center gap-2 text-sm text-graphite">
         <Truck className="w-4 h-4 text-brand-green shrink-0" strokeWidth={1.75} />
         <span className="font-medium">Calcular frete (SuperFrete / Correios)</span>
+        {refreshing ? (
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-green ml-auto" strokeWidth={2} />
+        ) : null}
       </div>
 
       <div className="flex gap-2">
@@ -102,7 +140,7 @@ export function ShippingCalculator({
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault()
-              void handleQuote()
+              void runQuote('full')
             }
           }}
           placeholder="CEP"
@@ -112,7 +150,7 @@ export function ShippingCalculator({
         />
         <button
           type="button"
-          onClick={() => void handleQuote()}
+          onClick={() => void runQuote('full')}
           disabled={loading}
           className="min-w-[7.5rem] px-4 py-3 border border-brand-green text-[10px] tracking-widest uppercase text-brand-green hover:bg-brand-green hover:text-white transition-colors disabled:opacity-70 disabled:hover:bg-transparent disabled:hover:text-brand-green inline-flex items-center justify-center gap-2"
         >
@@ -185,7 +223,7 @@ export function ShippingCalculator({
       {!loading && error && <p className="text-[11px] text-red-700 font-light">{error}</p>}
 
       {!loading && options.length > 0 && (
-        <ul className="space-y-2">
+        <ul className={`space-y-2 ${refreshing ? 'opacity-70 transition-opacity' : ''}`}>
           {options.map((opt) => {
             const active = selectedId === opt.id
             return (

@@ -169,27 +169,31 @@ export function Cart() {
                           <div className="flex items-center gap-4 mt-4">
                             <div className="flex items-center border border-border">
                               <button
-                                onClick={() =>
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault()
                                   updateQuantity(
                                     item.product.id,
                                     item.quantity - 1,
                                     line
                                   )
-                                }
+                                }}
                                 className="p-2 hover:bg-off-white"
                                 aria-label="Diminuir"
                               >
                                 <Minus className="w-4 h-4" strokeWidth={1.5} />
                               </button>
-                              <span className="px-4 text-sm">{item.quantity}</span>
+                              <span className="px-4 text-sm tabular-nums">{item.quantity}</span>
                               <button
-                                onClick={() =>
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault()
                                   updateQuantity(
                                     item.product.id,
                                     item.quantity + 1,
                                     line
                                   )
-                                }
+                                }}
                                 className="p-2 hover:bg-off-white"
                                 aria-label="Aumentar"
                               >
@@ -197,7 +201,11 @@ export function Cart() {
                               </button>
                             </div>
                             <button
-                              onClick={() => removeFromCart(item.product.id, line)}
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault()
+                                removeFromCart(item.product.id, line)
+                              }}
                               className="flex items-center gap-1.5 text-sm text-muted hover:text-graphite transition-colors"
                             >
                               <Trash2 className="w-4 h-4" strokeWidth={1.5} />
@@ -205,7 +213,7 @@ export function Cart() {
                             </button>
                           </div>
                         </div>
-                        <p className="text-base font-medium hidden sm:block">
+                        <p className="text-base font-medium hidden sm:block tabular-nums">
                           {formatPrice(price * item.quantity)}
                         </p>
                       </div>
@@ -214,8 +222,7 @@ export function Cart() {
                 })}
               </div>
 
-              <AnimateIn delay={0.2}>
-                <div className="bg-off-white/60 p-6 lg:p-8 h-fit lg:sticky lg:top-32">
+              <div className="bg-off-white/60 p-6 lg:p-8 h-fit lg:sticky lg:top-32">
                   <h2 className="font-serif text-xl font-light mb-6">Resumo</h2>
 
                   <div className="flex gap-2 mb-6">
@@ -250,19 +257,19 @@ export function Cart() {
                   <div className="space-y-3 text-sm mb-6">
                     <div className="flex justify-between font-light">
                       <span className="text-warm-gray">Subtotal</span>
-                      <span>{formatPrice(cartSubtotal)}</span>
+                      <span className="tabular-nums">{formatPrice(cartSubtotal)}</span>
                     </div>
                     {couponDiscount > 0 && (
                       <div className="flex justify-between font-light text-green-700">
                         <span>Desconto ({Math.round(couponDiscount * 100)}%)</span>
-                        <span>-{formatPrice(discount)}</span>
+                        <span className="tabular-nums">-{formatPrice(discount)}</span>
                       </div>
                     )}
                     <div className="flex justify-between font-light">
                       <span className="text-warm-gray">
                         Frete{shippingOpt ? ` · ${shippingOpt.name}` : ''}
                       </span>
-                      <span>
+                      <span className="tabular-nums">
                         {!shippingOpt
                           ? 'Informe o CEP'
                           : shipping === 0
@@ -292,10 +299,10 @@ export function Cart() {
 
                   <div className="flex justify-between font-medium text-lg pt-4 border-t border-border mb-6">
                     <span>Total</span>
-                    <span>{formatPrice(total)}</span>
+                    <span className="tabular-nums">{formatPrice(total)}</span>
                   </div>
 
-                  <Button className="w-full" size="lg" onClick={handleCheckout}>
+                  <Button type="button" className="w-full" size="lg" onClick={handleCheckout}>
                     Finalizar compra
                   </Button>
                   <p className="text-center text-[11px] text-muted mt-3 font-light">
@@ -309,7 +316,6 @@ export function Cart() {
                     Continuar comprando
                   </Link>
                 </div>
-              </AnimateIn>
             </div>
           )}
         </div>

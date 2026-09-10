@@ -1,96 +1,107 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getStoreFeaturedProducts, getStoreProducts } from '../services/storeService'
+import { getHomeShowcasePhotos } from '../services/storeService'
 import { Button } from './ui/Button'
 import { AnimateIn } from './ui/AnimateIn'
 import { cn } from '../utils/format'
 
 const FALLBACK = '/categories/colares.png'
 
-function collectionSlides() {
-  const featured = getStoreFeaturedProducts()
-    .map((p) => ({ id: p.id, slug: p.slug, name: p.name, src: p.images[0] }))
-    .filter((p) => Boolean(p.src))
-
-  if (featured.length >= 3) return featured.slice(0, 8)
-
-  const rest = getStoreProducts()
-    .map((p) => ({ id: p.id, slug: p.slug, name: p.name, src: p.images[0] }))
-    .filter((p) => Boolean(p.src) && !featured.some((f) => f.id === p.id))
-
-  const slides = [...featured, ...rest].slice(0, 8)
-  if (slides.length === 0) {
-    return [{ id: 'fallback', slug: 'produtos', name: 'Coleção Verissimo', src: FALLBACK }]
-  }
-  return slides
-}
-
 export function FeaturedCollection() {
-  const slides = collectionSlides()
+  const slidesRaw = getHomeShowcasePhotos('collection', 8)
+  const slides =
+    slidesRaw.length > 0
+      ? slidesRaw
+      : [{ id: 'fallback', slug: 'produtos', name: 'Coleção Verissimo', src: FALLBACK }]
+  const slidesKey = slides.map((s) => s.id).join('|')
   const [index, setIndex] = useState(0)
   const [paused, setPaused] = useState(false)
   const current = slides[index] ?? slides[0]
 
   useEffect(() => {
+    setIndex(0)
+  }, [slidesKey])
+
+  useEffect(() => {
     if (slides.length < 2 || paused) return
     const id = window.setInterval(() => {
       setIndex((i) => (i + 1) % slides.length)
-    }, 4000)
+    }, 4500)
     return () => window.clearInterval(id)
   }, [slides.length, paused])
 
+  const goTo = (next: number) => {
+    setIndex(((next % slides.length) + slides.length) % slides.length)
+  }
+
   return (
-    <section className="relative overflow-hidden">
-      <div className="grid lg:grid-cols-2 min-h-[70vh]">
+    <section className="relative overflow-hidden bg-off-white">
+      <div className="grid lg:grid-cols-[minmax(0,0.85fr)_1.15fr] min-h-[58vh] lg:min-h-[62vh]">
         <div
-          className="relative overflow-hidden min-h-[50vh] lg:min-h-full bg-off-white"
+          className="relative flex items-center justify-center px-6 py-10 sm:px-10 lg:px-12 lg:py-14"
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
         >
-          {slides.map((slide, i) => (
-            <Link
-              key={slide.id}
-              to={slide.slug === 'produtos' ? '/produtos' : `/produto/${slide.slug}`}
-              className={cn(
-                'absolute inset-0 block transition-opacity duration-700 ease-out',
-                i === index ? 'opacity-100 z-[1]' : 'opacity-0 z-0 pointer-events-none'
-              )}
-              aria-hidden={i !== index}
-              tabIndex={i === index ? 0 : -1}
-            >
-              <img
-                src={slide.src}
-                alt={slide.name}
-                className="absolute inset-0 w-full h-full object-cover"
-                loading={i === 0 ? 'eager' : 'lazy'}
-                decoding="async"
-              />
-            </Link>
-          ))}
-
-          {slides.length > 1 ? (
-            <div className="absolute bottom-5 left-1/2 z-[2] flex -translate-x-1/2 gap-2">
-              {slides.map((slide, i) => (
-                <button
-                  key={`dot-${slide.id}`}
-                  type="button"
-                  aria-label={`Ver foto ${i + 1}`}
-                  onClick={() => setIndex(i)}
+          <div className="relative w-full max-w-[420px] lg:max-w-[460px] aspect-[4/5] overflow-hidden bg-cream shadow-[0_24px_60px_rgba(26,26,26,0.14)] ring-1 ring-black/5">
+            {slides.map((slide, i) => {
+              const active = i === index
+              return (
+                <div
+                  key={slide.id}
                   className={cn(
-                    'h-1.5 rounded-full transition-all duration-300',
-                    i === index ? 'w-6 bg-white' : 'w-1.5 bg-white/50 hover:bg-white/80'
+                    'absolute inset-0 transition-opacity duration-700 ease-out',
+                    active ? 'opacity-100 z-[1]' : 'opacity-0 z-0 pointer-events-none'
                   )}
-                />
-              ))}
-            </div>
-          ) : null}
+                  aria-hidden={!active}
+                >
+                  <img
+                    src={slide.src}
+                    alt={slide.name}
+                    className={cn(
+                      'absolute inset-0 h-full w-full object-cover transition-transform duration-[4500ms] ease-out',
+                      active ? 'scale-105' : 'scale-100'
+                    )}
+                    loading={i === 0 ? 'eager' : 'lazy'}
+                    decoding="async"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-graphite/25 via-transparent to-transparent pointer-events-none" />
+                </div>
+              )
+            })}
 
-          <p className="sr-only">
-            {current?.name}
-          </p>
+            {current && current.slug !== 'produtos' ? (
+              <Link
+                to={`/produto/${current.slug}`}
+                className="absolute inset-0 z-[2]"
+                aria-label={`Ver ${current.name}`}
+              />
+            ) : null}
+
+            {slides.length > 1 ? (
+              <div className="absolute bottom-4 left-1/2 z-[3] flex -translate-x-1/2 items-center gap-2 rounded-full bg-graphite/25 px-3 py-1.5 backdrop-blur-sm">
+                {slides.map((slide, i) => (
+                  <button
+                    key={`dot-${slide.id}`}
+                    type="button"
+                    aria-label={`Ver foto ${i + 1}`}
+                    aria-current={i === index}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      goTo(i)
+                    }}
+                    className={cn(
+                      'h-1.5 rounded-full transition-all duration-300',
+                      i === index ? 'w-6 bg-white' : 'w-1.5 bg-white/55 hover:bg-white/85'
+                    )}
+                  />
+                ))}
+              </div>
+            ) : null}
+          </div>
         </div>
 
-        <div className="flex items-center bg-off-white px-8 py-16 lg:px-16 lg:py-24">
+        <div className="flex items-center px-8 py-14 lg:px-16 lg:py-20">
           <AnimateIn className="max-w-md">
             <p className="text-[11px] tracking-[0.3em] uppercase text-muted mb-4">
               Coleção exclusiva
@@ -103,7 +114,9 @@ export function FeaturedCollection() {
               significativos — da rotina ao extraordinário.
             </p>
             <Link to="/produtos">
-              <Button size="lg">Descobrir coleção</Button>
+              <Button type="button" size="lg">
+                Descobrir coleção
+              </Button>
             </Link>
           </AnimateIn>
         </div>
