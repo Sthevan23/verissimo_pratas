@@ -486,10 +486,10 @@ export function AdminProductForm() {
                   // Só formata depois de sair do campo — nunca enquanto digita
                   if (parsed) setSizesText(parsed.join(', '))
                 }}
-                placeholder="14, 16, 18, 20, 22"
+                placeholder="12, 13, 14, 15… até 31"
               />
               <p className="text-[11px] text-muted mt-1">
-                Digite os tamanhos separados por vírgula. Ex.: 14, 16, 18
+                Anéis: use de 12 a 31. Digite separados por vírgula.
               </p>
             </div>
             <div className="rounded-sm border border-brand-green/30 bg-brand-green/5 p-4 space-y-3">
