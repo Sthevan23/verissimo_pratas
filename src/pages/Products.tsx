@@ -4,7 +4,10 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { ProductCard } from '../components/ProductCard'
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { categoryLabels } from '../data/categories'
+import { DEFAULT_RING_SIZES, resolveProductSizes } from '../data/sizes'
 import { getStoreProducts } from '../services/storeService'
+import type { Product } from '../types'
+import { cn } from '../utils/format'
 
 const BRINCOS_TIPOS = [
   {
@@ -167,11 +170,50 @@ function isMasculinosCategory(cat: string) {
   )
 }
 
+function isAneisCategory(cat: string) {
+  return cat === 'aneis' || cat === 'personalizados-aneis'
+}
+
+function productHasSize(product: Product, size: string): boolean {
+  const sizes = resolveProductSizes(product.category, product.sizes)
+  if (!sizes?.length) return false
+  const needle = size.trim()
+  return sizes.some((s) => s.trim() === needle)
+}
+
+function collectAvailableSizes(products: Product[]): string[] {
+  const set = new Set<string>()
+  for (const p of products) {
+    if (!p.inStock) continue
+    const sizes = resolveProductSizes(p.category, p.sizes)
+    sizes?.forEach((s) => {
+      const t = s.trim()
+      if (t) set.add(t)
+    })
+  }
+  const list = [...set]
+  list.sort((a, b) => {
+    const na = Number(a)
+    const nb = Number(b)
+    if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb
+    return a.localeCompare(b, 'pt-BR')
+  })
+  // Preferência visual: tamanhos padrão de anel primeiro se existirem
+  if (list.some((s) => DEFAULT_RING_SIZES.includes(s))) {
+    const preferred = DEFAULT_RING_SIZES.filter((s) => set.has(s))
+    const extras = list.filter((s) => !DEFAULT_RING_SIZES.includes(s))
+    return [...preferred, ...extras]
+  }
+  return list
+}
+
 export function Products() {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const category = searchParams.get('categoria')
   const query = searchParams.get('q')
   const isPromo = searchParams.get('promocao') === 'true'
+  const sizeFilter = searchParams.get('tamanho')?.trim() || ''
+  const showSizeFilter = !!category && isAneisCategory(category)
   const isBrincosFamily =
     category === 'brincos' ||
     category === 'brincos-duplas' ||
@@ -292,8 +334,35 @@ export function Products() {
     if (isPromo) {
       result = result.filter((p) => p.isOnSale)
     }
+
+    // Filtro de tamanho (anéis): só peças disponíveis naquele número
+    if (showSizeFilter && sizeFilter) {
+      result = result.filter(
+        (p) => p.inStock && productHasSize(p, sizeFilter)
+      )
+    }
+
     return result
-  }, [category, query, isPromo])
+  }, [category, query, isPromo, showSizeFilter, sizeFilter])
+
+  const sizeOptions = useMemo(() => {
+    if (!showSizeFilter) return [] as string[]
+    // Base: produtos da categoria (sem filtro de tamanho) para montar os botões
+    let base = [...getStoreProducts()]
+    if (category === 'aneis') {
+      base = base.filter((p) => p.category === 'aneis' && !isBraceleteProduct(p.name))
+    } else if (category === 'personalizados-aneis') {
+      base = base.filter((p) => p.category === 'personalizados-aneis')
+    }
+    return collectAvailableSizes(base)
+  }, [showSizeFilter, category])
+
+  const setSizeFilter = (size: string | null) => {
+    const next = new URLSearchParams(searchParams)
+    if (size) next.set('tamanho', size)
+    else next.delete('tamanho')
+    setSearchParams(next, { replace: true })
+  }
 
   const title = category
     ? categoryLabels[category] ?? 'Produtos'
@@ -367,6 +436,53 @@ export function Products() {
             </div>
           )}
 
+          {showSizeFilter && sizeOptions.length > 0 && (
+            <div className="mb-10 lg:mb-12">
+              <p className="text-center text-[11px] tracking-[0.25em] uppercase text-muted mb-4">
+                Filtrar por tamanho
+              </p>
+              <div className="flex flex-wrap justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSizeFilter(null)}
+                  className={cn(
+                    'min-w-[2.75rem] px-3 py-2 text-[11px] tracking-wider uppercase border transition-colors',
+                    !sizeFilter
+                      ? 'border-brand-green bg-brand-green text-white'
+                      : 'border-border bg-cream text-graphite hover:border-brand-green'
+                  )}
+                >
+                  Todos
+                </button>
+                {sizeOptions.map((size) => {
+                  const active = sizeFilter === size
+                  return (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => setSizeFilter(active ? null : size)}
+                      className={cn(
+                        'min-w-[2.75rem] px-3 py-2 text-sm border transition-colors tabular-nums',
+                        active
+                          ? 'border-brand-green bg-brand-green text-white'
+                          : 'border-border bg-cream text-graphite hover:border-brand-green'
+                      )}
+                      aria-pressed={active}
+                      aria-label={`Tamanho ${size}`}
+                    >
+                      {size}
+                    </button>
+                  )
+                })}
+              </div>
+              {sizeFilter ? (
+                <p className="text-center text-sm text-warm-gray font-light mt-4">
+                  Mostrando anéis disponíveis no tamanho {sizeFilter}
+                </p>
+              ) : null}
+            </div>
+          )}
+
           {!familyHub && (
             <p className="text-center text-[11px] tracking-[0.3em] uppercase text-muted mb-10 -mt-6">
               {filtered.length} {filtered.length === 1 ? 'peça' : 'peças'}
@@ -381,36 +497,38 @@ export function Products() {
 
           {filtered.length === 0 ? (
             <p className="text-center text-warm-gray font-light py-20">
-              Nenhum produto encontrado nesta opção.
-              {isBrincosFamily && (
+              {showSizeFilter && sizeFilter
+                ? `Nenhum anel disponível no tamanho ${sizeFilter} no momento.`
+                : 'Nenhum produto encontrado nesta opção.'}
+              {!sizeFilter && isBrincosFamily && (
                 <>
                   {' '}
                   Cadastre produtos em <strong>Brincos</strong>, <strong>Duplas</strong> ou{' '}
                   <strong>Trios</strong> no painel.
                 </>
               )}
-              {isPulseirasFamily && (
+              {!sizeFilter && isPulseirasFamily && (
                 <>
                   {' '}
                   Cadastre produtos em <strong>Pulseiras</strong>, <strong>Braceletes</strong> ou{' '}
                   <strong>Infantil</strong> no painel.
                 </>
               )}
-              {isBerloquesFamily && (
+              {!sizeFilter && isBerloquesFamily && (
                 <>
                   {' '}
                   Cadastre produtos em <strong>Berloques</strong> ou{' '}
                   <strong>Pulseiras</strong> (para berloques) no painel.
                 </>
               )}
-              {isPersonalizadosFamily && (
+              {!sizeFilter && isPersonalizadosFamily && (
                 <>
                   {' '}
                   Cadastre peças de <strong>encomenda</strong> no painel
                   (Anéis, Colares, Pulseiras, Berloques ou Chaveiros).
                 </>
               )}
-              {isMasculinosFamily && (
+              {!sizeFilter && isMasculinosFamily && (
                 <>
                   {' '}
                   Cadastre produtos em <strong>Masculinos</strong> — Corrente,
