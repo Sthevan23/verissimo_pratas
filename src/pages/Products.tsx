@@ -170,10 +170,6 @@ function isMasculinosCategory(cat: string) {
   )
 }
 
-function isAneisCategory(cat: string) {
-  return cat === 'aneis' || cat === 'personalizados-aneis'
-}
-
 function productHasSize(product: Product, size: string): boolean {
   const sizes = resolveProductSizes(product.category, product.sizes)
   if (!sizes?.length) return false
@@ -198,7 +194,6 @@ function collectAvailableSizes(products: Product[]): string[] {
     if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb
     return a.localeCompare(b, 'pt-BR')
   })
-  // Preferência visual: tamanhos padrão de anel primeiro se existirem
   if (list.some((s) => DEFAULT_RING_SIZES.includes(s))) {
     const preferred = DEFAULT_RING_SIZES.filter((s) => set.has(s))
     const extras = list.filter((s) => !DEFAULT_RING_SIZES.includes(s))
@@ -207,13 +202,95 @@ function collectAvailableSizes(products: Product[]): string[] {
   return list
 }
 
+function filterCatalog(params: {
+  category: string | null
+  query: string | null
+  isPromo: boolean
+}): Product[] {
+  let result = [...getStoreProducts()]
+  const { category, query, isPromo } = params
+
+  if (category) {
+    if (category === 'novidades') {
+      result = result.filter((p) => p.isNew)
+    } else if (category === 'brincos') {
+      result = result.filter(
+        (p) =>
+          isBrincosCategory(p.category) ||
+          isTrioProduct(p.name) ||
+          isDuplaProduct(p.name)
+      )
+    } else if (category === 'brincos-trios') {
+      result = result.filter(
+        (p) =>
+          p.category === 'brincos-trios' ||
+          (p.category === 'brincos' && isTrioProduct(p.name))
+      )
+    } else if (category === 'brincos-duplas') {
+      result = result.filter(
+        (p) =>
+          p.category === 'brincos-duplas' ||
+          (p.category === 'brincos' && isDuplaProduct(p.name))
+      )
+    } else if (category === 'pulseiras') {
+      result = result.filter(
+        (p) =>
+          isPulseirasCategory(p.category) ||
+          isBraceleteProduct(p.name) ||
+          isInfantilProduct(p.name)
+      )
+    } else if (category === 'pulseiras-braceletes') {
+      result = result.filter(
+        (p) =>
+          p.category === 'pulseiras-braceletes' ||
+          isBraceleteProduct(p.name)
+      )
+    } else if (category === 'pulseiras-infantil') {
+      result = result.filter(
+        (p) =>
+          p.category === 'pulseiras-infantil' ||
+          (p.category === 'pulseiras' && isInfantilProduct(p.name))
+      )
+    } else if (category === 'berloques') {
+      result = result.filter((p) => isBerloquesCategory(p.category))
+    } else if (category === 'berloques-pulseiras') {
+      result = result.filter(
+        (p) =>
+          p.category === 'berloques-pulseiras' ||
+          (p.category === 'berloques' &&
+            isPulseiraBerloqueProduct(p.name, p.description))
+      )
+    } else if (category === 'personalizados') {
+      result = result.filter((p) => isPersonalizadosCategory(p.category))
+    } else if (category === 'masculinos' || category === 'linha-masculina') {
+      result = result.filter((p) => isMasculinosCategory(p.category))
+    } else if (category === 'aneis') {
+      result = result.filter(
+        (p) => p.category === 'aneis' && !isBraceleteProduct(p.name)
+      )
+    } else {
+      result = result.filter((p) => p.category === category)
+    }
+  }
+
+  if (query) {
+    const q = query.toLowerCase()
+    result = result.filter(
+      (p) => p.name.toLowerCase().includes(q) || p.category.includes(q)
+    )
+  }
+  if (isPromo) {
+    result = result.filter((p) => p.isOnSale)
+  }
+  return result
+}
+
 export function Products() {
   const [searchParams, setSearchParams] = useSearchParams()
   const category = searchParams.get('categoria')
   const query = searchParams.get('q')
   const isPromo = searchParams.get('promocao') === 'true'
   const sizeFilter = searchParams.get('tamanho')?.trim() || ''
-  const showSizeFilter = !!category && isAneisCategory(category)
   const isBrincosFamily =
     category === 'brincos' ||
     category === 'brincos-duplas' ||
@@ -257,105 +334,21 @@ export function Products() {
               }
             : null
 
+  const baseFiltered = useMemo(
+    () => filterCatalog({ category, query, isPromo }),
+    [category, query, isPromo]
+  )
+
+  const sizeOptions = useMemo(
+    () => collectAvailableSizes(baseFiltered),
+    [baseFiltered]
+  )
+  const showSizeFilter = sizeOptions.length > 0
+
   const filtered = useMemo(() => {
-    // Sempre lê do catálogo hidratado (não snapshot estático do módulo)
-    let result = [...getStoreProducts()]
-    if (category) {
-      if (category === 'novidades') {
-        result = result.filter((p) => p.isNew)
-      } else if (category === 'brincos') {
-        result = result.filter(
-          (p) =>
-            isBrincosCategory(p.category) ||
-            isTrioProduct(p.name) ||
-            isDuplaProduct(p.name)
-        )
-      } else if (category === 'brincos-trios') {
-        result = result.filter(
-          (p) =>
-            p.category === 'brincos-trios' ||
-            (p.category === 'brincos' && isTrioProduct(p.name))
-        )
-      } else if (category === 'brincos-duplas') {
-        result = result.filter(
-          (p) =>
-            p.category === 'brincos-duplas' ||
-            (p.category === 'brincos' && isDuplaProduct(p.name))
-        )
-      } else if (category === 'pulseiras') {
-        result = result.filter(
-          (p) =>
-            isPulseirasCategory(p.category) ||
-            isBraceleteProduct(p.name) ||
-            isInfantilProduct(p.name)
-        )
-      } else if (category === 'pulseiras-braceletes') {
-        result = result.filter(
-          (p) =>
-            p.category === 'pulseiras-braceletes' ||
-            isBraceleteProduct(p.name)
-        )
-      } else if (category === 'pulseiras-infantil') {
-        result = result.filter(
-          (p) =>
-            p.category === 'pulseiras-infantil' ||
-            (p.category === 'pulseiras' && isInfantilProduct(p.name))
-        )
-      } else if (category === 'berloques') {
-        result = result.filter((p) => isBerloquesCategory(p.category))
-      } else if (category === 'berloques-pulseiras') {
-        result = result.filter(
-          (p) =>
-            p.category === 'berloques-pulseiras' ||
-            (p.category === 'berloques' &&
-              isPulseiraBerloqueProduct(p.name, p.description))
-        )
-      } else if (category === 'personalizados') {
-        result = result.filter((p) => isPersonalizadosCategory(p.category))
-      } else if (category === 'masculinos' || category === 'linha-masculina') {
-        result = result.filter((p) => isMasculinosCategory(p.category))
-      } else if (category === 'aneis') {
-        // Não misturar braceletes cadastrados por engano em Anéis
-        result = result.filter(
-          (p) => p.category === 'aneis' && !isBraceleteProduct(p.name)
-        )
-      } else {
-        result = result.filter((p) => p.category === category)
-      }
-    }
-    if (query) {
-      const q = query.toLowerCase()
-      result = result.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.category.includes(q)
-      )
-    }
-    if (isPromo) {
-      result = result.filter((p) => p.isOnSale)
-    }
-
-    // Filtro de tamanho (anéis): só peças disponíveis naquele número
-    if (showSizeFilter && sizeFilter) {
-      result = result.filter(
-        (p) => p.inStock && productHasSize(p, sizeFilter)
-      )
-    }
-
-    return result
-  }, [category, query, isPromo, showSizeFilter, sizeFilter])
-
-  const sizeOptions = useMemo(() => {
-    if (!showSizeFilter) return [] as string[]
-    // Base: produtos da categoria (sem filtro de tamanho) para montar os botões
-    let base = [...getStoreProducts()]
-    if (category === 'aneis') {
-      base = base.filter((p) => p.category === 'aneis' && !isBraceleteProduct(p.name))
-    } else if (category === 'personalizados-aneis') {
-      base = base.filter((p) => p.category === 'personalizados-aneis')
-    }
-    return collectAvailableSizes(base)
-  }, [showSizeFilter, category])
+    if (!sizeFilter) return baseFiltered
+    return baseFiltered.filter((p) => p.inStock && productHasSize(p, sizeFilter))
+  }, [baseFiltered, sizeFilter])
 
   const setSizeFilter = (size: string | null) => {
     const next = new URLSearchParams(searchParams)
@@ -477,7 +470,7 @@ export function Products() {
               </div>
               {sizeFilter ? (
                 <p className="text-center text-sm text-warm-gray font-light mt-4">
-                  Mostrando anéis disponíveis no tamanho {sizeFilter}
+                  Mostrando peças disponíveis no tamanho {sizeFilter}
                 </p>
               ) : null}
             </div>
@@ -498,7 +491,7 @@ export function Products() {
           {filtered.length === 0 ? (
             <p className="text-center text-warm-gray font-light py-20">
               {showSizeFilter && sizeFilter
-                ? `Nenhum anel disponível no tamanho ${sizeFilter} no momento.`
+                ? `Nenhuma peça disponível no tamanho ${sizeFilter} no momento.`
                 : 'Nenhum produto encontrado nesta opção.'}
               {!sizeFilter && isBrincosFamily && (
                 <>
