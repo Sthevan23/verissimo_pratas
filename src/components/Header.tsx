@@ -72,6 +72,7 @@ const navLinks: NavItem[] = [
       { label: 'Pulseiras', href: '/produtos?categoria=personalizados-pulseiras' },
       { label: 'Berloques', href: '/produtos?categoria=personalizados-berloques' },
       { label: 'Chaveiros', href: '/produtos?categoria=personalizados-chaveiros' },
+      { label: 'Pingentes', href: '/produtos?categoria=personalizados-pingentes' },
     ],
   },
   { label: 'Piercings', href: '/produtos?categoria=piercings' },

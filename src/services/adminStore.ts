@@ -42,6 +42,7 @@ const HOME_HIDDEN_SLUGS = new Set([
   'personalizados-pulseiras',
   'personalizados-berloques',
   'personalizados-chaveiros',
+  'personalizados-pingentes',
   'masculinos-corrente',
   'masculinos-pulseira',
   'masculinos-pingente',

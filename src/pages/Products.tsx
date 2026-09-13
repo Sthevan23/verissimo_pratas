@@ -86,6 +86,11 @@ const PERSONALIZADOS_TIPOS = [
     title: 'Chaveiros',
     description: 'Chaveiros personalizados',
   },
+  {
+    slug: 'personalizados-pingentes',
+    title: 'Pingentes',
+    description: 'Pingentes personalizados',
+  },
 ] as const
 
 const MASCULINOS_TIPOS = [

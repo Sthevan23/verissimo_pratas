@@ -21,6 +21,7 @@ export type CategorySlug =
   | 'personalizados-pulseiras'
   | 'personalizados-berloques'
   | 'personalizados-chaveiros'
+  | 'personalizados-pingentes'
   | 'masculinos'
   | 'masculinos-corrente'
   | 'masculinos-pulseira'

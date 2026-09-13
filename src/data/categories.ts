@@ -130,6 +130,12 @@ export const categories: Category[] = [
     image: `${CDN}/products/img_4633-9c3c043dc188f7692c17807857126302-480-0.webp`,
   },
   {
+    slug: 'personalizados-pingentes',
+    name: 'Pingentes personalizados',
+    description: 'Pingentes sob encomenda em prata 925',
+    image: `${CDN}/products/img_4633-9c3c043dc188f7692c17807857126302-480-0.webp`,
+  },
+  {
     slug: 'masculinos',
     name: 'Masculinos',
     description: 'Linha masculina em prata 925',
@@ -189,6 +195,7 @@ export const categoryLabels: Record<string, string> = {
   'personalizados-pulseiras': 'Pulseiras',
   'personalizados-berloques': 'Berloques',
   'personalizados-chaveiros': 'Chaveiros',
+  'personalizados-pingentes': 'Pingentes',
   masculinos: 'Masculinos',
   'masculinos-corrente': 'Corrente',
   'masculinos-pulseira': 'Pulseira',
@@ -214,6 +221,7 @@ export const homeCategories = categories
         'personalizados-pulseiras',
         'personalizados-berloques',
         'personalizados-chaveiros',
+        'personalizados-pingentes',
         'masculinos-corrente',
         'masculinos-pulseira',
         'masculinos-pingente',
