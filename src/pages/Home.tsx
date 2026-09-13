@@ -3,12 +3,9 @@ import { BenefitsBar } from '../components/BenefitsBar'
 import { Hero } from '../components/Hero'
 import { Categories } from '../components/Categories'
 import { ProductGrid } from '../components/ProductGrid'
-import { FeaturedCollection } from '../components/FeaturedCollection'
 import { Promotions } from '../components/Promotions'
-import { AboutSection } from '../components/AboutSection'
 import { ShoppingExperience } from '../components/ShoppingExperience'
 import { InstagramFeed } from '../components/Instagram'
-import { Newsletter } from '../components/Newsletter'
 import { getFeaturedProducts } from '../data/products'
 import { STORE_CONTACT } from '../data/contact'
 
@@ -40,12 +37,9 @@ export function Home() {
       <Hero />
       <Categories />
       <ProductGrid products={featured} />
-      <FeaturedCollection />
       <Promotions />
-      <AboutSection />
       <ShoppingExperience />
       <InstagramFeed />
-      <Newsletter />
     </>
   )
 }

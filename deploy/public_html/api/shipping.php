@@ -97,30 +97,31 @@ if ($token === '') {
     'User-Agent: VerissimoPratas/1.0 (verissimopratass@gmail.com)',
   ];
 
-  // Duas cotações: Mini (pacote pequeno) + PAC/SEDEX (mínimos Correios)
-  // Peso sobe com a quantidade (mín. 0.3 kg por peça)
-  $weight = max(0.3, 0.3 * $totalQty);
-  $height = min(100, max(4, 2 + (int) ceil($totalQty / 2)));
+  // Joias: pacote leve. Seguro declarado inflava o frete — usamos o valor puro da SuperFrete.
+  // Peso: ~150g base + ~50g por peça extra (realista para prata em embalagem pequena).
+  $weight = round(max(0.15, 0.15 + (0.05 * max(0, $totalQty - 1))), 3);
+  $height = min(20, max(2, 2 + (int) floor(($totalQty - 1) / 3)));
+  $width = 12;
+  $length = max(16, min(24, 16 + (int) floor(($totalQty - 1) / 2)));
+
   $requests = [
     [
       'services' => '17',
       'package' => [
         'height' => $height,
-        'width' => 12,
-        'length' => 16,
+        'width' => $width,
+        'length' => $length,
         'weight' => $weight,
       ],
-      'insurance' => max(26.0, min($subtotal, 3000.0)),
     ],
     [
       'services' => '1,2',
       'package' => [
-        'height' => $height,
-        'width' => 16,
-        'length' => 24,
+        'height' => max($height, 4),
+        'width' => max($width, 16),
+        'length' => max($length, 24),
         'weight' => $weight,
       ],
-      'insurance' => max(26.0, min($subtotal, 3000.0)),
     ],
   ];
 
@@ -133,8 +134,8 @@ if ($token === '') {
       'options' => [
         'own_hand' => false,
         'receipt' => false,
-        'insurance_value' => $req['insurance'],
-        'use_insurance_value' => true,
+        'insurance_value' => 0,
+        'use_insurance_value' => false,
       ],
       'package' => $req['package'],
     ];
@@ -172,8 +173,19 @@ if ($token === '') {
         $errors[] = (string) ($row['name'] ?? 'serviço') . ': ' . (is_string($row['error']) ? $row['error'] : json_encode($row['error'], JSON_UNESCAPED_UNICODE));
         continue;
       }
-      if (isset($row['price']) === false) continue;
-      $price = (float) $row['price'];
+      if (isset($row['price']) === false && isset($row['final_price']) === false) continue;
+      // Usa o preço retornado pela SuperFrete (sem inventar markup)
+      $rawPrice = $row['final_price'] ?? $row['price'];
+      if (is_string($rawPrice)) {
+        $rawPrice = preg_replace('/[^\d,.-]/', '', $rawPrice) ?? '';
+        // Formato BR: 1.234,56 → 1234.56
+        if (strpos($rawPrice, ',') !== false) {
+          $rawPrice = str_replace('.', '', $rawPrice);
+          $rawPrice = str_replace(',', '.', $rawPrice);
+        }
+      }
+      $price = round((float) $rawPrice, 2);
+      if ($price < 0) continue;
       $company = '';
       if (isset($row['company']) && is_array($row['company'])) {
         $company = (string) ($row['company']['name'] ?? '');
