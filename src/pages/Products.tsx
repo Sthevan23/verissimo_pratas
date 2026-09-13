@@ -7,7 +7,6 @@ import { categoryLabels } from '../data/categories'
 import { DEFAULT_RING_SIZES, resolveProductSizes } from '../data/sizes'
 import { getStoreProducts } from '../services/storeService'
 import type { Product } from '../types'
-import { cn } from '../utils/format'
 
 const BRINCOS_TIPOS = [
   {
