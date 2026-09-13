@@ -54,8 +54,11 @@ export function AdminProductForm() {
   const [product, setProduct] = useState<AdminProduct>(emptyProduct)
   /** Texto bruto do textarea — evita apagar ao digitar antes do formato "Nome: a, b" */
   const [optionsText, setOptionsText] = useState('')
-  /** Texto bruto dos tamanhos — evita comer a vírgula ao digitar (ex.: "14,") */
+  /** Texto bruto dos tamanhos — só vira array no blur/salvar (vírgula livre ao digitar) */
   const [sizesText, setSizesText] = useState('')
+  /** Texto bruto dos valores da 1ª variação (ex.: Corações, Círculos) */
+  const [optionValuesText, setOptionValuesText] = useState('')
+  const [optionLabelText, setOptionLabelText] = useState('Modelo')
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const galleryInputRef = useRef<HTMLInputElement>(null)
@@ -67,27 +70,42 @@ export function AdminProductForm() {
       const p = getAdminProduct(id)
       if (p) {
         setProduct(p)
-        setOptionsText(formatProductOptions(p.options))
+        const formatted = formatProductOptions(p.options)
+        setOptionsText(formatted)
         setSizesText((p.sizes ?? []).join(', '))
+        const first = p.options?.[0]
+        setOptionLabelText(first?.label || 'Modelo')
+        setOptionValuesText(first?.values?.join(', ') || '')
       }
     } else {
       setOptionsText('')
       setSizesText('')
+      setOptionLabelText('Modelo')
+      setOptionValuesText('')
     }
   }, [id, isNew])
 
   const margin = calcMargin(product.costPrice, product.salePrice ?? product.price)
 
+  const update = (field: keyof AdminProduct, value: unknown) => {
+    setProduct((p) => ({ ...p, [field]: value }))
+  }
+
   const parseSizesText = (text: string): string[] | undefined => {
     const sizes = text
-      .split(',')
+      .split(/[,;]+/)
       .map((s) => s.trim())
       .filter(Boolean)
     return sizes.length ? sizes : undefined
   }
 
-  const update = (field: keyof AdminProduct, value: unknown) => {
-    setProduct((p) => ({ ...p, [field]: value }))
+  const syncOptionsFromFields = (label: string, values: string, restLines = '') => {
+    const cleanLabel = label.trim() || 'Modelo'
+    const line = `${cleanLabel}: ${values}`
+    const next = [line, restLines].filter((l) => l.trim().length > 0).join('\n')
+    setOptionsText(next)
+    const options = parseProductOptions(next)
+    update('options', options.length ? options : undefined)
   }
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -173,8 +191,12 @@ export function AdminProductForm() {
         seoTitle: product.seoTitle || `${product.name} | Verissimo Pratas 925`,
         inStock: product.stock > 0,
       })
-      setOptionsText(formatProductOptions(parsedOptions))
+      const formattedOptions = formatProductOptions(parsedOptions)
+      setOptionsText(formattedOptions)
       setSizesText((parsedSizes ?? []).join(', '))
+      const first = parsedOptions[0]
+      setOptionLabelText(first?.label || 'Modelo')
+      setOptionValuesText(first?.values?.join(', ') || '')
       setProduct(saved)
       const pub = await publishCatalogToServer()
       if (!pub.ok) {
@@ -450,22 +472,24 @@ export function AdminProductForm() {
             <div>
               <label className="admin-label">Tamanhos (separados por vírgula)</label>
               <input
+                type="text"
+                inputMode="text"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
                 className="admin-input"
                 value={sizesText}
-                onChange={(e) => {
-                  const text = e.target.value
-                  setSizesText(text)
-                  update('sizes', parseSizesText(text))
-                }}
+                onChange={(e) => setSizesText(e.target.value)}
                 onBlur={() => {
                   const parsed = parseSizesText(sizesText)
                   update('sizes', parsed)
-                  setSizesText((parsed ?? []).join(', '))
+                  // Só formata depois de sair do campo — nunca enquanto digita
+                  if (parsed) setSizesText(parsed.join(', '))
                 }}
                 placeholder="14, 16, 18, 20, 22"
               />
               <p className="text-[11px] text-muted mt-1">
-                Anéis e pulseiras: informe os tamanhos disponíveis na loja.
+                Digite os tamanhos separados por vírgula. Ex.: 14, 16, 18
               </p>
             </div>
             <div className="rounded-sm border border-brand-green/30 bg-brand-green/5 p-4 space-y-3">
@@ -477,49 +501,41 @@ export function AdminProductForm() {
                 </p>
                 <div className="grid sm:grid-cols-[8rem_1fr] gap-2 mb-2">
                   <input
+                    type="text"
+                    inputMode="text"
+                    autoComplete="off"
                     className="admin-input"
-                    value={
-                      optionsText.includes(':')
-                        ? optionsText.split('\n')[0]?.split(':')[0]?.trim() || 'Modelo'
-                        : 'Modelo'
-                    }
+                    value={optionLabelText}
                     onChange={(e) => {
-                      const label = e.target.value.trim() || 'Modelo'
-                      const firstLine = optionsText.split('\n')[0] ?? ''
-                      const valuesPart = firstLine.includes(':')
-                        ? firstLine.slice(firstLine.indexOf(':') + 1).trim()
-                        : firstLine.trim()
+                      const label = e.target.value
+                      setOptionLabelText(label)
                       const rest = optionsText.split('\n').slice(1).join('\n')
-                      const next = [`${label}: ${valuesPart}`, rest].filter(Boolean).join('\n')
-                      setOptionsText(next)
-                      const options = parseProductOptions(next)
-                      update('options', options.length ? options : undefined)
+                      syncOptionsFromFields(label, optionValuesText, rest)
                     }}
                     placeholder="Modelo"
                     aria-label="Nome da variação"
                   />
                   <input
+                    type="text"
+                    inputMode="text"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    spellCheck={false}
                     className="admin-input"
-                    value={
-                      (() => {
-                        const firstLine = optionsText.split('\n')[0] ?? ''
-                        return firstLine.includes(':')
-                          ? firstLine.slice(firstLine.indexOf(':') + 1).trim()
-                          : firstLine.trim()
-                      })()
-                    }
+                    value={optionValuesText}
                     onChange={(e) => {
-                      const label =
-                        optionsText.includes(':')
-                          ? optionsText.split('\n')[0]?.split(':')[0]?.trim() || 'Modelo'
-                          : 'Modelo'
+                      const values = e.target.value
+                      setOptionValuesText(values)
                       const rest = optionsText.split('\n').slice(1).join('\n')
-                      const next = [`${label}: ${e.target.value}`, rest]
-                        .filter(Boolean)
-                        .join('\n')
-                      setOptionsText(next)
-                      const options = parseProductOptions(next)
-                      update('options', options.length ? options : undefined)
+                      syncOptionsFromFields(optionLabelText, values, rest)
+                    }}
+                    onBlur={() => {
+                      const parsed = parseProductOptions(
+                        `${optionLabelText.trim() || 'Modelo'}: ${optionValuesText}`
+                      )
+                      if (parsed[0]?.values?.length) {
+                        setOptionValuesText(parsed[0].values.join(', '))
+                      }
                     }}
                     placeholder="Corações, Círculos"
                     aria-label="Opções separadas por vírgula"
@@ -533,6 +549,13 @@ export function AdminProductForm() {
                     setOptionsText(text)
                     const options = parseProductOptions(text)
                     update('options', options.length ? options : undefined)
+                    const firstLine = text.split('\n')[0] ?? ''
+                    if (firstLine.includes(':')) {
+                      setOptionLabelText(firstLine.split(':')[0]?.trim() || 'Modelo')
+                      setOptionValuesText(firstLine.slice(firstLine.indexOf(':') + 1))
+                    } else {
+                      setOptionValuesText(firstLine)
+                    }
                   }}
                   placeholder={'Modelo: Corações, Círculos'}
                 />
