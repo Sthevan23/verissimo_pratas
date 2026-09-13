@@ -98,26 +98,29 @@ if ($token === '') {
   ];
 
   // Duas cotações: Mini (pacote pequeno) + PAC/SEDEX (mínimos Correios)
+  // Peso sobe com a quantidade (mín. 0.3 kg por peça)
+  $weight = max(0.3, 0.3 * $totalQty);
+  $height = min(100, max(4, 2 + (int) ceil($totalQty / 2)));
   $requests = [
     [
       'services' => '17',
       'package' => [
-        'height' => 4,
+        'height' => $height,
         'width' => 12,
         'length' => 16,
-        'weight' => 0.3,
+        'weight' => $weight,
       ],
-      'insurance' => 26.0,
+      'insurance' => max(26.0, min($subtotal, 3000.0)),
     ],
     [
       'services' => '1,2',
       'package' => [
-        'height' => 4,
+        'height' => $height,
         'width' => 16,
         'length' => 24,
-        'weight' => 0.3,
+        'weight' => $weight,
       ],
-      'insurance' => 26.0,
+      'insurance' => max(26.0, min($subtotal, 3000.0)),
     ],
   ];
 

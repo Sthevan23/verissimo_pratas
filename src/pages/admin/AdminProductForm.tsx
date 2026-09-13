@@ -54,6 +54,8 @@ export function AdminProductForm() {
   const [product, setProduct] = useState<AdminProduct>(emptyProduct)
   /** Texto bruto do textarea — evita apagar ao digitar antes do formato "Nome: a, b" */
   const [optionsText, setOptionsText] = useState('')
+  /** Texto bruto dos tamanhos — evita comer a vírgula ao digitar (ex.: "14,") */
+  const [sizesText, setSizesText] = useState('')
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const galleryInputRef = useRef<HTMLInputElement>(null)
@@ -66,13 +68,23 @@ export function AdminProductForm() {
       if (p) {
         setProduct(p)
         setOptionsText(formatProductOptions(p.options))
+        setSizesText((p.sizes ?? []).join(', '))
       }
     } else {
       setOptionsText('')
+      setSizesText('')
     }
   }, [id, isNew])
 
   const margin = calcMargin(product.costPrice, product.salePrice ?? product.price)
+
+  const parseSizesText = (text: string): string[] | undefined => {
+    const sizes = text
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+    return sizes.length ? sizes : undefined
+  }
 
   const update = (field: keyof AdminProduct, value: unknown) => {
     setProduct((p) => ({ ...p, [field]: value }))
@@ -144,16 +156,26 @@ export function AdminProductForm() {
         category = 'pulseiras-braceletes' as CategorySlug
       }
       const parsedOptions = parseProductOptions(optionsText)
+      const parsedSizes = parseSizesText(sizesText)
+      const salePrice =
+        product.salePrice && product.salePrice > 0 && product.salePrice < product.price
+          ? product.salePrice
+          : undefined
       const saved = saveProduct({
         ...product,
         category,
         slug,
         sku,
+        sizes: parsedSizes,
         options: parsedOptions.length ? parsedOptions : undefined,
+        salePrice,
+        isOnSale: Boolean(salePrice),
         seoTitle: product.seoTitle || `${product.name} | Verissimo Pratas 925`,
         inStock: product.stock > 0,
       })
       setOptionsText(formatProductOptions(parsedOptions))
+      setSizesText((parsedSizes ?? []).join(', '))
+      setProduct(saved)
       const pub = await publishCatalogToServer()
       if (!pub.ok) {
         showToast(
@@ -334,8 +356,30 @@ export function AdminProductForm() {
             </div>
             <div>
               <label className="admin-label">Preço promocional (R$)</label>
-              <input type="number" step="0.01" className="admin-input" value={product.salePrice ?? ''} onChange={(e) => update('salePrice', e.target.value ? parseFloat(e.target.value) : undefined)} />
+              <input
+                type="number"
+                step="0.01"
+                className="admin-input"
+                value={product.salePrice ?? ''}
+                onChange={(e) => {
+                  const salePrice = e.target.value ? parseFloat(e.target.value) : undefined
+                  setProduct((p) => ({
+                    ...p,
+                    salePrice,
+                    isOnSale: Boolean(salePrice && salePrice > 0 && salePrice < p.price),
+                  }))
+                }}
+              />
             </div>
+            <label className="flex items-center gap-2 text-sm cursor-pointer pt-1">
+              <input
+                type="checkbox"
+                checked={Boolean(product.isFeatured)}
+                onChange={(e) => update('isFeatured', e.target.checked)}
+                className="rounded border-border"
+              />
+              Mostrar em “Mais desejados” na home
+            </label>
             <div>
               <label className="admin-label">Preço de custo (R$)</label>
               <input type="number" step="0.01" className="admin-input" value={product.costPrice || ''} onChange={(e) => update('costPrice', parseFloat(e.target.value) || 0)} />
@@ -407,13 +451,16 @@ export function AdminProductForm() {
               <label className="admin-label">Tamanhos (separados por vírgula)</label>
               <input
                 className="admin-input"
-                value={(product.sizes ?? []).join(', ')}
+                value={sizesText}
                 onChange={(e) => {
-                  const sizes = e.target.value
-                    .split(',')
-                    .map((s) => s.trim())
-                    .filter(Boolean)
-                  update('sizes', sizes.length ? sizes : undefined)
+                  const text = e.target.value
+                  setSizesText(text)
+                  update('sizes', parseSizesText(text))
+                }}
+                onBlur={() => {
+                  const parsed = parseSizesText(sizesText)
+                  update('sizes', parsed)
+                  setSizesText((parsed ?? []).join(', '))
                 }}
                 placeholder="14, 16, 18, 20, 22"
               />

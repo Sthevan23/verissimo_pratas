@@ -232,9 +232,11 @@ export function ProductDetails() {
 
                 {/* Preços */}
                 <div className="mb-3">
-                  <p className="text-[15px] text-muted line-through decoration-muted/80">
-                    {formatPrice(listPrice)}
-                  </p>
+                  {product.salePrice != null && product.salePrice > 0 && product.salePrice < product.price ? (
+                    <p className="text-[15px] text-muted line-through decoration-muted/80">
+                      {formatPrice(listPrice)}
+                    </p>
+                  ) : null}
                   <p className="text-[1.35rem] sm:text-2xl font-bold text-graphite leading-tight mt-0.5">
                     {formatPrice(pixPrice)}{' '}
                     <span className="font-semibold text-[1.05rem] sm:text-xl">
