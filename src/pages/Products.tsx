@@ -430,49 +430,40 @@ export function Products() {
           )}
 
           {showSizeFilter && sizeOptions.length > 0 && (
-            <div className="mb-10 lg:mb-12">
-              <p className="text-center text-[11px] tracking-[0.25em] uppercase text-muted mb-4">
+            <div className="mb-10 lg:mb-12 flex flex-col sm:flex-row sm:items-center sm:justify-center gap-3 sm:gap-4">
+              <label
+                htmlFor="filtro-tamanho"
+                className="text-[11px] tracking-[0.25em] uppercase text-muted text-center sm:text-left shrink-0"
+              >
                 Filtrar por tamanho
-              </p>
-              <div className="flex flex-wrap justify-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setSizeFilter(null)}
-                  className={cn(
-                    'min-w-[2.75rem] px-3 py-2 text-[11px] tracking-wider uppercase border transition-colors',
-                    !sizeFilter
-                      ? 'border-brand-green bg-brand-green text-white'
-                      : 'border-border bg-cream text-graphite hover:border-brand-green'
-                  )}
+              </label>
+              <div className="flex items-center justify-center gap-2">
+                <select
+                  id="filtro-tamanho"
+                  value={sizeFilter}
+                  onChange={(e) => setSizeFilter(e.target.value || null)}
+                  className="w-full sm:w-auto min-w-[11rem] appearance-none border border-border bg-cream px-4 py-2.5 pr-10 text-sm text-graphite focus:outline-none focus:border-brand-green bg-[length:12px] bg-[right_0.85rem_center] bg-no-repeat"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B6B6B' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+                  }}
                 >
-                  Todos
-                </button>
-                {sizeOptions.map((size) => {
-                  const active = sizeFilter === size
-                  return (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => setSizeFilter(active ? null : size)}
-                      className={cn(
-                        'min-w-[2.75rem] px-3 py-2 text-sm border transition-colors tabular-nums',
-                        active
-                          ? 'border-brand-green bg-brand-green text-white'
-                          : 'border-border bg-cream text-graphite hover:border-brand-green'
-                      )}
-                      aria-pressed={active}
-                      aria-label={`Tamanho ${size}`}
-                    >
-                      {size}
-                    </button>
-                  )
-                })}
+                  <option value="">Todos os tamanhos</option>
+                  {sizeOptions.map((size) => (
+                    <option key={size} value={size}>
+                      Tamanho {size}
+                    </option>
+                  ))}
+                </select>
+                {sizeFilter ? (
+                  <button
+                    type="button"
+                    onClick={() => setSizeFilter(null)}
+                    className="shrink-0 px-3 py-2.5 text-[11px] tracking-wider uppercase text-muted hover:text-graphite border border-border"
+                  >
+                    Limpar
+                  </button>
+                ) : null}
               </div>
-              {sizeFilter ? (
-                <p className="text-center text-sm text-warm-gray font-light mt-4">
-                  Mostrando peças disponíveis no tamanho {sizeFilter}
-                </p>
-              ) : null}
             </div>
           )}
 
