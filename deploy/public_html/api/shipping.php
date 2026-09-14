@@ -97,120 +97,102 @@ if ($token === '') {
     'User-Agent: VerissimoPratas/1.0 (verissimopratass@gmail.com)',
   ];
 
-  // Joias: pacote leve. Seguro declarado inflava o frete — usamos o valor puro da SuperFrete.
-  // Peso: ~150g base + ~50g por peça extra (realista para prata em embalagem pequena).
-  $weight = round(max(0.15, 0.15 + (0.05 * max(0, $totalQty - 1))), 3);
-  $height = min(20, max(2, 2 + (int) floor(($totalQty - 1) / 3)));
-  $width = 12;
-  $length = max(16, min(24, 16 + (int) floor(($totalQty - 1) / 2)));
+  // Joias: embalagem pequena (mínimos Correios ~16×11×2 cm).
+  // Mesmas medidas para Mini/PAC/SEDEX — caixa grande no PAC inflava a cotação.
+  // Seguro desligado: valor declarado aumentava o frete sem necessidade.
+  // ~100g base + 50g/peça extra (joia + embalagem). Mini Envios só até 300g.
+  $weight = round(max(0.1, 0.1 + (0.05 * max(0, $totalQty - 1))), 3);
+  $height = min(8, max(2, 2 + (int) floor(($totalQty - 1) / 4)));
+  $width = min(16, max(11, 11 + (int) floor(($totalQty - 1) / 3)));
+  $length = min(20, max(16, 16 + (int) floor(($totalQty - 1) / 2)));
 
-  $requests = [
-    [
-      'services' => '17',
-      'package' => [
-        'height' => $height,
-        'width' => $width,
-        'length' => $length,
-        'weight' => $weight,
-      ],
+  $payload = [
+    'from' => ['postal_code' => $originCep],
+    'to' => ['postal_code' => $cep],
+    'services' => '1,2,17',
+    'options' => [
+      'own_hand' => false,
+      'receipt' => false,
+      'insurance_value' => 0,
+      'use_insurance_value' => false,
     ],
-    [
-      'services' => '1,2',
-      'package' => [
-        'height' => max($height, 4),
-        'width' => max($width, 16),
-        'length' => max($length, 24),
-        'weight' => $weight,
-      ],
+    'package' => [
+      'height' => $height,
+      'width' => $width,
+      'length' => $length,
+      'weight' => $weight,
     ],
   ];
 
   $errors = [];
-  foreach ($requests as $req) {
-    $payload = [
-      'from' => ['postal_code' => $originCep],
-      'to' => ['postal_code' => $cep],
-      'services' => $req['services'],
-      'options' => [
-        'own_hand' => false,
-        'receipt' => false,
-        'insurance_value' => 0,
-        'use_insurance_value' => false,
-      ],
-      'package' => $req['package'],
-    ];
+  $ch = curl_init($base . '/api/v0/calculator');
+  curl_setopt_array($ch, [
+    CURLOPT_POST => true,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HTTPHEADER => $headers,
+    CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
+    CURLOPT_TIMEOUT => 25,
+  ]);
+  $resp = curl_exec($ch);
+  $http = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+  $curlErr = curl_error($ch);
+  curl_close($ch);
 
-    $ch = curl_init($base . '/api/v0/calculator');
-    curl_setopt_array($ch, [
-      CURLOPT_POST => true,
-      CURLOPT_RETURNTRANSFER => true,
-      CURLOPT_HTTPHEADER => $headers,
-      CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
-      CURLOPT_TIMEOUT => 25,
-    ]);
-    $resp = curl_exec($ch);
-    $http = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlErr = curl_error($ch);
-    curl_close($ch);
-
-    if ($resp === false) {
-      $errors[] = $curlErr ?: 'sem resposta';
-      continue;
-    }
-
+  if ($resp === false) {
+    $errors[] = $curlErr ?: 'sem resposta';
+  } else {
     $data = json_decode($resp, true);
     if ($http >= 400 || !is_array($data)) {
       $errors[] = is_array($data)
         ? (string) ($data['message'] ?? $data['error'] ?? 'Erro na cotação')
         : 'Erro na cotação SuperFrete';
-      continue;
-    }
-
-    $list = isset($data[0]) ? $data : (isset($data['data']) && is_array($data['data']) ? $data['data'] : [$data]);
-    foreach ($list as $row) {
-      if (!is_array($row)) continue;
-      if (!empty($row['error'])) {
-        $errors[] = (string) ($row['name'] ?? 'serviço') . ': ' . (is_string($row['error']) ? $row['error'] : json_encode($row['error'], JSON_UNESCAPED_UNICODE));
-        continue;
-      }
-      if (isset($row['price']) === false && isset($row['final_price']) === false) continue;
-      // Usa o preço retornado pela SuperFrete (sem inventar markup)
-      $rawPrice = $row['final_price'] ?? $row['price'];
-      if (is_string($rawPrice)) {
-        $rawPrice = preg_replace('/[^\d,.-]/', '', $rawPrice) ?? '';
-        // Formato BR: 1.234,56 → 1234.56
-        if (strpos($rawPrice, ',') !== false) {
-          $rawPrice = str_replace('.', '', $rawPrice);
-          $rawPrice = str_replace(',', '.', $rawPrice);
+    } else {
+      $list = isset($data[0]) ? $data : (isset($data['data']) && is_array($data['data']) ? $data['data'] : [$data]);
+      foreach ($list as $row) {
+        if (!is_array($row)) continue;
+        if (!empty($row['error'])) {
+          $errors[] = (string) ($row['name'] ?? 'serviço') . ': ' . (is_string($row['error']) ? $row['error'] : json_encode($row['error'], JSON_UNESCAPED_UNICODE));
+          continue;
         }
-      }
-      $price = round((float) $rawPrice, 2);
-      if ($price < 0) continue;
-      $company = '';
-      if (isset($row['company']) && is_array($row['company'])) {
-        $company = (string) ($row['company']['name'] ?? '');
-      } elseif (isset($row['company']) && is_string($row['company'])) {
-        $company = $row['company'];
-      }
-      $id = (string) ($row['id'] ?? $row['service'] ?? uniqid('sf_', true));
-      // Evita duplicar o mesmo serviço
-      $exists = false;
-      foreach ($quotes as $q) {
-        if ((string) $q['id'] === $id) {
-          $exists = true;
-          break;
+        if (isset($row['price']) === false && isset($row['final_price']) === false) continue;
+        // `price` = valor SuperFrete (com desconto da plataforma). `final_price` costuma ser tabela cheia.
+        $rawPrice = $row['price'] ?? $row['final_price'];
+        if (is_string($rawPrice)) {
+          $rawPrice = preg_replace('/[^\d,.-]/', '', $rawPrice) ?? '';
+          // Formato BR: 1.234,56 → 1234.56
+          if (strpos($rawPrice, ',') !== false) {
+            $rawPrice = str_replace('.', '', $rawPrice);
+            $rawPrice = str_replace(',', '.', $rawPrice);
+          }
         }
+        $price = round((float) $rawPrice, 2);
+        if ($price < 0) continue;
+        $company = '';
+        if (isset($row['company']) && is_array($row['company'])) {
+          $company = (string) ($row['company']['name'] ?? '');
+        } elseif (isset($row['company']) && is_string($row['company'])) {
+          $company = $row['company'];
+        }
+        $id = (string) ($row['id'] ?? $row['service'] ?? uniqid('sf_', true));
+        // Evita duplicar o mesmo serviço
+        $exists = false;
+        foreach ($quotes as $q) {
+          if ((string) $q['id'] === $id) {
+            $exists = true;
+            break;
+          }
+        }
+        if ($exists) continue;
+        $quotes[] = [
+          'id' => $id,
+          'name' => (string) ($row['name'] ?? 'Correios'),
+          'company' => $company !== '' ? $company : 'Correios / SuperFrete',
+          'price' => round($price, 2),
+          'delivery_time' => isset($row['delivery_time']) ? (int) $row['delivery_time'] : null,
+          'currency' => (string) ($row['currency'] ?? 'R$'),
+          'free' => false,
+        ];
       }
-      if ($exists) continue;
-      $quotes[] = [
-        'id' => $id,
-        'name' => (string) ($row['name'] ?? 'Correios'),
-        'company' => $company !== '' ? $company : 'Correios / SuperFrete',
-        'price' => round($price, 2),
-        'delivery_time' => isset($row['delivery_time']) ? (int) $row['delivery_time'] : null,
-        'currency' => (string) ($row['currency'] ?? 'R$'),
-        'free' => false,
-      ];
     }
   }
 
