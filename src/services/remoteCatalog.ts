@@ -233,6 +233,8 @@ export function normalizeProductImageUrl(url: string): string {
 export function normalizeProductImages<T extends { images?: string[] }>(product: T): T {
   const images = (Array.isArray(product.images) ? product.images : [])
     .filter((img): img is string => typeof img === 'string' && img.trim().length > 0)
+    // Remove fotos do site antigo (MitiendaNube)
+    .filter((img) => !/mitiendanube\.com|tiendanube\.com/i.test(img))
     .map((img) => normalizeProductImageUrl(img.trim()))
   return {
     ...product,

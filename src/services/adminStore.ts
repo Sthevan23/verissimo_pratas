@@ -19,6 +19,7 @@ import {
   normalizeProductImages,
   pushCatalogToServer,
 } from './remoteCatalog'
+import { isLegacyForeignImage, localCategoryImage, stripLegacyImages } from '../utils/legacyImages'
 
 const STORAGE_KEY = 'verissimo-admin-db-v5'
 
@@ -82,16 +83,30 @@ function ensureSeedCategories(db: AdminDatabase): boolean {
     })
     changed = true
   }
+  // Troca fotos antigas (MitiendaNube) pelas fotos locais da Verissimo
+  for (const cat of db.categories) {
+    const seed = seedCategories.find((c) => c.slug === cat.slug)
+    const localImg = seed?.image || localCategoryImage(String(cat.slug))
+    if (!cat.image || isLegacyForeignImage(cat.image)) {
+      cat.image = localImg
+      changed = true
+    }
+  }
+
+  for (const p of db.products) {
+    const cleaned = stripLegacyImages(p.images)
+    if (cleaned.length !== (p.images?.length ?? 0)) {
+      p.images = cleaned
+      changed = true
+    }
+  }
+
   const acessorios = db.categories.find((c) => c.slug === 'acessorios')
   const seed = seedCategories.find((c) => c.slug === 'acessorios')
   if (acessorios && seed) {
     if (acessorios.description !== seed.description) {
       acessorios.description = seed.description
       acessorios.name = seed.name
-      changed = true
-    }
-    if (!acessorios.image || String(acessorios.image).includes('mitiendanube')) {
-      acessorios.image = '/categories/acessorios.png'
       changed = true
     }
     if (acessorios.showOnHome !== false) {
@@ -348,9 +363,18 @@ export async function publishCatalogToServer(): Promise<{ ok: boolean; error?: s
     }
     db.products = withUrls
     saveDatabase(db)
+    const categories = db.categories.map((c) => {
+      const cat = migrateCategory(c)
+      if (!cat.image || isLegacyForeignImage(cat.image)) {
+        cat.image = localCategoryImage(String(cat.slug))
+      }
+      return cat
+    })
+    db.categories = categories
+    saveDatabase(db)
     const ok = await pushCatalogToServer({
       products: withUrls,
-      categories: db.categories.map(migrateCategory),
+      categories,
       settings: db.settings,
     })
     return ok

@@ -4,6 +4,7 @@ import { getStorefrontCatalog } from './catalogMemory'
 import { categoryLabels, homeCategories as fallbackHomeCategories } from '../data/categories'
 import { resolveProductSizes } from '../data/sizes'
 import { normalizeProductImageUrl } from './remoteCatalog'
+import { isLegacyForeignImage, localCategoryImage } from '../utils/legacyImages'
 
 function sourceProducts() {
   return getStorefrontCatalog() ?? getDatabase().products
@@ -75,24 +76,34 @@ export function getStoreCategories(): Category[] {
   return db.categories
     .filter((c) => c.active)
     .sort((a, b) => a.order - b.order)
-    .map((c) => ({
-      slug: c.slug as Category['slug'],
-      name: c.name,
-      image: publicImageUrl(c.image),
-      description: c.description,
-    }))
+    .map((c) => {
+      const image = isLegacyForeignImage(c.image)
+        ? localCategoryImage(String(c.slug))
+        : c.image || localCategoryImage(String(c.slug))
+      return {
+        slug: c.slug as Category['slug'],
+        name: c.name,
+        image: publicImageUrl(image),
+        description: c.description,
+      }
+    })
 }
 
 export function getHomeCategories(): Category[] {
   const fromDb = getDatabase()
     .categories.filter((c) => c.active && c.showOnHome !== false)
     .sort((a, b) => a.order - b.order)
-    .map((c) => ({
-      slug: c.slug as Category['slug'],
-      name: c.name,
-      image: publicImageUrl(c.image),
-      description: c.description,
-    }))
+    .map((c) => {
+      const image = isLegacyForeignImage(c.image)
+        ? localCategoryImage(String(c.slug))
+        : c.image || localCategoryImage(String(c.slug))
+      return {
+        slug: c.slug as Category['slug'],
+        name: c.name,
+        image: publicImageUrl(image),
+        description: c.description,
+      }
+    })
 
   return fromDb.length > 0 ? fromDb : fallbackHomeCategories
 }
@@ -113,6 +124,7 @@ export function getStoreCategoryLabels(): Record<string, string> {
 function adminToStoreProduct(p: import('../types/admin').AdminProduct): Product {
   const images = (Array.isArray(p.images) ? p.images : [])
     .filter((img): img is string => typeof img === 'string' && img.trim().length > 0)
+    .filter((img) => !isLegacyForeignImage(img))
     .map((img) => publicImageUrl(img.trim()))
 
   return {

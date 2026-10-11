@@ -1,7 +1,5 @@
 import type { Product } from '../types'
 
-const CDN = 'https://dcdn-us.mitiendanube.com/stores/003/936/343/products'
-
 export const products: Product[] = [
   {
     id: '1',
@@ -10,10 +8,7 @@ export const products: Product[] = [
     description:
       'Brinco delicado em prata 925 com coração cravejado e pedra azul royal pendurada. Peça versátil que combina elegância e feminilidade para o dia a dia ou ocasiões especiais.',
     price: 145,
-    images: [
-      `${CDN}/img_7459-jpg-ae93f851c77204047a17840546062480-480-0.webp`,
-      `${CDN}/img_7459-jpg-ae93f851c77204047a17840546062480-640-0.webp`,
-    ],
+    images: [],
     category: 'brincos',
     badge: 'novidade',
     rating: 4.9,
@@ -33,9 +28,7 @@ export const products: Product[] = [
     description:
       'Colar em prata 925 com pingente redondo cravejado em verde turmalina. Uma peça sofisticada que ilumina qualquer look com sutileza e charme.',
     price: 155,
-    images: [
-      `${CDN}/img_4817-jpg-bc43e9cb0a124925e817801724891973-480-0.webp`,
-    ],
+    images: [],
     category: 'colares',
     rating: 4.8,
     reviewCount: 32,
@@ -53,9 +46,7 @@ export const products: Product[] = [
     description:
       'Anel aparador em prata 925 com acabamento meia aliança de 2mm e pedras translúcidas. Perfeito para combinar com solitários ou usar sozinho.',
     price: 139,
-    images: [
-      `${CDN}/img_7372-jpg-1625f9af83ae02340c17840446565786-480-0.webp`,
-    ],
+    images: [],
     category: 'aneis',
     rating: 4.7,
     reviewCount: 28,
@@ -74,9 +65,7 @@ export const products: Product[] = [
     description:
       'Colar romântico em prata 925 com dois corações entrelaçados. Simboliza conexão e afeto — ideal para presentear quem você ama.',
     price: 189,
-    images: [
-      `${CDN}/img_4633-9c3c043dc188f7692c17807857126302-480-0.webp`,
-    ],
+    images: [],
     category: 'colares',
     rating: 5.0,
     reviewCount: 56,
@@ -95,9 +84,7 @@ export const products: Product[] = [
       'Anel solitário clássico em prata 925 com pedra azul royal. Elegância atemporal em uma peça que nunca sai de moda.',
     price: 99,
     salePrice: 79,
-    images: [
-      `${CDN}/img_7372-jpg-1625f9af83ae02340c17840446565786-480-0.webp`,
-    ],
+    images: [],
     category: 'aneis',
     badge: 'oferta-especial',
     rating: 4.9,
@@ -118,9 +105,7 @@ export const products: Product[] = [
     description:
       'Conjunto de três argolas em prata 925 cravejadas com fecho tarraxa. Versatilidade para usar juntas ou separadas.',
     price: 319,
-    images: [
-      `${CDN}/img_1216-jpg-d16ce5b4c77552954417798372394070-480-0.webp`,
-    ],
+    images: [],
     category: 'brincos',
     rating: 4.8,
     reviewCount: 23,
@@ -138,9 +123,7 @@ export const products: Product[] = [
     description:
       'Pulseira em prata 925 com elos piastrine de 2,5mm. Peça clássica e atemporal, perfeita para uso diário ou sobreposição.',
     price: 129,
-    images: [
-      `${CDN}/img_7549-240e76c14ba192830017842945307545-480-0.webp`,
-    ],
+    images: [],
     category: 'pulseiras',
     rating: 4.6,
     reviewCount: 19,
@@ -159,9 +142,7 @@ export const products: Product[] = [
       'Conjunto harmonioso de colar e pulseira em prata 925 com corações cravejados em vermelho. Presente perfeito para momentos especiais.',
     price: 299,
     salePrice: 249,
-    images: [
-      `${CDN}/img_4633-9c3c043dc188f7692c17807857126302-480-0.webp`,
-    ],
+    images: [],
     category: 'conjuntos',
     badge: 'promocao',
     rating: 4.9,
@@ -180,9 +161,7 @@ export const products: Product[] = [
     description:
       'Escapulário delicado em prata 925 com cruz cravejada e medalha do Espírito Santo. Fé e elegância em uma única peça.',
     price: 229,
-    images: [
-      `${CDN}/img_4817-jpg-bc43e9cb0a124925e817801724891973-480-0.webp`,
-    ],
+    images: [],
     category: 'colares',
     rating: 5.0,
     reviewCount: 62,
@@ -199,9 +178,7 @@ export const products: Product[] = [
     description:
       'Anel em formato V cravejado com gota translúcida central. Design moderno que valoriza a feminilidade com ousadia.',
     price: 149,
-    images: [
-      `${CDN}/img_7372-jpg-1625f9af83ae02340c17840446565786-480-0.webp`,
-    ],
+    images: [],
     category: 'aneis',
     badge: 'novidade',
     rating: 4.7,
@@ -221,9 +198,7 @@ export const products: Product[] = [
     description:
       'Pulseira para berloques em prata 925 com coração cravejado. Personalize com charms e conte sua história única.',
     price: 435,
-    images: [
-      `${CDN}/img_7549-240e76c14ba192830017842945307545-480-0.webp`,
-    ],
+    images: [],
     category: 'berloques',
     rating: 4.9,
     reviewCount: 38,
@@ -241,9 +216,7 @@ export const products: Product[] = [
       'Versão translúcida do queridinho coração pendurado. Brinco em prata 925 que combina com qualquer estilo.',
     price: 145,
     salePrice: 125,
-    images: [
-      `${CDN}/img_7459-jpg-ae93f851c77204047a17840546062480-480-0.webp`,
-    ],
+    images: [],
     category: 'brincos',
     badge: 'oferta-especial',
     rating: 4.8,
