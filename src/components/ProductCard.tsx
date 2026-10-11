@@ -10,6 +10,7 @@ import {
   formatPrice,
 } from '../utils/format'
 import { productRequiresSelection } from '../utils/cart'
+import { productPath } from '../utils/productPath'
 
 interface ProductCardProps {
   product: Product
@@ -54,7 +55,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
       onMouseLeave={() => setHovered(false)}
     >
       <div className="relative aspect-[3/4] bg-off-white overflow-hidden mb-3 sm:mb-4">
-        <Link to={`/produto/${product.slug}`} className="absolute inset-0 block">
+        <Link to={productPath(product)} className="absolute inset-0 block">
           {!imgBroken && imgSrc ? (
             <img
               src={imgSrc}
@@ -124,14 +125,14 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
         <div className="absolute bottom-0 left-0 right-0 z-10 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300 hidden lg:block">
           {!product.inStock ? (
             <Link
-              to={`/produto/${product.slug}`}
+              to={productPath(product)}
               className="w-full flex items-center justify-center gap-2 bg-graphite/80 text-cream py-3 text-[10px] tracking-[0.2em] uppercase"
             >
               Esgotado
             </Link>
           ) : needsSelection ? (
             <Link
-              to={`/produto/${product.slug}`}
+              to={productPath(product)}
               className="w-full flex items-center justify-center gap-2 bg-brand-green text-white py-3 text-[10px] tracking-[0.2em] uppercase hover:bg-brand-green-dark transition-colors"
             >
               <ShoppingBag className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -151,7 +152,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
       </div>
 
       <div className="space-y-1 sm:space-y-1.5">
-        <Link to={`/produto/${product.slug}`}>
+        <Link to={productPath(product)}>
           <h3 className="text-xs sm:text-sm font-light text-graphite leading-snug hover:text-charcoal transition-colors line-clamp-2">
             {product.name}
           </h3>
@@ -183,14 +184,14 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
 
         {!product.inStock ? (
           <Link
-            to={`/produto/${product.slug}`}
+            to={productPath(product)}
             className="lg:hidden w-full mt-2 min-h-11 py-2.5 border border-border text-[10px] tracking-[0.2em] uppercase text-muted flex items-center justify-center"
           >
             Esgotado
           </Link>
         ) : needsSelection ? (
           <Link
-            to={`/produto/${product.slug}`}
+            to={productPath(product)}
             className="lg:hidden w-full mt-2 min-h-11 py-2.5 border border-border text-[10px] tracking-[0.2em] uppercase text-graphite active:border-graphite active:bg-off-white transition-colors flex items-center justify-center"
           >
             Escolher opções

@@ -96,6 +96,8 @@ export interface OrderItem {
   productId: string
   productName: string
   productImage: string
+  /** SKU / código do produto no pedido */
+  productSku?: string
   quantity: number
   unitPrice: number
   size?: string

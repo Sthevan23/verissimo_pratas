@@ -27,8 +27,8 @@ import { Button } from '../components/ui/Button'
 import { ShippingCalculator } from '../components/ShippingCalculator'
 
 export function ProductDetails() {
-  const { slug } = useParams<{ slug: string }>()
-  const product = slug ? getProductBySlug(slug) : undefined
+  const { slug: productRef } = useParams<{ slug: string }>()
+  const product = productRef ? getProductBySlug(productRef) : undefined
   const navigate = useNavigate()
   const { addToCart, openCart, showToast } = useApp()
   const [selectedImage, setSelectedImage] = useState(0)
@@ -40,6 +40,7 @@ export function ProductDetails() {
   const [shareHint, setShareHint] = useState(false)
 
   useEffect(() => {
+    window.scrollTo(0, 0)
     const nextSizes = product
       ? resolveProductSizes(product.category, product.sizes)
       : undefined
@@ -53,7 +54,8 @@ export function ProductDetails() {
     setSelectedImage(0)
     setPaymentOpen(false)
     setShippingOpen(false)
-  }, [product?.id])
+    setShareHint(false)
+  }, [productRef, product?.id])
 
   if (!product) {
     return (
@@ -114,7 +116,7 @@ export function ProductDetails() {
   }
 
   return (
-    <>
+    <div key={product.id}>
       <Helmet>
         <title>{product.name} — Verissimo Pratas 925</title>
         <meta name="description" content={product.description} />
@@ -139,74 +141,74 @@ export function ProductDetails() {
       </Helmet>
 
       <div className="header-offset bg-cream pb-24">
-        {/* Galeria — mobile full bleed como Nuvemshop/Mafena */}
-        <AnimateIn>
-          <div className="lg:hidden">
-            <div className="relative aspect-square bg-off-white overflow-hidden">
-              <motion.img
-                key={selectedImage}
-                src={product.images[selectedImage]}
-                alt={product.name}
-                className="w-full h-full object-cover"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.25 }}
-              />
-            </div>
-            {product.images.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 py-3">
-                {product.images.map((img, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setSelectedImage(i)}
-                    className={cn(
-                      'w-14 h-14 shrink-0 overflow-hidden border',
-                      i === selectedImage ? 'border-brand-green' : 'border-border'
-                    )}
-                  >
-                    <img src={img} alt="" className="w-full h-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            )}
+        {/* Galeria mobile — foto grande, sem cortar */}
+        <div className="lg:hidden">
+          <div className="relative w-full bg-off-white flex items-center justify-center min-h-[70vw] max-h-[78vh]">
+            <img
+              key={selectedImage}
+              src={product.images[selectedImage]}
+              alt={product.name}
+              className="w-full h-auto max-h-[78vh] object-contain"
+              decoding="async"
+              fetchPriority="high"
+            />
           </div>
-        </AnimateIn>
+          {product.images.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 py-3">
+              {product.images.map((img, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setSelectedImage(i)}
+                  className={cn(
+                    'w-16 h-16 shrink-0 overflow-hidden border bg-off-white',
+                    i === selectedImage ? 'border-brand-green' : 'border-border'
+                  )}
+                >
+                  <img src={img} alt="" className="w-full h-full object-contain" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="container-brand">
-          <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 lg:pt-8">
-            {/* Galeria desktop */}
-            <AnimateIn direction="left" className="hidden lg:block">
-              <div className="space-y-3">
-                <div className="relative aspect-square bg-off-white overflow-hidden">
+          <div className="grid lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-10 lg:gap-14 xl:gap-16 lg:pt-8">
+            {/* Galeria desktop — maior e nítida */}
+            <div className="hidden lg:block">
+              <div className="lg:sticky lg:top-[calc(var(--header-height)+1rem)] space-y-3">
+                <div className="relative bg-off-white overflow-hidden flex items-center justify-center min-h-[560px] xl:min-h-[640px]">
                   <img
+                    key={selectedImage}
                     src={product.images[selectedImage]}
                     alt={product.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-auto max-h-[min(82vh,820px)] object-contain"
+                    decoding="async"
+                    fetchPriority="high"
                   />
                 </div>
                 {product.images.length > 1 && (
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     {product.images.map((img, i) => (
                       <button
                         key={i}
                         type="button"
                         onClick={() => setSelectedImage(i)}
                         className={cn(
-                          'w-20 h-20 shrink-0 overflow-hidden border',
+                          'w-20 h-20 shrink-0 overflow-hidden border bg-off-white',
                           i === selectedImage ? 'border-brand-green' : 'border-transparent'
                         )}
                       >
-                        <img src={img} alt="" className="w-full h-full object-cover" />
+                        <img src={img} alt="" className="w-full h-full object-contain" />
                       </button>
                     ))}
                   </div>
                 )}
               </div>
-            </AnimateIn>
+            </div>
 
-            {/* Painel de compra — igual à estrutura da foto Mafena */}
-            <AnimateIn direction="right" delay={0.05}>
+            {/* Painel de compra */}
+            <AnimateIn direction="none" delay={0.05}>
               <div className="pt-4 lg:pt-0 lg:sticky lg:top-[calc(var(--header-height)+1rem)] max-w-xl">
                 <nav
                   className="text-[12px] text-muted mb-3 leading-relaxed"
@@ -495,6 +497,6 @@ export function ProductDetails() {
           )}
         </div>
       </div>
-    </>
+    </div>
   )
 }

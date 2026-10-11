@@ -24,6 +24,7 @@ function cartToOrderItems(cart: CartItem[]): OrderItem[] {
     productId: item.product.id,
     productName: item.product.name,
     productImage: item.product.images[0] ?? '',
+    productSku: item.product.sku || undefined,
     quantity: item.quantity,
     unitPrice: item.product.salePrice ?? item.product.price,
     size: item.selectedSize,

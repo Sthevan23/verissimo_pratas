@@ -11,6 +11,7 @@ import { AnimateIn } from '../components/ui/AnimateIn'
 import { ShippingCalculator } from '../components/ShippingCalculator'
 import { STORE_COMMERCE } from '../data/commerce'
 import type { ShippingAddress, ShippingOption } from '../services/shippingService'
+import { productPath } from '../utils/productPath'
 
 export function Cart() {
   const {
@@ -112,7 +113,7 @@ export function Cart() {
                     >
                       <div className="flex gap-5 pb-6 border-b border-border">
                         <Link
-                          to={`/produto/${item.product.slug}`}
+                          to={productPath(item.product)}
                           className="w-28 h-32 bg-off-white shrink-0 overflow-hidden"
                         >
                           <img
@@ -123,7 +124,7 @@ export function Cart() {
                         </Link>
                         <div className="flex-1 min-w-0">
                           <Link
-                            to={`/produto/${item.product.slug}`}
+                            to={productPath(item.product)}
                             className="text-base font-light text-graphite hover:text-charcoal"
                           >
                             {item.product.name}

@@ -22,6 +22,8 @@ export type CheckoutParams = {
   orderNumber?: string
 }
 
+const DIVIDER = '────────────'
+
 export function buildCheckoutMessage(params: CheckoutParams): string {
   const {
     cart,
@@ -38,18 +40,32 @@ export function buildCheckoutMessage(params: CheckoutParams): string {
     neighborhood,
     orderNumber,
   } = params
-  const lines = cart.map((item, i) => {
+
+  const itemBlocks = cart.map((item, i) => {
     const price = item.product.salePrice ?? item.product.price
-    const size = item.selectedSize ? ` | Tamanho: ${item.selectedSize}` : ''
-    const choices = describeCartChoices(item.product, item.selectedChoices)
-    const choiceLine = choices ? ` | ${choices}` : ''
-    return `${i + 1}. ${item.product.name}${size}${choiceLine}\n   Qtd: ${item.quantity} × ${formatPrice(price)} = ${formatPrice(price * item.quantity)}`
+    const code = (item.product.sku || item.product.id).trim()
+    const detailLines = [
+      `${i + 1}) *${item.product.name}*`,
+      `   Código: ${code}`,
+      item.selectedSize ? `   Tamanho: ${item.selectedSize}` : null,
+      (() => {
+        const choices = describeCartChoices(item.product, item.selectedChoices)
+        return choices ? `   Opções: ${choices}` : null
+      })(),
+      `   Qtd: ${item.quantity} × ${formatPrice(price)} = *${formatPrice(price * item.quantity)}*`,
+    ]
+    return detailLines.filter(Boolean).join('\n')
   })
 
   const getsGift = subtotal >= STORE_COMMERCE.giftMin
-  const freteLine = shippingLabel
-    ? `Frete (${shippingLabel}): ${shipping === 0 ? 'Grátis' : formatPrice(shipping)}`
-    : `Frete: ${shipping === 0 ? 'Grátis' : formatPrice(shipping)}`
+
+  const freteLabel = shippingLabel
+    ? shippingLabel.replace(/^Verissimo\s*[—–-]\s*/i, '').trim()
+    : 'Frete'
+  const freteLine =
+    shipping === 0
+      ? `Frete (${freteLabel}): *Grátis*`
+      : `Frete (${freteLabel}): ${formatPrice(shipping)}`
 
   const addressLine = [
     street
@@ -65,23 +81,29 @@ export function buildCheckoutMessage(params: CheckoutParams): string {
 
   return [
     '*Pedido — Verissimo Pratas 925*',
-    orderNumber ? `Nº ${orderNumber}` : null,
+    orderNumber ? `Nº *${orderNumber}*` : null,
+    DIVIDER,
+    '*Itens do pedido*',
     '',
-    ...lines,
+    itemBlocks.join('\n\n'),
     '',
+    DIVIDER,
+    '*Resumo*',
     `Subtotal: ${formatPrice(subtotal)}`,
     discount > 0
       ? `Desconto${couponCode ? ` (${couponCode})` : ''}: -${formatPrice(discount)}`
       : null,
-    addressLine ? `Endereço: ${addressLine}` : null,
-    cep ? `CEP: ${formatCep(cep)}` : null,
     freteLine,
     getsGift ? `Brinde: ${STORE_COMMERCE.giftLabel}` : null,
     `*Total: ${formatPrice(total)}*`,
-    '',
-    'Olá! Gostaria de finalizar este pedido.',
+    addressLine || cep ? DIVIDER : null,
+    addressLine || cep ? '*Entrega*' : null,
+    addressLine ? `Endereço: ${addressLine}` : null,
+    cep ? `CEP: ${formatCep(cep)}` : null,
+    DIVIDER,
+    'Olá! Gostaria de finalizar este pedido ✨',
   ]
-    .filter(Boolean)
+    .filter((line) => line !== null && line !== undefined)
     .join('\n')
 }
 

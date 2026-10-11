@@ -304,7 +304,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         type: 'product',
         id: p.id,
         label: p.name,
-        href: `/produto/${p.slug}`,
+        href: `/produto/${encodeURIComponent(p.id)}`,
         image: p.images[0],
         price: p.salePrice ?? p.price,
       })

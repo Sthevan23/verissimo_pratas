@@ -225,6 +225,7 @@ export const homeCategories = categories
         'masculinos-corrente',
         'masculinos-pulseira',
         'masculinos-pingente',
+        'acessorios',
         'novidades',
       ].includes(c.slug)
   )
@@ -244,5 +245,4 @@ export const HOME_CATEGORY_NAV = [
   { name: 'Tornozeleiras', slug: 'tornozeleiras', image: '/categories/tornozeleiras.png' },
   { name: 'Correntes', slug: 'correntes', image: '/categories/correntes.png' },
   { name: 'Berloques', slug: 'berloques', image: '/categories/berloques.png' },
-  { name: 'Acessórios', slug: 'acessorios', image: '/categories/acessorios.png' },
 ] as const

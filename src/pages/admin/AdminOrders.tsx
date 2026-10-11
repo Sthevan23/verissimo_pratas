@@ -9,6 +9,7 @@ import { fetchStoreOrders, updateStoreOrder } from '../../services/orderService'
 import { useAdminToast } from '../../context/AdminToastContext'
 import type { Order } from '../../types/admin'
 import { formatPrice } from '../../utils/format'
+import { resolveOrderItemImage } from '../../utils/orderItemImage'
 
 export function AdminOrders() {
   const { showToast } = useAdminToast()
@@ -129,7 +130,40 @@ export function AdminOrders() {
                     )}
                   </td>
                   <td className="admin-table-td text-muted">{new Date(o.createdAt).toLocaleDateString('pt-BR')}</td>
-                  <td className="admin-table-td">{o.items.length}</td>
+                  <td className="admin-table-td">
+                    <div className="flex items-center gap-2 max-w-[280px]">
+                      <div className="flex -space-x-2 shrink-0">
+                        {o.items.slice(0, 3).map((item, i) => {
+                          const img = resolveOrderItemImage(item)
+                          return img ? (
+                            <img
+                              key={`${o.id}-${i}`}
+                              src={img}
+                              alt={item.productName}
+                              title={item.productName}
+                              className="w-9 h-9 object-cover bg-off-white border border-white shadow-sm"
+                            />
+                          ) : (
+                            <div
+                              key={`${o.id}-${i}`}
+                              title={item.productName}
+                              className="w-9 h-9 bg-off-white border border-white text-[9px] text-muted flex items-center justify-center"
+                            >
+                              ?
+                            </div>
+                          )
+                        })}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs truncate">
+                          {o.items.map((it) => it.productName).join(', ')}
+                        </p>
+                        {o.items.length > 1 && (
+                          <p className="text-[10px] text-muted">{o.items.length} itens</p>
+                        )}
+                      </div>
+                    </div>
+                  </td>
                   <td className="admin-table-td font-medium">{formatPrice(o.total)}</td>
                   <td className="admin-table-td capitalize">{o.paymentMethod === 'whatsapp' ? 'WhatsApp' : o.paymentMethod}</td>
                   <td className="admin-table-td"><StatusBadge status={o.status} /></td>
@@ -172,6 +206,25 @@ export function AdminOrders() {
               </div>
               <p className="text-sm text-warm-gray">{o.customerName}</p>
               {o.shippingAddress && <p className="text-[11px] text-muted mt-1">{o.shippingAddress}</p>}
+              <div className="flex gap-2 mt-3 overflow-x-auto">
+                {o.items.map((item, i) => {
+                  const img = resolveOrderItemImage(item)
+                  return (
+                    <div key={`${o.id}-m-${i}`} className="shrink-0 w-14">
+                      {img ? (
+                        <img
+                          src={img}
+                          alt={item.productName}
+                          className="w-14 h-14 object-cover bg-off-white border border-border/40"
+                        />
+                      ) : (
+                        <div className="w-14 h-14 bg-off-white border border-border/40" />
+                      )}
+                      <p className="text-[10px] text-muted mt-1 truncate">{item.productName}</p>
+                    </div>
+                  )
+                })}
+              </div>
               <p className="text-sm font-medium mt-2">{formatPrice(o.total)}</p>
             </Link>
             <div className="flex gap-2 mt-3 pt-3 border-t border-border/50">

@@ -4,11 +4,18 @@ import { Helmet } from 'react-helmet-async'
 import { ArrowLeft, Pencil, XCircle } from 'lucide-react'
 import { ConfirmDialog, PageHeader } from '../../components/admin/Modal'
 import { StatusBadge, ORDER_STATUS_OPTIONS } from '../../components/admin/StatusBadge'
-import { getOrder, getDatabase, saveDb } from '../../services/adminStore'
+import { getAdminProduct, getOrder, getDatabase, saveDb } from '../../services/adminStore'
 import { fetchStoreOrders, updateStoreOrder } from '../../services/orderService'
 import { useAdminToast } from '../../context/AdminToastContext'
 import { formatPrice } from '../../utils/format'
+import { resolveOrderItemImage } from '../../utils/orderItemImage'
 import type { Order, OrderStatus } from '../../types/admin'
+
+function resolveOrderItemSku(item: Order['items'][number]): string {
+  const fromOrder = (item.productSku ?? '').trim()
+  if (fromOrder) return fromOrder
+  return (getAdminProduct(item.productId)?.sku ?? '').trim()
+}
 
 type EditForm = {
   customerName: string
@@ -188,17 +195,48 @@ export function AdminOrderDetail() {
         <div className="lg:col-span-2 space-y-6">
           <section className="admin-card p-6">
             <h2 className="font-serif text-lg font-light mb-4">Produtos</h2>
-            {order.items.map((item, i) => (
-              <div key={i} className="flex gap-4 py-4 border-b border-border/50 last:border-0">
-                <img src={item.productImage} alt="" className="w-16 h-16 object-cover bg-off-white" />
-                <div className="flex-1">
-                  <p className="text-sm font-light">{item.productName}</p>
-                  <p className="text-xs text-muted">Qtd: {item.quantity} · {formatPrice(item.unitPrice)}</p>
-                  {item.size && <p className="text-xs text-muted">Tamanho: {item.size}</p>}
+            {order.items.map((item, i) => {
+              const img = resolveOrderItemImage(item)
+              return (
+                <div key={i} className="flex gap-4 py-4 border-b border-border/50 last:border-0">
+                  {img ? (
+                    <img
+                      src={img}
+                      alt={item.productName}
+                      className="w-16 h-16 object-cover bg-off-white shrink-0 border border-border/40"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 bg-off-white shrink-0 border border-border/40 flex items-center justify-center text-[10px] text-muted">
+                      Sem foto
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-light">{item.productName}</p>
+                    {(() => {
+                      const sku = resolveOrderItemSku(item)
+                      return sku ? (
+                        <p className="text-xs text-graphite mt-0.5">
+                          Código: <span className="font-medium tracking-wide">{sku}</span>
+                        </p>
+                      ) : null
+                    })()}
+                    <p className="text-xs text-muted">
+                      Qtd: {item.quantity} · {formatPrice(item.unitPrice)}
+                    </p>
+                    {item.size && <p className="text-xs text-muted">Tamanho: {item.size}</p>}
+                    {item.choices &&
+                      Object.entries(item.choices).map(([k, v]) => (
+                        <p key={k} className="text-xs text-muted capitalize">
+                          {k}: {v}
+                        </p>
+                      ))}
+                  </div>
+                  <p className="font-medium text-sm shrink-0">
+                    {formatPrice(item.unitPrice * item.quantity)}
+                  </p>
                 </div>
-                <p className="font-medium text-sm">{formatPrice(item.unitPrice * item.quantity)}</p>
-              </div>
-            ))}
+              )
+            })}
             <div className="mt-4 pt-4 border-t border-border space-y-2 text-sm">
               {editing ? (
                 <>

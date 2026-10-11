@@ -41,6 +41,8 @@ export interface ProductOption {
 export interface Product {
   id: string
   slug: string
+  /** Código interno (SKU) — ajuda a identificar no WhatsApp e no admin */
+  sku?: string
   name: string
   description: string
   price: number

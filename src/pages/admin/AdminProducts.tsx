@@ -1,11 +1,12 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-import { Plus, Search, Copy, Archive, Trash2, Pencil, CloudUpload } from 'lucide-react'
-import { PageHeader, ConfirmDialog, EmptyState } from '../../components/admin/Modal'
+import { Plus, Search, Copy, Archive, Trash2, Pencil, CloudUpload, Percent } from 'lucide-react'
+import { PageHeader, ConfirmDialog, EmptyState, Modal } from '../../components/admin/Modal'
 import { StatusBadge } from '../../components/admin/StatusBadge'
 import {
   getAdminProducts,
+  getDatabase,
   saveProduct,
   deleteProduct,
   archiveProduct,
@@ -18,6 +19,8 @@ import {
 import { useAdminToast } from '../../context/AdminToastContext'
 import { formatPrice } from '../../utils/format'
 import type { AdminProduct } from '../../types/admin'
+
+type DiscountScope = 'all' | 'category' | 'selected'
 
 function AvailabilityBadge({ stock }: { stock: number }) {
   const available = stock > 0
@@ -34,17 +37,45 @@ function AvailabilityBadge({ stock }: { stock: number }) {
   )
 }
 
+function applySalePrice(p: AdminProduct, pct: number): AdminProduct {
+  const salePrice = Math.round(p.price * (1 - pct / 100) * 100) / 100
+  return {
+    ...p,
+    salePrice,
+    isOnSale: true,
+    badge: p.badge === 'novidade' ? p.badge : 'promocao',
+  }
+}
+
+function clearSalePrice(p: AdminProduct): AdminProduct {
+  return {
+    ...p,
+    salePrice: undefined,
+    isOnSale: false,
+    badge: p.badge === 'promocao' ? undefined : p.badge,
+  }
+}
+
 export function AdminProducts() {
   const { showToast } = useAdminToast()
   const [products, setProducts] = useState(getAdminProducts)
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<string[]>([])
   const [deleteId, setDeleteId] = useState<string | null>(null)
-  const [bulkOpen, setBulkOpen] = useState(false)
-  const [bulkDiscount, setBulkDiscount] = useState('10')
+  const [discountOpen, setDiscountOpen] = useState(false)
+  const [discountPct, setDiscountPct] = useState('10')
+  const [discountScope, setDiscountScope] = useState<DiscountScope>('all')
+  const [discountCategory, setDiscountCategory] = useState('')
   const [editingPrice, setEditingPrice] = useState<string | null>(null)
   const [priceValue, setPriceValue] = useState('')
   const [syncing, setSyncing] = useState(false)
+  const [applyingDiscount, setApplyingDiscount] = useState(false)
+
+  const categories = useMemo(() => {
+    return getDatabase()
+      .categories.filter((c) => c.active)
+      .sort((a, b) => a.order - b.order)
+  }, [products])
 
   const refresh = useCallback(() => setProducts(getAdminProducts()), [])
 
@@ -78,22 +109,30 @@ export function AdminProducts() {
   const toggleAvailability = (p: AdminProduct) => {
     if (p.stock > 0) {
       setStock(p.id, 0, 'Marcado como esgotado')
-      showToast('Marcado como esgotado no site.')
+      showToast(`${p.name} marcado como esgotado.`)
     } else {
       setStock(p.id, 1, 'Marcado como disponível')
-      showToast('Marcado como disponível no site.')
+      showToast(`${p.name} disponível novamente.`)
     }
     refresh()
   }
 
   const filtered = useMemo(() => {
-    if (!search) return products
-    const q = search.toLowerCase()
-    return products.filter((p) => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q))
+    const q = search.toLowerCase().trim()
+    const list = q
+      ? products.filter(
+          (p) =>
+            p.name.toLowerCase().includes(q) ||
+            p.sku.toLowerCase().includes(q) ||
+            p.category.toLowerCase().includes(q)
+        )
+      : [...products]
+    // Esgotados no final da lista
+    return list.sort((a, b) => Number(b.stock > 0) - Number(a.stock > 0))
   }, [products, search])
 
   const toggleSelect = (id: string) => {
-    setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id])
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   }
 
   const toggleAll = () => {
@@ -109,17 +148,79 @@ export function AdminProducts() {
     refresh()
   }
 
-  const handleBulkDiscount = () => {
-    const pct = parseFloat(bulkDiscount) / 100
-    selected.forEach((id) => {
-      const p = products.find((x) => x.id === id)!
-      saveProduct({ ...p, salePrice: Math.round(p.price * (1 - pct) * 100) / 100, isOnSale: true })
-    })
-    showToast(`Desconto de ${bulkDiscount}% aplicado a ${selected.length} produtos.`)
-    setSelected([])
-    setBulkOpen(false)
-    refresh()
+  const targetsForDiscount = (): AdminProduct[] => {
+    if (discountScope === 'selected') {
+      return products.filter((p) => selected.includes(p.id))
+    }
+    if (discountScope === 'category') {
+      if (!discountCategory) return []
+      return products.filter((p) => p.category === discountCategory && p.status === 'active')
+    }
+    return products.filter((p) => p.status === 'active')
   }
+
+  const handleApplyDiscount = async () => {
+    const pct = parseFloat(discountPct.replace(',', '.'))
+    if (!pct || pct <= 0 || pct >= 100) {
+      showToast('Informe um percentual entre 1 e 99.', 'error')
+      return
+    }
+    if (discountScope === 'selected' && selected.length === 0) {
+      showToast('Selecione pelo menos um produto na lista.', 'error')
+      return
+    }
+    if (discountScope === 'category' && !discountCategory) {
+      showToast('Escolha a categoria/seção.', 'error')
+      return
+    }
+    const targets = targetsForDiscount()
+    if (targets.length === 0) {
+      showToast('Nenhum produto encontrado para aplicar o desconto.', 'error')
+      return
+    }
+    setApplyingDiscount(true)
+    targets.forEach((p) => saveProduct(applySalePrice(p, pct)))
+    const pub = await publishCatalogToServer()
+    setApplyingDiscount(false)
+    setDiscountOpen(false)
+    refresh()
+    showToast(
+      pub.ok
+        ? `Desconto de ${pct}% aplicado em ${targets.length} produto(s) e publicado.`
+        : `Desconto salvo aqui, mas falhou ao publicar no site.`,
+      pub.ok ? 'success' : 'error'
+    )
+  }
+
+  const handleClearDiscount = async () => {
+    if (discountScope === 'selected' && selected.length === 0) {
+      showToast('Selecione pelo menos um produto na lista.', 'error')
+      return
+    }
+    if (discountScope === 'category' && !discountCategory) {
+      showToast('Escolha a categoria/seção.', 'error')
+      return
+    }
+    const targets = targetsForDiscount()
+    if (targets.length === 0) {
+      showToast('Nenhum produto para limpar.', 'error')
+      return
+    }
+    setApplyingDiscount(true)
+    targets.forEach((p) => saveProduct(clearSalePrice(p)))
+    const pub = await publishCatalogToServer()
+    setApplyingDiscount(false)
+    setDiscountOpen(false)
+    refresh()
+    showToast(
+      pub.ok
+        ? `Promoção removida de ${targets.length} produto(s).`
+        : `Removido aqui, mas falhou ao publicar.`,
+      pub.ok ? 'success' : 'error'
+    )
+  }
+
+  const scopeCount = targetsForDiscount().length
 
   return (
     <>
@@ -129,6 +230,13 @@ export function AdminProducts() {
         subtitle={`${filtered.length} produtos${syncing ? ' · sincronizando…' : ''}`}
         action={
           <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setDiscountOpen(true)}
+              className="admin-btn-secondary text-[10px]"
+            >
+              <Percent className="w-4 h-4" /> Descontos %
+            </button>
             <button
               type="button"
               onClick={publishNow}
@@ -156,11 +264,22 @@ export function AdminProducts() {
         </div>
         {selected.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => setBulkOpen(true)} className="admin-btn-secondary text-[10px]">
-              Aplicar desconto ({selected.length})
+            <button
+              onClick={() => {
+                setDiscountScope('selected')
+                setDiscountOpen(true)
+              }}
+              className="admin-btn-secondary text-[10px]"
+            >
+              Desconto nos selecionados ({selected.length})
             </button>
             <button
-              onClick={() => { bulkUpdateProducts(selected, { status: 'archived' }); showToast(`${selected.length} produtos arquivados.`); setSelected([]); refresh() }}
+              onClick={() => {
+                bulkUpdateProducts(selected, { status: 'archived' })
+                showToast(`${selected.length} produtos arquivados.`)
+                setSelected([])
+                refresh()
+              }}
               className="admin-btn-secondary text-[10px]"
             >
               Arquivar
@@ -170,15 +289,27 @@ export function AdminProducts() {
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState title="Nenhum produto encontrado" action={<Link to="/admin/produtos/novo" className="admin-btn-primary">Criar produto</Link>} />
+        <EmptyState
+          title="Nenhum produto encontrado"
+          action={
+            <Link to="/admin/produtos/novo" className="admin-btn-primary">
+              Criar produto
+            </Link>
+          }
+        />
       ) : (
         <>
-          {/* Desktop table */}
           <div className="admin-card overflow-hidden hidden md:block">
             <table className="w-full">
               <thead>
                 <tr>
-                  <th className="admin-table-th w-10"><input type="checkbox" checked={selected.length === filtered.length && filtered.length > 0} onChange={toggleAll} /></th>
+                  <th className="admin-table-th w-10">
+                    <input
+                      type="checkbox"
+                      checked={selected.length === filtered.length && filtered.length > 0}
+                      onChange={toggleAll}
+                    />
+                  </th>
                   <th className="admin-table-th">Produto</th>
                   <th className="admin-table-th">SKU</th>
                   <th className="admin-table-th">Categoria</th>
@@ -192,7 +323,13 @@ export function AdminProducts() {
               <tbody>
                 {filtered.map((p) => (
                   <tr key={p.id} className="hover:bg-off-white/40">
-                    <td className="admin-table-td"><input type="checkbox" checked={selected.includes(p.id)} onChange={() => toggleSelect(p.id)} /></td>
+                    <td className="admin-table-td">
+                      <input
+                        type="checkbox"
+                        checked={selected.includes(p.id)}
+                        onChange={() => toggleSelect(p.id)}
+                      />
+                    </td>
                     <td className="admin-table-td">
                       <div className="flex items-center gap-3">
                         <img src={p.images[0]} alt="" className="w-10 h-10 object-cover bg-off-white" />
@@ -213,7 +350,10 @@ export function AdminProducts() {
                         />
                       ) : (
                         <button
-                          onClick={() => { setEditingPrice(p.id); setPriceValue(String(p.price)) }}
+                          onClick={() => {
+                            setEditingPrice(p.id)
+                            setPriceValue(String(p.price))
+                          }}
                           className="hover:text-charcoal underline decoration-dotted underline-offset-2"
                         >
                           {formatPrice(p.price)}
@@ -233,13 +373,43 @@ export function AdminProducts() {
                         </button>
                       </div>
                     </td>
-                    <td className="admin-table-td"><StatusBadge status={p.status} /></td>
+                    <td className="admin-table-td">
+                      <StatusBadge status={p.status} />
+                    </td>
                     <td className="admin-table-td">
                       <div className="flex gap-1">
-                        <Link to={`/admin/produtos/${p.id}`} className="p-2 hover:bg-off-white" title="Editar"><Pencil className="w-3.5 h-3.5" /></Link>
-                        <button onClick={() => { duplicateProduct(p.id); showToast('Produto duplicado.'); refresh() }} className="p-2 hover:bg-off-white" title="Duplicar"><Copy className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => { archiveProduct(p.id); showToast('Produto arquivado.'); refresh() }} className="p-2 hover:bg-off-white" title="Arquivar"><Archive className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => setDeleteId(p.id)} className="p-2 hover:bg-off-white text-red-600" title="Excluir"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <Link to={`/admin/produtos/${p.id}`} className="p-2 hover:bg-off-white" title="Editar">
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Link>
+                        <button
+                          onClick={() => {
+                            duplicateProduct(p.id)
+                            showToast('Produto duplicado.')
+                            refresh()
+                          }}
+                          className="p-2 hover:bg-off-white"
+                          title="Duplicar"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            archiveProduct(p.id)
+                            showToast('Produto arquivado.')
+                            refresh()
+                          }}
+                          className="p-2 hover:bg-off-white"
+                          title="Arquivar"
+                        >
+                          <Archive className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteId(p.id)}
+                          className="p-2 hover:bg-off-white text-red-600"
+                          title="Excluir"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -248,25 +418,37 @@ export function AdminProducts() {
             </table>
           </div>
 
-          {/* Mobile cards */}
           <div className="md:hidden space-y-3">
             {filtered.map((p) => (
               <div key={p.id} className="admin-card p-4">
                 <div className="flex gap-3">
-                  <input type="checkbox" checked={selected.includes(p.id)} onChange={() => toggleSelect(p.id)} className="mt-1" />
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(p.id)}
+                    onChange={() => toggleSelect(p.id)}
+                    className="mt-1"
+                  />
                   <img src={p.images[0]} alt="" className="w-16 h-16 object-cover bg-off-white shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-light truncate">{p.name}</p>
                     <p className="text-xs text-muted">{p.sku}</p>
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
                       <span className="font-medium text-sm">{formatPrice(p.price)}</span>
+                      {p.salePrice ? (
+                        <span className="text-xs text-emerald-700">Promo {formatPrice(p.salePrice)}</span>
+                      ) : null}
                       <StatusBadge status={p.status} />
                       <AvailabilityBadge stock={p.stock} />
                     </div>
                   </div>
                 </div>
                 <div className="flex gap-2 mt-3 pt-3 border-t border-border/50">
-                  <Link to={`/admin/produtos/${p.id}`} className="flex-1 admin-btn-secondary text-[10px] py-2 text-center">Editar</Link>
+                  <Link
+                    to={`/admin/produtos/${p.id}`}
+                    className="flex-1 admin-btn-secondary text-[10px] py-2 text-center"
+                  >
+                    Editar
+                  </Link>
                   <button
                     type="button"
                     onClick={() => toggleAvailability(p)}
@@ -274,7 +456,12 @@ export function AdminProducts() {
                   >
                     {p.stock > 0 ? 'Esgotar' : 'Disponibilizar'}
                   </button>
-                  <button onClick={() => setDeleteId(p.id)} className="p-2 border border-border text-red-600"><Trash2 className="w-4 h-4" /></button>
+                  <button
+                    onClick={() => setDeleteId(p.id)}
+                    className="p-2 border border-border text-red-600"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             ))}
@@ -285,33 +472,116 @@ export function AdminProducts() {
       <ConfirmDialog
         open={!!deleteId}
         onClose={() => setDeleteId(null)}
-        onConfirm={() => { if (deleteId) { deleteProduct(deleteId); showToast('Produto excluído.'); refresh() } }}
+        onConfirm={() => {
+          if (deleteId) {
+            deleteProduct(deleteId)
+            showToast('Produto excluído.')
+            refresh()
+          }
+        }}
         title="Excluir produto"
         message="Esta ação não pode ser desfeita. Deseja excluir este produto?"
         confirmLabel="Excluir"
         danger
       />
 
-      <ConfirmDialog
-        open={bulkOpen}
-        onClose={() => setBulkOpen(false)}
-        onConfirm={handleBulkDiscount}
-        title="Aplicar desconto em massa"
-        message={`Aplicar ${bulkDiscount}% de desconto em ${selected.length} produtos selecionados?`}
-        extra={
-          <label className="block mt-4">
-            <span className="text-xs text-muted">Percentual de desconto</span>
+      <Modal open={discountOpen} onClose={() => setDiscountOpen(false)} title="Descontos em %">
+        <div className="space-y-4">
+          <p className="text-sm text-warm-gray font-light">
+            Escolha o percentual e onde aplicar: em todos os produtos, em uma seção (categoria) ou só
+            nos produtos selecionados na lista.
+          </p>
+
+          <div>
+            <label className="admin-label">Percentual de desconto (%)</label>
             <input
               type="number"
               min={1}
               max={99}
-              value={bulkDiscount}
-              onChange={(e) => setBulkDiscount(e.target.value)}
-              className="admin-input mt-1"
+              value={discountPct}
+              onChange={(e) => setDiscountPct(e.target.value)}
+              className="admin-input"
+              placeholder="Ex.: 15"
             />
-          </label>
-        }
-      />
+          </div>
+
+          <div>
+            <label className="admin-label">Aplicar em</label>
+            <div className="space-y-2">
+              {(
+                [
+                  { id: 'all' as const, label: 'Todos os produtos ativos' },
+                  { id: 'category' as const, label: 'Uma seção / categoria' },
+                  {
+                    id: 'selected' as const,
+                    label: `Produtos selecionados (${selected.length})`,
+                  },
+                ] as const
+              ).map((opt) => (
+                <label
+                  key={opt.id}
+                  className={`flex items-center gap-3 border px-3 py-3 cursor-pointer transition-colors ${
+                    discountScope === opt.id
+                      ? 'border-brand-green bg-brand-green/5'
+                      : 'border-border hover:border-brand-green/40'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="discount-scope"
+                    checked={discountScope === opt.id}
+                    onChange={() => setDiscountScope(opt.id)}
+                  />
+                  <span className="text-sm">{opt.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {discountScope === 'category' && (
+            <div>
+              <label className="admin-label">Seção / categoria</label>
+              <select
+                className="admin-input"
+                value={discountCategory}
+                onChange={(e) => setDiscountCategory(e.target.value)}
+              >
+                <option value="">Selecione…</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.slug}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <p className="text-xs text-muted">
+            {scopeCount > 0
+              ? `${scopeCount} produto(s) serão afetados.`
+              : 'Nenhum produto no escopo escolhido.'}
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-2 pt-2">
+            <button
+              type="button"
+              disabled={applyingDiscount}
+              onClick={() => void handleApplyDiscount()}
+              className="admin-btn-primary flex-1 disabled:opacity-50"
+            >
+              {applyingDiscount ? 'Aplicando…' : 'Aplicar desconto'}
+            </button>
+            <button
+              type="button"
+              disabled={applyingDiscount}
+              onClick={() => void handleClearDiscount()}
+              className="admin-btn-secondary flex-1 disabled:opacity-50"
+            >
+              Remover promoções
+            </button>
+          </div>
+        </div>
+      </Modal>
     </>
   )
 }

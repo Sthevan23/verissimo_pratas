@@ -131,7 +131,7 @@ async function compressWithCanvas(
 }
 
 /** Compacta imagem (galeria/câmera) — converte HEIC e fotos grandes para JPEG */
-export async function compressImageFile(file: File, maxSide = 1600, quality = 0.82): Promise<File> {
+export async function compressImageFile(file: File, maxSide = 2400, quality = 0.9): Promise<File> {
   if (!isImageFile(file)) {
     throw new Error('Arquivo não é uma imagem válida.')
   }

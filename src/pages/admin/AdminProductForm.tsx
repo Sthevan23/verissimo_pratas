@@ -166,6 +166,7 @@ export function AdminProductForm() {
     }
     setSaving(true)
     try {
+      // saveProduct garante slug único (evita abrir outro produto no site)
       const slug = product.slug || slugify(product.name)
       const sku = product.sku || `VP-${Date.now().toString().slice(-6)}`
       // Bracelete cadastrado como Anéis (padrão antigo) → Pulseiras / Braceletes
@@ -392,6 +393,47 @@ export function AdminProductForm() {
                   }))
                 }}
               />
+            </div>
+            <div>
+              <label className="admin-label">Ou desconto em % neste produto</label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  max={90}
+                  step={1}
+                  className="admin-input"
+                  placeholder="Ex.: 15"
+                  onChange={(e) => {
+                    const pct = parseFloat(e.target.value)
+                    if (!pct || pct <= 0 || pct >= 100 || !product.price) return
+                    const salePrice = Math.round(product.price * (1 - pct / 100) * 100) / 100
+                    setProduct((p) => ({
+                      ...p,
+                      salePrice,
+                      isOnSale: true,
+                      badge: p.badge === 'novidade' ? p.badge : 'promocao',
+                    }))
+                  }}
+                />
+                <button
+                  type="button"
+                  className="admin-btn-secondary shrink-0 px-3"
+                  onClick={() =>
+                    setProduct((p) => ({
+                      ...p,
+                      salePrice: undefined,
+                      isOnSale: false,
+                      badge: p.badge === 'promocao' ? undefined : p.badge,
+                    }))
+                  }
+                >
+                  Limpar promo
+                </button>
+              </div>
+              <p className="text-[11px] text-muted mt-1">
+                Digite a % e o preço promocional é calculado automaticamente.
+              </p>
             </div>
             <label className="flex items-center gap-2 text-sm cursor-pointer pt-1">
               <input

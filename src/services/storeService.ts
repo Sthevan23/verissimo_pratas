@@ -14,10 +14,29 @@ export function getStoreProducts(): Product[] {
   return sourceProducts()
     .filter((p) => p.status === 'active')
     .map(adminToStoreProduct)
+    // Esgotados no final da vitrine (home, categorias, busca, promoções)
+    .sort((a, b) => Number(b.inStock) - Number(a.inStock))
 }
 
-export function getStoreProductBySlug(slug: string): Product | undefined {
-  return getStoreProducts().find((p) => p.slug === slug)
+/** Resolve produto por id (preferido) ou slug. Id evita abrir outro item com slug repetido. */
+export function getStoreProductBySlug(ref: string): Product | undefined {
+  const key = decodeURIComponent(ref || '').trim()
+  if (!key) return undefined
+
+  const active = sourceProducts().filter((p) => p.status === 'active')
+  const byId = active.find((p) => p.id === key)
+  if (byId) return adminToStoreProduct(byId)
+
+  const bySlug = active.filter((p) => p.slug === key)
+  if (bySlug.length === 1) return adminToStoreProduct(bySlug[0])
+  // Slug duplicado: prefere o que está disponível; se empatar, o mais recente
+  if (bySlug.length > 1) {
+    const preferred =
+      bySlug.find((p) => Number(p.stock) > 0) ??
+      [...bySlug].sort((a, b) => String(b.updatedAt ?? '').localeCompare(String(a.updatedAt ?? '')))[0]
+    return adminToStoreProduct(preferred)
+  }
+  return undefined
 }
 
 export function getStoreProductsByCategory(category: string): Product[] {
@@ -99,6 +118,7 @@ function adminToStoreProduct(p: import('../types/admin').AdminProduct): Product 
   return {
     id: p.id,
     slug: p.slug,
+    sku: p.sku || undefined,
     name: p.name,
     description: p.description,
     price: p.price,

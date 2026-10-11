@@ -122,10 +122,12 @@ if ($method === 'POST') {
 
     $unitPrice = verissimo_product_unit_price($product);
     $subtotal += $unitPrice * $qty;
+    $sku = trim((string) ($product['sku'] ?? ($item['productSku'] ?? '')));
     $normalizedItems[] = [
       'productId' => $productId,
       'productName' => (string) ($product['name'] ?? 'Produto'),
       'productImage' => (string) (($product['images'][0] ?? '') ?: ($item['productImage'] ?? '')),
+      'productSku' => $sku !== '' ? $sku : null,
       'quantity' => $qty,
       'unitPrice' => round($unitPrice, 2),
       'size' => isset($item['size']) ? (string) $item['size'] : null,

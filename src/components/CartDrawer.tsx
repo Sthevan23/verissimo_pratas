@@ -6,6 +6,7 @@ import { formatPrice } from '../utils/format'
 import { cartLineKey, describeCartChoices } from '../utils/cart'
 import { Button } from './ui/Button'
 import { STORE_COMMERCE } from '../data/commerce'
+import { productPath } from '../utils/productPath'
 
 export function CartDrawer() {
   const {
@@ -89,7 +90,7 @@ export function CartDrawer() {
                         className="flex gap-4"
                       >
                         <Link
-                          to={`/produto/${item.product.slug}`}
+                          to={productPath(item.product)}
                           onClick={closeCart}
                           className="w-24 h-28 bg-off-white shrink-0 overflow-hidden"
                         >
@@ -101,7 +102,7 @@ export function CartDrawer() {
                         </Link>
                         <div className="flex-1 min-w-0">
                           <Link
-                            to={`/produto/${item.product.slug}`}
+                            to={productPath(item.product)}
                             onClick={closeCart}
                             className="text-sm font-light text-graphite hover:text-charcoal line-clamp-2"
                           >

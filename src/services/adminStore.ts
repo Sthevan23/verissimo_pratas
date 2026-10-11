@@ -48,6 +48,7 @@ const HOME_HIDDEN_SLUGS = new Set([
   'masculinos-pingente',
   'novidades',
   'promocoes',
+  'acessorios',
 ])
 
 function defaultShowOnHome(slug: string): boolean {
@@ -93,8 +94,8 @@ function ensureSeedCategories(db: AdminDatabase): boolean {
       acessorios.image = '/categories/acessorios.png'
       changed = true
     }
-    if (acessorios.showOnHome === false) {
-      acessorios.showOnHome = true
+    if (acessorios.showOnHome !== false) {
+      acessorios.showOnHome = false
       changed = true
     }
     if (!acessorios.active) {
@@ -281,9 +282,27 @@ export function getAdminProduct(id: string): AdminProduct | undefined {
   return getDatabase().products.find((p) => p.id === id)
 }
 
+function ensureUniqueProductSlug(db: AdminDatabase, product: AdminProduct): string {
+  const base = (product.slug || product.name || 'produto')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60) || 'produto'
+  let slug = base
+  let n = 2
+  while (db.products.some((p) => p.id !== product.id && p.slug === slug && p.status !== 'archived')) {
+    slug = `${base}-${n}`
+    n += 1
+  }
+  return slug
+}
+
 export function saveProduct(product: AdminProduct): AdminProduct {
   const db = getDatabase()
   const idx = db.products.findIndex((p) => p.id === product.id)
+  product.slug = ensureUniqueProductSlug(db, product)
   product.updatedAt = now()
   if (idx >= 0) {
     const old = db.products[idx]
