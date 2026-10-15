@@ -22,6 +22,8 @@ import {
 import { isLegacyForeignImage, localCategoryImage, stripLegacyImages } from '../utils/legacyImages'
 
 const STORAGE_KEY = 'verissimo-admin-db-v5'
+/** IDs conhecidos no catálogo público (api/catalog.php) — usado para avisar produtos só no navegador */
+const SERVER_SNAPSHOT_KEY = 'verissimo-server-product-ids-v1'
 
 function uid() {
   return crypto.randomUUID()
@@ -314,6 +316,53 @@ function ensureUniqueProductSlug(db: AdminDatabase, product: AdminProduct): stri
   return slug
 }
 
+function readServerProductIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(SERVER_SNAPSHOT_KEY)
+    if (!raw) return new Set()
+    const ids = JSON.parse(raw) as unknown
+    if (!Array.isArray(ids)) return new Set()
+    return new Set(ids.filter((id): id is string => typeof id === 'string'))
+  } catch {
+    return new Set()
+  }
+}
+
+function writeServerProductIds(products: AdminProduct[]): void {
+  const ids = products.filter((p) => p.status !== 'archived').map((p) => p.id)
+  localStorage.setItem(SERVER_SNAPSHOT_KEY, JSON.stringify(ids))
+}
+
+/** Produtos salvos neste aparelho que ainda não constam no catálogo do servidor */
+export function getUnpublishedProductIds(): string[] {
+  const serverIds = readServerProductIds()
+  if (serverIds.size === 0) return []
+  return getDatabase()
+    .products.filter((p) => p.status !== 'archived' && !serverIds.has(p.id))
+    .map((p) => p.id)
+}
+
+function mergeProductLists(local: AdminProduct[], remote: AdminProduct[]): AdminProduct[] {
+  const map = new Map<string, AdminProduct>()
+  for (const p of remote) {
+    map.set(p.id, normalizeProductImages(p))
+  }
+  for (const p of local) {
+    const norm = normalizeProductImages(p)
+    const existing = map.get(p.id)
+    if (!existing) {
+      map.set(p.id, norm)
+      continue
+    }
+    const localAt = String(norm.updatedAt ?? norm.createdAt ?? '')
+    const remoteAt = String(existing.updatedAt ?? existing.createdAt ?? '')
+    if (localAt > remoteAt) {
+      map.set(p.id, norm)
+    }
+  }
+  return Array.from(map.values())
+}
+
 export function saveProduct(product: AdminProduct): AdminProduct {
   const db = getDatabase()
   const idx = db.products.findIndex((p) => p.id === product.id)
@@ -377,9 +426,14 @@ export async function publishCatalogToServer(): Promise<{ ok: boolean; error?: s
       categories,
       settings: db.settings,
     })
-    return ok
-      ? { ok: true }
-      : { ok: false, error: 'Servidor não aceitou o catálogo. Faça login de novo e tente publicar.' }
+    if (ok) {
+      writeServerProductIds(withUrls)
+      return { ok: true }
+    }
+    return {
+      ok: false,
+      error: 'Servidor não aceitou o catálogo. Faça login de novo e clique em Publicar no site.',
+    }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Erro ao publicar' }
   }
@@ -389,6 +443,8 @@ export async function publishCatalogToServer(): Promise<{ ok: boolean; error?: s
 export async function hydrateCatalogFromServer(options?: {
   /** Só no painel admin: se o servidor estiver vazio, envia os produtos deste aparelho */
   pushIfEmpty?: boolean
+  /** No admin: mantém produtos locais que ainda não foram publicados no servidor */
+  mergeLocal?: boolean
 }): Promise<boolean> {
   const remote = await fetchRemoteCatalog()
   if (!remote) return false
@@ -401,7 +457,11 @@ export async function hydrateCatalogFromServer(options?: {
 
   if (hasRemote) {
     if (remote.products.length > 0) {
-      db.products = remote.products.map((p) => normalizeProductImages(p))
+      writeServerProductIds(remote.products.map((p) => normalizeProductImages(p)))
+      const mergeLocal = options?.mergeLocal ?? Boolean(options?.pushIfEmpty)
+      db.products = mergeLocal
+        ? mergeProductLists(db.products, remote.products)
+        : remote.products.map((p) => normalizeProductImages(p))
     }
     if (remote.categories.length > 0) {
       db.categories = remote.categories.map(migrateCategory)

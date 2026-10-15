@@ -14,6 +14,7 @@ import {
   bulkUpdateProducts,
   hydrateCatalogFromServer,
   publishCatalogToServer,
+  getUnpublishedProductIds,
   setStock,
 } from '../../services/adminStore'
 import { useAdminToast } from '../../context/AdminToastContext'
@@ -70,6 +71,7 @@ export function AdminProducts() {
   const [priceValue, setPriceValue] = useState('')
   const [syncing, setSyncing] = useState(false)
   const [applyingDiscount, setApplyingDiscount] = useState(false)
+  const unpublishedCount = useMemo(() => getUnpublishedProductIds().length, [products])
 
   const categories = useMemo(() => {
     return getDatabase()
@@ -251,6 +253,21 @@ export function AdminProducts() {
           </div>
         }
       />
+
+      {unpublishedCount > 0 && (
+        <div className="admin-card p-4 mb-4 border-amber-300 bg-amber-50 text-sm text-amber-950">
+          <p className="font-medium mb-1">
+            {unpublishedCount} produto{unpublishedCount > 1 ? 's' : ''} ainda não {unpublishedCount > 1 ? 'estão' : 'está'} no site
+          </p>
+          <p className="text-amber-900/90 mb-3">
+            Cadastros feitos sem publicar ficam só neste navegador — por isso somem do painel em outro aparelho e a busca da loja não encontra.
+            Clique em <strong>Publicar no site</strong> (logada no admin).
+          </p>
+          <button type="button" onClick={publishNow} disabled={syncing} className="admin-btn-primary text-[10px]">
+            <CloudUpload className="w-4 h-4" /> Publicar agora
+          </button>
+        </div>
+      )}
 
       <div className="admin-card p-4 mb-4 flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
