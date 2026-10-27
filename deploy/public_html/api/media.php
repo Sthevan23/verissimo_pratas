@@ -83,12 +83,32 @@ try {
     exit;
   }
 
-  header('Content-Type: ' . $mime);
-  header('Content-Length: ' . (string) strlen($data));
-  header('Cache-Control: public, max-age=3600, must-revalidate');
+  $requestedW = isset($_GET['w']) ? (int) $_GET['w'] : 0;
+  $outBody = $data;
+  $outMime = $mime;
+
+  if ($requestedW > 0 && stripos($mime, 'gif') === false) {
+    $cacheKey = 'w' . $requestedW . '_' . preg_replace('/[^a-zA-Z0-9._-]+/', '_', $name) . '.jpg';
+    $cachePath = verissimo_media_cache_dir() . DIRECTORY_SEPARATOR . $cacheKey;
+    if (is_file($cachePath) && is_readable($cachePath)) {
+      $outBody = file_get_contents($cachePath);
+      $outMime = 'image/jpeg';
+    } else {
+      $resized = verissimo_resize_image_blob($data, $requestedW);
+      if ($resized !== null) {
+        @file_put_contents($cachePath, $resized['body'], LOCK_EX);
+        $outBody = $resized['body'];
+        $outMime = $resized['mime'];
+      }
+    }
+  }
+
+  header('Content-Type: ' . $outMime);
+  header('Content-Length: ' . (string) strlen($outBody));
+  header('Cache-Control: public, max-age=86400, must-revalidate');
   header('Access-Control-Allow-Origin: *');
   header('X-Content-Type-Options: nosniff');
-  echo $data;
+  echo $outBody;
   exit;
 } catch (Throwable $e) {
   http_response_code(500);

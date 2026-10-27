@@ -120,10 +120,18 @@ export default function App() {
                     }
                   />
                   <Route
+                    path="esgotados"
+                    element={
+                      <ProtectedRoute module="products">
+                        <AdminProducts area="soldout" />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
                     path="produtos"
                     element={
                       <ProtectedRoute module="products">
-                        <AdminProducts />
+                        <AdminProducts area="available" />
                       </ProtectedRoute>
                     }
                   />

@@ -240,13 +240,15 @@ export function ProductDetails() {
                     </p>
                   ) : null}
                   <p className="text-[1.35rem] sm:text-2xl font-bold text-graphite leading-tight mt-0.5">
-                    {formatPrice(pixPrice)}{' '}
-                    <span className="font-semibold text-[1.05rem] sm:text-xl">
-                      com Pix
-                    </span>
+                    {formatPrice(currentPrice)}
                   </p>
-                  <p className="text-[15px] text-charcoal/80 mt-1 font-medium">
-                    {formatInstallments(currentPrice)}
+                  <p className="text-[11px] sm:text-xs text-muted font-light mt-1.5 space-y-0.5">
+                    <span className="block">
+                      Pix {formatPrice(pixPrice)}
+                    </span>
+                    <span className="block">
+                      {formatInstallments(currentPrice)}
+                    </span>
                   </p>
 
                   <button

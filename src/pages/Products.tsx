@@ -1,5 +1,5 @@
 import { Helmet } from 'react-helmet-async'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ProductCard } from '../components/ProductCard'
 import { AnimateIn } from '../components/ui/AnimateIn'
@@ -7,6 +7,10 @@ import { categoryLabels } from '../data/categories'
 import { DEFAULT_RING_SIZES, resolveProductSizes } from '../data/sizes'
 import { getStoreProducts } from '../services/storeService'
 import type { Product } from '../types'
+import {
+  isPersonalizadosCategory,
+  matchesStoreCategoryFilter,
+} from '../utils/productCategory'
 
 const BRINCOS_TIPOS = [
   {
@@ -118,56 +122,8 @@ const MASCULINOS_TIPOS = [
   },
 ] as const
 
-function isTrioProduct(name: string) {
-  return /trio/i.test(name)
-}
-
-function isDuplaProduct(name: string) {
-  return /dupla/i.test(name)
-}
-
-function isBraceleteProduct(name: string) {
-  return /bracelete|bracelet/i.test(name)
-}
-
-function isInfantilProduct(name: string) {
-  return /infantil|crian[cç]a|baby|kids/i.test(name)
-}
-
-function isPulseiraBerloqueProduct(name: string, description?: string) {
-  const text = `${name} ${description ?? ''}`
-  return /pulseira.*berloque|berloque.*pulseira|para berloques|pulseira de berloques/i.test(
-    text
-  )
-}
-
-function isBrincosCategory(cat: string) {
-  return cat === 'brincos' || cat === 'brincos-duplas' || cat === 'brincos-trios'
-}
-
-function isPulseirasCategory(cat: string) {
-  return (
-    cat === 'pulseiras' ||
-    cat === 'pulseiras-braceletes' ||
-    cat === 'pulseiras-infantil'
-  )
-}
-
-function isBerloquesCategory(cat: string) {
-  return cat === 'berloques' || cat === 'berloques-pulseiras'
-}
-
-function isPersonalizadosCategory(cat: string) {
-  return cat === 'personalizados' || cat.startsWith('personalizados-')
-}
-
-function isMasculinosCategory(cat: string) {
-  return (
-    cat === 'masculinos' ||
-    cat.startsWith('masculinos-') ||
-    cat === 'linha-masculina'
-  )
-}
+/** Quantos cards montam de uma vez — evita centenas de fotos na primeira tela. */
+const CATALOG_PAGE_SIZE = 24
 
 function productHasSize(product: Product, size: string): boolean {
   const sizes = resolveProductSizes(product.category, product.sizes)
@@ -210,66 +166,7 @@ function filterCatalog(params: {
   const { category, query, isPromo } = params
 
   if (category) {
-    if (category === 'novidades') {
-      result = result.filter((p) => p.isNew)
-    } else if (category === 'brincos') {
-      result = result.filter(
-        (p) =>
-          isBrincosCategory(p.category) ||
-          isTrioProduct(p.name) ||
-          isDuplaProduct(p.name)
-      )
-    } else if (category === 'brincos-trios') {
-      result = result.filter(
-        (p) =>
-          p.category === 'brincos-trios' ||
-          (p.category === 'brincos' && isTrioProduct(p.name))
-      )
-    } else if (category === 'brincos-duplas') {
-      result = result.filter(
-        (p) =>
-          p.category === 'brincos-duplas' ||
-          (p.category === 'brincos' && isDuplaProduct(p.name))
-      )
-    } else if (category === 'pulseiras') {
-      result = result.filter(
-        (p) =>
-          isPulseirasCategory(p.category) ||
-          isBraceleteProduct(p.name) ||
-          isInfantilProduct(p.name)
-      )
-    } else if (category === 'pulseiras-braceletes') {
-      result = result.filter(
-        (p) =>
-          p.category === 'pulseiras-braceletes' ||
-          isBraceleteProduct(p.name)
-      )
-    } else if (category === 'pulseiras-infantil') {
-      result = result.filter(
-        (p) =>
-          p.category === 'pulseiras-infantil' ||
-          (p.category === 'pulseiras' && isInfantilProduct(p.name))
-      )
-    } else if (category === 'berloques') {
-      result = result.filter((p) => isBerloquesCategory(p.category))
-    } else if (category === 'berloques-pulseiras') {
-      result = result.filter(
-        (p) =>
-          p.category === 'berloques-pulseiras' ||
-          (p.category === 'berloques' &&
-            isPulseiraBerloqueProduct(p.name, p.description))
-      )
-    } else if (category === 'personalizados') {
-      result = result.filter((p) => isPersonalizadosCategory(p.category))
-    } else if (category === 'masculinos' || category === 'linha-masculina') {
-      result = result.filter((p) => isMasculinosCategory(p.category))
-    } else if (category === 'aneis') {
-      result = result.filter(
-        (p) => p.category === 'aneis' && !isBraceleteProduct(p.name)
-      )
-    } else {
-      result = result.filter((p) => p.category === category)
-    }
+    result = result.filter((p) => matchesStoreCategoryFilter(p, category))
   }
 
   if (query) {
@@ -348,6 +245,29 @@ export function Products() {
     if (!sizeFilter) return baseFiltered
     return baseFiltered.filter((p) => p.inStock && productHasSize(p, sizeFilter))
   }, [baseFiltered, sizeFilter])
+
+  const [visibleCount, setVisibleCount] = useState(CATALOG_PAGE_SIZE)
+  const filterKey = useMemo(
+    () =>
+      [
+        category ?? '',
+        query ?? '',
+        isPromo ? '1' : '0',
+        sizeFilter ?? '',
+        filtered.length,
+      ].join('|'),
+    [category, query, isPromo, sizeFilter, filtered.length]
+  )
+
+  useEffect(() => {
+    setVisibleCount(CATALOG_PAGE_SIZE)
+  }, [filterKey])
+
+  const visibleProducts = useMemo(
+    () => filtered.slice(0, visibleCount),
+    [filtered, visibleCount]
+  )
+  const hasMore = visibleCount < filtered.length
 
   const setSizeFilter = (size: string | null) => {
     const next = new URLSearchParams(searchParams)
@@ -520,11 +440,31 @@ export function Products() {
               )}
             </p>
           ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-10 lg:gap-x-6">
-              {filtered.map((product, i) => (
-                <ProductCard key={product.id} product={product} index={i} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-10 lg:gap-x-6">
+                {visibleProducts.map((product, i) => (
+                  <ProductCard key={product.id} product={product} index={i} />
+                ))}
+              </div>
+              {hasMore && (
+                <div className="mt-12 sm:mt-14 flex flex-col items-center gap-3">
+                  <p className="text-[11px] tracking-[0.2em] uppercase text-muted">
+                    Mostrando {visibleProducts.length} de {filtered.length}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setVisibleCount((n) =>
+                        Math.min(n + CATALOG_PAGE_SIZE, filtered.length)
+                      )
+                    }
+                    className="min-h-11 px-8 py-3 border border-graphite text-graphite text-[11px] tracking-[0.2em] uppercase hover:bg-off-white transition-colors"
+                  >
+                    Carregar mais peças
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

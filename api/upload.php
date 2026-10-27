@@ -75,11 +75,12 @@ if ($blob === false || !move_uploaded_file($file['tmp_name'], $dest)) {
 @chmod($dest, 0644);
 $bytes = (int) filesize($dest);
 
-// Espelho MySQL (sobrevive a limpeza de arquivos)
-try {
-  require_once __DIR__ . '/db.php';
-  $pdo = verissimo_db();
-  $pdo->exec("CREATE TABLE IF NOT EXISTS `product_images` (
+// Espelho MySQL (opcional) — só arquivos menores; evita timeout em fotos grandes do celular
+if ($bytes > 0 && $bytes <= 2 * 1024 * 1024) {
+  try {
+    require_once __DIR__ . '/db.php';
+    $pdo = verissimo_db();
+    $pdo->exec("CREATE TABLE IF NOT EXISTS `product_images` (
     `filename` VARCHAR(190) NOT NULL,
     `mime` VARCHAR(64) NOT NULL DEFAULT 'image/jpeg',
     `data` LONGBLOB NOT NULL,
@@ -88,10 +89,14 @@ try {
     `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`filename`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-  $stmt = $pdo->prepare('REPLACE INTO product_images (filename, mime, data, bytes) VALUES (?, ?, ?, ?)');
-  $stmt->execute([$name, $mime, $blob !== false ? $blob : file_get_contents($dest), $bytes]);
-} catch (Throwable $e) {
-  // não bloqueia o upload se MySQL falhar
+    $payload = $blob !== false ? $blob : file_get_contents($dest);
+    if (is_string($payload) && $payload !== '') {
+      $stmt = $pdo->prepare('REPLACE INTO product_images (filename, mime, data, bytes) VALUES (?, ?, ?, ?)');
+      $stmt->execute([$name, $mime, $payload, $bytes]);
+    }
+  } catch (Throwable $e) {
+    // disco (api/data/images) já guardou — upload segue ok
+  }
 }
 
 verissimo_json([

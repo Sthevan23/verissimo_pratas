@@ -32,6 +32,20 @@ function verissimo_read_catalog(string $path): array {
 
 if ($method === 'GET') {
   $data = verissimo_read_catalog($path);
+  $catFix = verissimo_reconcile_product_categories($data['products'] ?? []);
+  $data['products'] = $catFix['products'];
+  if ($catFix['changed'] && is_file($path)) {
+    $out = [
+      'updatedAt' => gmdate('c'),
+      'products' => array_values($data['products']),
+      'categories' => $data['categories'] ?? [],
+      'settings' => $data['settings'] ?? [],
+    ];
+    $json = json_encode($out, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if ($json !== false) {
+      file_put_contents($path, $json, LOCK_EX);
+    }
+  }
   verissimo_json([
     'ok' => true,
     'products' => $data['products'],
@@ -53,6 +67,11 @@ if ($method === 'POST') {
   if (!is_array($products)) {
     verissimo_json(['ok' => false, 'error' => 'Campo products obrigatório'], 400);
   }
+
+  $reconciled = verissimo_reconcile_orphan_images(array_values($products));
+  $products = $reconciled['products'];
+  $catFix = verissimo_reconcile_product_categories($products);
+  $products = $catFix['products'];
 
   $existing = verissimo_read_catalog($path);
   $out = [
@@ -78,6 +97,8 @@ if ($method === 'POST') {
     'count' => count($out['products']),
     'categoriesCount' => count($out['categories']),
     'updatedAt' => $out['updatedAt'],
+    'linkedImages' => (int) ($reconciled['linked'] ?? 0),
+    'orphanImages' => count($reconciled['orphans'] ?? []),
   ]);
 }
 

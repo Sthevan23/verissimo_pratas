@@ -7,6 +7,7 @@ import {
   getAdminProduct,
   saveProduct,
   publishCatalogToServer,
+  hydrateCatalogFromServer,
 } from '../../services/adminStore'
 import { getDatabase } from '../../services/adminStore'
 import { useAdminToast } from '../../context/AdminToastContext'
@@ -61,29 +62,57 @@ export function AdminProductForm() {
   const [optionLabelText, setOptionLabelText] = useState('Modelo')
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [loadingCatalog, setLoadingCatalog] = useState(!isNew)
   const galleryInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const categories = getDatabase().categories
 
+  const applyProductToForm = (p: AdminProduct) => {
+    setProduct(p)
+    const formatted = formatProductOptions(p.options)
+    setOptionsText(formatted)
+    setSizesText((p.sizes ?? []).join(', '))
+    const first = p.options?.[0]
+    setOptionLabelText(first?.label || 'Modelo')
+    setOptionValuesText(first?.values?.join(', ') || '')
+  }
+
   useEffect(() => {
-    if (!isNew && id) {
-      const p = getAdminProduct(id)
-      if (p) {
-        setProduct(p)
-        const formatted = formatProductOptions(p.options)
-        setOptionsText(formatted)
-        setSizesText((p.sizes ?? []).join(', '))
-        const first = p.options?.[0]
-        setOptionLabelText(first?.label || 'Modelo')
-        setOptionValuesText(first?.values?.join(', ') || '')
+    let alive = true
+    ;(async () => {
+      if (!isNew) setLoadingCatalog(true)
+      await hydrateCatalogFromServer({ mergeLocal: true })
+      if (!alive) return
+      if (!isNew && id) {
+        const p = getAdminProduct(id)
+        if (p) applyProductToForm(p)
+      } else {
+        setOptionsText('')
+        setSizesText('')
+        setOptionLabelText('Modelo')
+        setOptionValuesText('')
       }
-    } else {
-      setOptionsText('')
-      setSizesText('')
-      setOptionLabelText('Modelo')
-      setOptionValuesText('')
+      setLoadingCatalog(false)
+    })()
+    return () => {
+      alive = false
     }
   }, [id, isNew])
+
+  /** Grava no catálogo do servidor (fotos só aparecem na loja depois disso). */
+  const persistProductToSite = async (
+    next: AdminProduct
+  ): Promise<{ ok: boolean; error?: string }> => {
+    if (!next.name?.trim() || !(next.price > 0) || next.images.length === 0) {
+      return { ok: false, error: 'incomplete' }
+    }
+    const saved = saveProduct({
+      ...next,
+      inStock: next.stock > 0,
+    })
+    setProduct(saved)
+    return publishCatalogToServer()
+  }
 
   const margin = calcMargin(product.costPrice, product.salePrice ?? product.price)
 
@@ -126,10 +155,39 @@ export function AdminProductForm() {
         }
       }
       if (urls.length > 0) {
-        setProduct((p) => ({ ...p, images: [...p.images, ...urls] }))
-        showToast(
-          urls.length > 1 ? `${urls.length} fotos enviadas ao site.` : 'Foto enviada ao site.'
-        )
+        const merged: AdminProduct = { ...product, images: [...product.images, ...urls] }
+        setProduct(merged)
+
+        const pub = await persistProductToSite(merged)
+        if (pub.ok) {
+          const n = urls.length
+          let msg =
+            n > 1
+              ? `${n} fotos publicadas no site.`
+              : 'Foto publicada no site.'
+          if (merged.status !== 'active') {
+            msg += ' Status não é Ativo — a peça ainda não aparece na loja.'
+          } else if (merged.stock <= 0) {
+            msg += ' Estoque zerado — libere no painel para aparecer na loja.'
+          }
+          showToast(msg)
+          if (isNew) {
+            navigate(`/admin/produtos/${merged.id}`, { replace: true })
+          }
+        } else if (pub.error === 'incomplete') {
+          showToast(
+            urls.length > 1
+              ? `${urls.length} fotos no servidor. Preencha nome e preço e toque em Salvar e publicar.`
+              : 'Foto no servidor. Preencha nome e preço e toque em Salvar e publicar.',
+            'error'
+          )
+        } else {
+          showToast(
+            pub.error ||
+              'Fotos enviadas, mas o catálogo não publicou. Toque em Salvar e publicar no site.',
+            'error'
+          )
+        }
       }
       if (errors.length > 0) {
         showToast(
@@ -144,7 +202,19 @@ export function AdminProductForm() {
   }
 
   const removeImage = (index: number) => {
-    setProduct((p) => ({ ...p, images: p.images.filter((_, i) => i !== index) }))
+    const next: AdminProduct = {
+      ...product,
+      images: product.images.filter((_, i) => i !== index),
+    }
+    setProduct(next)
+    if (next.name && next.price > 0 && next.images.length > 0) {
+      void persistProductToSite(next).then((pub) => {
+        if (pub.ok) showToast('Foto removida do site.')
+        else if (pub.error !== 'incomplete') {
+          showToast('Removida aqui; use Salvar e publicar para atualizar o site.', 'error')
+        }
+      })
+    }
   }
 
   const moveImage = (from: number, to: number) => {
@@ -216,7 +286,9 @@ export function AdminProductForm() {
         showToast(isNew ? 'Produto publicado no site!' : 'Produto atualizado no site!')
       }
       if (continueEditing) {
-        navigate(`/admin/produtos/${saved.id}`, { replace: true })
+        if (isNew) {
+          navigate(`/admin/produtos/${saved.id}`, { replace: true })
+        }
         setProduct(saved)
       } else {
         navigate('/admin/produtos')
@@ -224,6 +296,14 @@ export function AdminProductForm() {
     } finally {
       setSaving(false)
     }
+  }
+
+  if (loadingCatalog) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="w-8 h-8 text-muted animate-spin" strokeWidth={1.5} />
+      </div>
+    )
   }
 
   return (
@@ -274,7 +354,8 @@ export function AdminProductForm() {
           <section className="admin-card p-6 space-y-4">
             <h2 className="font-serif text-lg font-light border-b border-border pb-3">Fotos</h2>
             <p className="text-xs text-muted">
-              Escolha da galeria ou tire foto na hora. As imagens sobem para o servidor e aparecem no site.
+              Galeria ou câmera: em produto já cadastrado, cada foto publica no site na hora. Produto
+              novo: envie as fotos e depois toque em <strong>Salvar e publicar no site</strong>.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button

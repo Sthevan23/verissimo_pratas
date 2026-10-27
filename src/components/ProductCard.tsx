@@ -1,8 +1,9 @@
 import { Heart, ShoppingBag } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import type { Product } from '../types'
+import { catalogCardImageUrl } from '../utils/catalogImage'
 import {
   calcDiscount,
   cn,
@@ -26,6 +27,14 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const currentPrice = product.salePrice ?? product.price
   const hasSecondImage = product.images.length > 1 && !imgBroken
   const needsSelection = productRequiresSelection(product)
+  const primarySrc = useMemo(
+    () => (imgSrc ? catalogCardImageUrl(imgSrc) : ''),
+    [imgSrc]
+  )
+  const hoverSrc = useMemo(
+    () => (product.images[1] ? catalogCardImageUrl(product.images[1]) : ''),
+    [product.images]
+  )
 
   useEffect(() => {
     setImgSrc(product.images[0] || '')
@@ -56,12 +65,13 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
     >
       <div className="relative aspect-[3/4] bg-off-white overflow-hidden mb-3 sm:mb-4">
         <Link to={productPath(product)} className="absolute inset-0 block">
-          {!imgBroken && imgSrc ? (
+          {!imgBroken && primarySrc ? (
             <img
-              src={imgSrc}
+              src={primarySrc}
               alt={product.name}
               width={480}
               height={640}
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               className={cn(
                 'absolute inset-0 z-0 w-full h-full object-cover transition-opacity duration-300',
                 !product.inStock && 'opacity-60',
@@ -77,16 +87,14 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
               Foto indisponível
             </div>
           )}
-          {hasSecondImage ? (
+          {hovered && hasSecondImage && hoverSrc ? (
             <img
-              src={product.images[1]}
+              src={hoverSrc}
               alt=""
               width={480}
               height={640}
-              className={cn(
-                'absolute inset-0 z-0 w-full h-full object-cover transition-opacity duration-300 hidden lg:block',
-                hovered ? 'opacity-100' : 'opacity-0'
-              )}
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              className="absolute inset-0 z-0 w-full h-full object-cover transition-opacity duration-300 hidden lg:block opacity-100"
               loading="lazy"
               decoding="async"
             />

@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard,
   Package,
+  PackageX,
   FolderTree,
   ShoppingCart,
   Users,
@@ -17,10 +18,16 @@ import {
   X,
 } from 'lucide-react'
 import { useAdminAuth } from '../../context/AdminAuthContext'
+import { getAdminProducts } from '../../services/adminStore'
+
+function soldOutCount(): number {
+  return getAdminProducts().filter((p) => p.stock <= 0).length
+}
 
 const menuItems = [
   { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard', module: 'dashboard' },
   { to: '/admin/produtos', icon: Package, label: 'Produtos', module: 'products' },
+  { to: '/admin/esgotados', icon: PackageX, label: 'Esgotados', module: 'products', badge: soldOutCount },
   { to: '/admin/categorias', icon: FolderTree, label: 'Página inicial', module: 'categories' },
   { to: '/admin/pedidos', icon: ShoppingCart, label: 'Pedidos', module: 'orders' },
   { to: '/admin/clientes', icon: Users, label: 'Clientes', module: 'customers' },
@@ -56,8 +63,9 @@ export function AdminSidebar({ mobile, onClose }: AdminSidebarProps) {
       </div>
 
       <nav className="flex-1 overflow-y-auto py-4 px-3">
-        {menuItems.map(({ to, icon: Icon, label, module }) => {
+        {menuItems.map(({ to, icon: Icon, label, module, badge }) => {
           if (!canAccess(module)) return null
+          const count = badge?.() ?? 0
           return (
             <NavLink
               key={to}
@@ -72,7 +80,12 @@ export function AdminSidebar({ mobile, onClose }: AdminSidebarProps) {
               }
             >
               <Icon className="w-5 h-5 shrink-0" strokeWidth={1.5} />
-              {label}
+              <span className="flex-1">{label}</span>
+              {count > 0 && (
+                <span className="text-[10px] tabular-nums px-1.5 py-0.5 border border-current/30 min-w-[1.25rem] text-center">
+                  {count}
+                </span>
+              )}
             </NavLink>
           )
         })}

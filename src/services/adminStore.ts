@@ -20,6 +20,7 @@ import {
   pushCatalogToServer,
 } from './remoteCatalog'
 import { isLegacyForeignImage, localCategoryImage, stripLegacyImages } from '../utils/legacyImages'
+import { normalizeProductCategory } from '../utils/productCategory'
 
 const STORAGE_KEY = 'verissimo-admin-db-v5'
 /** IDs conhecidos no catálogo público (api/catalog.php) — usado para avisar produtos só no navegador */
@@ -117,6 +118,25 @@ function ensureSeedCategories(db: AdminDatabase): boolean {
     }
     if (!acessorios.active) {
       acessorios.active = true
+      changed = true
+    }
+  }
+  return changed
+}
+
+/** Coloca colares, piercings, brincos etc. na categoria certa conforme o nome */
+function reconcileProductCategories(db: AdminDatabase): boolean {
+  let changed = false
+  for (const p of db.products) {
+    const next = normalizeProductCategory({
+      name: p.name,
+      slug: p.slug,
+      description: p.description,
+      category: String(p.category),
+    })
+    if (next !== p.category) {
+      p.category = next
+      p.updatedAt = now()
       changed = true
     }
   }
@@ -257,7 +277,7 @@ export function getDatabase(): AdminDatabase {
       const db = JSON.parse(raw) as AdminDatabase
       db.categories = (db.categories ?? []).map(migrateCategory)
       if (!db.settings.heroImage) db.settings.heroImage = ''
-      if (ensureSeedCategories(db)) saveDatabase(db)
+      if (ensureSeedCategories(db) || reconcileProductCategories(db)) saveDatabase(db)
       return db
     } catch {
       /* fall through */
@@ -367,6 +387,12 @@ export function saveProduct(product: AdminProduct): AdminProduct {
   const db = getDatabase()
   const idx = db.products.findIndex((p) => p.id === product.id)
   product.slug = ensureUniqueProductSlug(db, product)
+  product.category = normalizeProductCategory({
+    name: product.name,
+    slug: product.slug,
+    description: product.description,
+    category: String(product.category),
+  })
   product.updatedAt = now()
   if (idx >= 0) {
     const old = db.products[idx]
@@ -385,7 +411,12 @@ export function saveProduct(product: AdminProduct): AdminProduct {
 }
 
 /** Sobe fotos base64 + publica catálogo no servidor (visível no site) */
-export async function publishCatalogToServer(): Promise<{ ok: boolean; error?: string }> {
+export async function publishCatalogToServer(): Promise<{
+  ok: boolean
+  error?: string
+  linkedImages?: number
+  orphanImages?: number
+}> {
   if (!isAdminLoggedIn()) {
     return {
       ok: false,
@@ -421,14 +452,19 @@ export async function publishCatalogToServer(): Promise<{ ok: boolean; error?: s
     })
     db.categories = categories
     saveDatabase(db)
-    const ok = await pushCatalogToServer({
+    const pub = await pushCatalogToServer({
       products: withUrls,
       categories,
       settings: db.settings,
     })
-    if (ok) {
-      writeServerProductIds(withUrls)
-      return { ok: true }
+    if (pub.ok) {
+      await hydrateCatalogFromServer({ mergeLocal: true })
+      writeServerProductIds(getDatabase().products.filter((p) => p.status !== 'archived'))
+      return {
+        ok: true,
+        linkedImages: pub.linkedImages,
+        orphanImages: pub.orphanImages,
+      }
     }
     return {
       ok: false,
@@ -470,6 +506,7 @@ export async function hydrateCatalogFromServer(options?: {
       db.settings = { ...db.settings, ...remote.settings }
     }
     const categoriesAdded = ensureSeedCategories(db)
+    reconcileProductCategories(db)
     saveDatabase(db)
     if (categoriesAdded && options?.pushIfEmpty) {
       void publishCatalogToServer()

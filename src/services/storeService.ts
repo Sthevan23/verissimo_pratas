@@ -1,22 +1,27 @@
 import type { Product, Category } from '../types'
+import type { AdminProduct } from '../types/admin'
 import { getDatabase } from './adminStore'
 import { getStorefrontCatalog } from './catalogMemory'
 import { categoryLabels, homeCategories as fallbackHomeCategories } from '../data/categories'
 import { resolveProductSizes } from '../data/sizes'
 import { normalizeProductImageUrl } from './remoteCatalog'
 import { isLegacyForeignImage, localCategoryImage } from '../utils/legacyImages'
+import { matchesStoreCategoryFilter } from '../utils/productCategory'
 
 function sourceProducts() {
   return getStorefrontCatalog() ?? getDatabase().products
 }
 
+/** Ativo e com estoque — esgotados ficam só no painel admin. */
+export function isPublishedOnStorefront(p: AdminProduct): boolean {
+  return p.status === 'active' && Number(p.stock) > 0
+}
+
 /** Bridge: vitrine lê memória (API) ou localStorage */
 export function getStoreProducts(): Product[] {
   return sourceProducts()
-    .filter((p) => p.status === 'active')
+    .filter(isPublishedOnStorefront)
     .map(adminToStoreProduct)
-    // Esgotados no final da vitrine (home, categorias, busca, promoções)
-    .sort((a, b) => Number(b.inStock) - Number(a.inStock))
 }
 
 /** Resolve produto por id (preferido) ou slug. Id evita abrir outro item com slug repetido. */
@@ -24,26 +29,24 @@ export function getStoreProductBySlug(ref: string): Product | undefined {
   const key = decodeURIComponent(ref || '').trim()
   if (!key) return undefined
 
-  const active = sourceProducts().filter((p) => p.status === 'active')
-  const byId = active.find((p) => p.id === key)
+  const onStore = sourceProducts().filter(isPublishedOnStorefront)
+  const byId = onStore.find((p) => p.id === key)
   if (byId) return adminToStoreProduct(byId)
 
-  const bySlug = active.filter((p) => p.slug === key)
+  const bySlug = onStore.filter((p) => p.slug === key)
   if (bySlug.length === 1) return adminToStoreProduct(bySlug[0])
-  // Slug duplicado: prefere o que está disponível; se empatar, o mais recente
   if (bySlug.length > 1) {
-    const preferred =
-      bySlug.find((p) => Number(p.stock) > 0) ??
-      [...bySlug].sort((a, b) => String(b.updatedAt ?? '').localeCompare(String(a.updatedAt ?? '')))[0]
+    const preferred = [...bySlug].sort((a, b) =>
+      String(b.updatedAt ?? '').localeCompare(String(a.updatedAt ?? ''))
+    )[0]
     return adminToStoreProduct(preferred)
   }
   return undefined
 }
 
 export function getStoreProductsByCategory(category: string): Product[] {
-  if (category === 'novidades') return getStoreProducts().filter((p) => p.isNew)
   if (category === 'promocoes') return getStoreProducts().filter((p) => p.isOnSale)
-  return getStoreProducts().filter((p) => p.category === category)
+  return getStoreProducts().filter((p) => matchesStoreCategoryFilter(p, category))
 }
 
 export function getStoreFeaturedProducts(): Product[] {

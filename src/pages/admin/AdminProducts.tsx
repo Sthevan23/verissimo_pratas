@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { Plus, Search, Copy, Archive, Trash2, Pencil, CloudUpload, Percent } from 'lucide-react'
 import { PageHeader, ConfirmDialog, EmptyState, Modal } from '../../components/admin/Modal'
@@ -22,6 +22,22 @@ import { formatPrice } from '../../utils/format'
 import type { AdminProduct } from '../../types/admin'
 
 type DiscountScope = 'all' | 'category' | 'selected'
+type AvailabilityTab = 'available' | 'soldout'
+
+function productMatchesQuery(p: AdminProduct, q: string) {
+  if (!q) return true
+  return (
+    p.name.toLowerCase().includes(q) ||
+    p.sku.toLowerCase().includes(q) ||
+    p.category.toLowerCase().includes(q)
+  )
+}
+
+function stockSummary(available: number, soldout: number) {
+  const availableLabel = available === 1 ? 'disponível' : 'disponíveis'
+  const soldoutLabel = soldout === 1 ? 'esgotado' : 'esgotados'
+  return `${available} ${availableLabel} · ${soldout} ${soldoutLabel}`
+}
 
 function AvailabilityBadge({ stock }: { stock: number }) {
   const available = stock > 0
@@ -57,10 +73,23 @@ function clearSalePrice(p: AdminProduct): AdminProduct {
   }
 }
 
-export function AdminProducts() {
+function productSortKey(p: AdminProduct): number {
+  const raw = p.updatedAt || p.createdAt || ''
+  const t = Date.parse(raw)
+  return Number.isNaN(t) ? 0 : t
+}
+
+type AdminProductsProps = {
+  /** Rota /admin/esgotados abre direto na aba de peças fora da loja */
+  area?: 'available' | 'soldout'
+}
+
+export function AdminProducts({ area = 'available' }: AdminProductsProps) {
+  const navigate = useNavigate()
   const { showToast } = useAdminToast()
   const [products, setProducts] = useState(getAdminProducts)
   const [search, setSearch] = useState('')
+  const availabilityTab: AvailabilityTab = area === 'soldout' ? 'soldout' : 'available'
   const [selected, setSelected] = useState<string[]>([])
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [discountOpen, setDiscountOpen] = useState(false)
@@ -102,36 +131,62 @@ export function AdminProducts() {
     const result = await publishCatalogToServer()
     refresh()
     setSyncing(false)
-    showToast(
-      result.ok ? 'Produtos publicados no site!' : result.error || 'Falha ao publicar',
-      result.ok ? 'success' : 'error'
-    )
+    if (result.ok) {
+      const extra =
+        (result.linkedImages ?? 0) > 0
+          ? ` ${result.linkedImages} foto(s) solta(s) vinculada(s) ao produto.`
+          : ''
+      showToast(`Produtos publicados no site!${extra}`)
+    } else {
+      showToast(result.error || 'Falha ao publicar', 'error')
+    }
   }
 
   const toggleAvailability = (p: AdminProduct) => {
     if (p.stock > 0) {
       setStock(p.id, 0, 'Marcado como esgotado')
-      showToast(`${p.name} marcado como esgotado.`)
+      showToast(`${p.name} foi para a aba Esgotados.`)
     } else {
       setStock(p.id, 1, 'Marcado como disponível')
-      showToast(`${p.name} disponível novamente.`)
+      showToast(`${p.name} voltou para Disponíveis — publique no site se ainda não publicou.`)
     }
+    setSelected((prev) => prev.filter((id) => id !== p.id))
     refresh()
   }
 
+  const formatShortDate = (iso?: string) => {
+    if (!iso) return '—'
+    const d = new Date(iso)
+    if (Number.isNaN(d.getTime())) return '—'
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+  }
+
+  const query = search.toLowerCase().trim()
+
+  const searched = useMemo(
+    () => products.filter((p) => productMatchesQuery(p, query)),
+    [products, query]
+  )
+
+  const stockCounts = useMemo(
+    () => ({
+      available: searched.filter((p) => p.stock > 0).length,
+      soldout: searched.filter((p) => p.stock <= 0).length,
+    }),
+    [searched]
+  )
+
   const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim()
-    const list = q
-      ? products.filter(
-          (p) =>
-            p.name.toLowerCase().includes(q) ||
-            p.sku.toLowerCase().includes(q) ||
-            p.category.toLowerCase().includes(q)
-        )
-      : [...products]
-    // Esgotados no final da lista
-    return list.sort((a, b) => Number(b.stock > 0) - Number(a.stock > 0))
-  }, [products, search])
+    const list = searched.filter((p) =>
+      availabilityTab === 'available' ? p.stock > 0 : p.stock <= 0
+    )
+    return [...list].sort((a, b) => productSortKey(b) - productSortKey(a))
+  }, [searched, availabilityTab])
+
+  const setAvailabilityTab = (tab: AvailabilityTab) => {
+    setSelected([])
+    navigate(tab === 'soldout' ? '/admin/esgotados' : '/admin/produtos')
+  }
 
   const toggleSelect = (id: string) => {
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
@@ -226,10 +281,20 @@ export function AdminProducts() {
 
   return (
     <>
-      <Helmet><title>Produtos — Verissimo Admin</title></Helmet>
+      <Helmet>
+        <title>
+          {availabilityTab === 'soldout' ? 'Esgotados' : 'Produtos'} — Verissimo Admin
+        </title>
+      </Helmet>
       <PageHeader
-        title="Produtos"
-        subtitle={`${filtered.length} produtos${syncing ? ' · sincronizando…' : ''}`}
+        title={availabilityTab === 'soldout' ? 'Esgotados' : 'Produtos'}
+        subtitle={
+          syncing
+            ? 'Sincronizando…'
+            : availabilityTab === 'soldout'
+              ? `${stockCounts.soldout} fora da loja · ${stockCounts.available} no site`
+              : stockSummary(stockCounts.available, stockCounts.soldout)
+        }
         action={
           <div className="flex flex-wrap gap-2">
             <button
@@ -269,14 +334,62 @@ export function AdminProducts() {
         </div>
       )}
 
+      <div
+        className="flex gap-2 mb-4 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0"
+        role="tablist"
+        aria-label="Disponibilidade"
+      >
+        {(
+          [
+            { id: 'available' as const, label: 'Disponíveis no site', count: stockCounts.available },
+            { id: 'soldout' as const, label: 'Esgotados', count: stockCounts.soldout },
+          ]
+        ).map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={availabilityTab === tab.id}
+            onClick={() => setAvailabilityTab(tab.id)}
+            className={`shrink-0 flex-1 sm:flex-none px-4 py-3 text-[11px] tracking-wider uppercase ${
+              availabilityTab === tab.id
+                ? 'bg-graphite text-cream'
+                : 'border border-border text-warm-gray bg-white'
+            }`}
+          >
+            {tab.label} ({tab.count})
+          </button>
+        ))}
+      </div>
+
+      {availabilityTab === 'soldout' ? (
+        <div className="admin-card p-4 mb-4 border-red-200 bg-red-50/80 text-sm text-red-950">
+          <p className="font-medium mb-1">Peças esgotadas — não aparecem na loja</p>
+          <p className="text-red-900/90 font-light leading-relaxed">
+            Use esta aba para ver o que acabou. Quando a mercadoria chegar: toque em{' '}
+            <strong>Editar</strong> (fotos novas, se quiser), depois em{' '}
+            <strong>Disponibilizar</strong>. A peça vai para <strong>Disponíveis no site</strong> e
+            volta à vitrine após <strong>Publicar no site</strong>.
+          </p>
+        </div>
+      ) : (
+        <div className="admin-card p-4 mb-4 border-emerald-200 bg-emerald-50/60 text-sm text-emerald-950">
+          <p className="font-medium mb-1">Peças no site</p>
+          <p className="text-emerald-900/90 font-light leading-relaxed">
+            Só entram aqui as peças com estoque. Esgotou? Use <strong>Esgotar</strong> — ela sai da
+            loja e vai para o menu <strong>Esgotados</strong>.
+          </p>
+        </div>
+      )}
+
       <div className="admin-card p-4 mb-4 flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" strokeWidth={1.5} />
+        <div className="admin-search-field flex-1">
+          <Search className="shrink-0 w-4 h-4 text-muted" strokeWidth={1.5} aria-hidden />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar por nome ou SKU..."
-            className="admin-input pl-10"
+            aria-label="Buscar por nome ou SKU"
           />
         </div>
         {selected.length > 0 && (
@@ -307,11 +420,25 @@ export function AdminProducts() {
 
       {filtered.length === 0 ? (
         <EmptyState
-          title="Nenhum produto encontrado"
+          title={
+            search.trim()
+              ? 'Nenhum produto encontrado'
+              : availabilityTab === 'soldout'
+                ? 'Nenhum produto esgotado'
+                : 'Nenhum produto disponível'
+          }
+          description={
+            search.trim() &&
+            (availabilityTab === 'available' ? stockCounts.soldout : stockCounts.available) > 0
+              ? `Há resultados na aba ${availabilityTab === 'available' ? 'Esgotados' : 'Disponíveis'}.`
+              : undefined
+          }
           action={
-            <Link to="/admin/produtos/novo" className="admin-btn-primary">
-              Criar produto
-            </Link>
+            availabilityTab === 'available' && !search.trim() ? (
+              <Link to="/admin/produtos/novo" className="admin-btn-primary">
+                Criar produto
+              </Link>
+            ) : undefined
           }
         />
       ) : (
@@ -333,6 +460,9 @@ export function AdminProducts() {
                   <th className="admin-table-th">Preço</th>
                   <th className="admin-table-th">Promo</th>
                   <th className="admin-table-th">Disponibilidade</th>
+                  {availabilityTab === 'soldout' && (
+                    <th className="admin-table-th">Atualizado</th>
+                  )}
                   <th className="admin-table-th">Status</th>
                   <th className="admin-table-th">Ações</th>
                 </tr>
@@ -386,10 +516,15 @@ export function AdminProducts() {
                           onClick={() => toggleAvailability(p)}
                           className="text-[10px] text-muted underline underline-offset-2 hover:text-graphite"
                         >
-                          {p.stock > 0 ? 'Marcar esgotado' : 'Marcar disponível'}
+                          {p.stock > 0 ? 'Marcar esgotado' : 'Disponibilizar'}
                         </button>
                       </div>
                     </td>
+                    {availabilityTab === 'soldout' && (
+                      <td className="admin-table-td text-xs text-muted whitespace-nowrap">
+                        {formatShortDate(p.updatedAt)}
+                      </td>
+                    )}
                     <td className="admin-table-td">
                       <StatusBadge status={p.status} />
                     </td>
@@ -449,6 +584,11 @@ export function AdminProducts() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-light truncate">{p.name}</p>
                     <p className="text-xs text-muted">{p.sku}</p>
+                    {availabilityTab === 'soldout' && (
+                      <p className="text-[10px] text-muted mt-0.5">
+                        Atualizado {formatShortDate(p.updatedAt)}
+                      </p>
+                    )}
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
                       <span className="font-medium text-sm">{formatPrice(p.price)}</span>
                       {p.salePrice ? (

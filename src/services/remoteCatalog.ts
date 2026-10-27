@@ -33,20 +33,24 @@ export async function pushCatalogToServer(payload: {
   products: AdminProduct[]
   categories?: AdminCategory[]
   settings?: StoreSettings
-}): Promise<boolean> {
-  if (!getSession()?.token) return false
+}): Promise<{ ok: boolean; linkedImages?: number; orphanImages?: number }> {
+  if (!getSession()?.token) return { ok: false }
   try {
     const res = await fetch('/api/catalog.php', {
       method: 'POST',
       headers: writeHeaders(),
       body: JSON.stringify(payload),
     })
-    if (res.status === 401) return false
-    if (!res.ok) return false
+    if (res.status === 401) return { ok: false }
+    if (!res.ok) return { ok: false }
     const data = await res.json()
-    return Boolean(data?.ok)
+    return {
+      ok: Boolean(data?.ok),
+      linkedImages: Number(data?.linkedImages) || 0,
+      orphanImages: Number(data?.orphanImages) || 0,
+    }
   } catch {
-    return false
+    return { ok: false }
   }
 }
 
@@ -76,6 +80,19 @@ export async function uploadProductFile(file: File): Promise<string> {
         ? 'Resposta inválida do servidor ao enviar foto.'
         : `Erro ${res.status} ao enviar foto. Tente de novo.`
     )
+  }
+  if (res.status === 401) {
+    throw new Error(
+      'Sessão expirada. Toque em Sair, entre de novo e marque Manter conectado.'
+    )
+  }
+  if (res.status === 504 || res.status === 502 || res.status === 408) {
+    throw new Error(
+      'Servidor demorou demais. Use Wi‑Fi, envie uma foto por vez ou tire outra mais leve.'
+    )
+  }
+  if (res.status === 413) {
+    throw new Error('Foto muito grande para o servidor (máx. 12 MB).')
   }
   if (!res.ok || !data?.ok || !data.url) {
     throw new Error(data?.error || 'Falha no upload da imagem')
@@ -131,7 +148,7 @@ async function compressWithCanvas(
 }
 
 /** Compacta imagem (galeria/câmera) — converte HEIC e fotos grandes para JPEG */
-export async function compressImageFile(file: File, maxSide = 2400, quality = 0.9): Promise<File> {
+export async function compressImageFile(file: File, maxSide = 1920, quality = 0.88): Promise<File> {
   if (!isImageFile(file)) {
     throw new Error('Arquivo não é uma imagem válida.')
   }
