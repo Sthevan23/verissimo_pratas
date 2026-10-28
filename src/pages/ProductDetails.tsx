@@ -22,6 +22,7 @@ import {
   formatPrice,
 } from '../utils/format'
 import { ProductCard } from '../components/ProductCard'
+import { catalogCardImageUrl, catalogDetailImageUrl } from '../utils/catalogImage'
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { Button } from '../components/ui/Button'
 import { ShippingCalculator } from '../components/ShippingCalculator'
@@ -65,6 +66,9 @@ export function ProductDetails() {
       </div>
     )
   }
+
+  const displayImages = product.images.map((img) => catalogDetailImageUrl(img))
+  const thumbImages = product.images.map((img) => catalogCardImageUrl(img))
 
   const listPrice = product.price
   const currentPrice = product.salePrice ?? product.price
@@ -146,7 +150,7 @@ export function ProductDetails() {
           <div className="relative w-full bg-off-white flex items-center justify-center min-h-[70vw] max-h-[78vh]">
             <img
               key={selectedImage}
-              src={product.images[selectedImage]}
+              src={displayImages[selectedImage]}
               alt={product.name}
               className="w-full h-auto max-h-[78vh] object-contain"
               decoding="async"
@@ -155,7 +159,7 @@ export function ProductDetails() {
           </div>
           {product.images.length > 1 && (
             <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 py-3">
-              {product.images.map((img, i) => (
+              {thumbImages.map((img, i) => (
                 <button
                   key={i}
                   type="button"
@@ -165,7 +169,7 @@ export function ProductDetails() {
                     i === selectedImage ? 'border-brand-green' : 'border-border'
                   )}
                 >
-                  <img src={img} alt="" className="w-full h-full object-contain" />
+                  <img src={img} alt="" className="w-full h-full object-contain" loading="lazy" />
                 </button>
               ))}
             </div>
@@ -180,7 +184,7 @@ export function ProductDetails() {
                 <div className="relative bg-off-white overflow-hidden flex items-center justify-center min-h-[560px] xl:min-h-[640px]">
                   <img
                     key={selectedImage}
-                    src={product.images[selectedImage]}
+                    src={displayImages[selectedImage]}
                     alt={product.name}
                     className="w-full h-auto max-h-[min(82vh,820px)] object-contain"
                     decoding="async"
@@ -189,7 +193,7 @@ export function ProductDetails() {
                 </div>
                 {product.images.length > 1 && (
                   <div className="flex gap-2 flex-wrap">
-                    {product.images.map((img, i) => (
+                    {thumbImages.map((img, i) => (
                       <button
                         key={i}
                         type="button"
@@ -199,7 +203,7 @@ export function ProductDetails() {
                           i === selectedImage ? 'border-brand-green' : 'border-transparent'
                         )}
                       >
-                        <img src={img} alt="" className="w-full h-full object-contain" />
+                        <img src={img} alt="" className="w-full h-full object-contain" loading="lazy" />
                       </button>
                     ))}
                   </div>

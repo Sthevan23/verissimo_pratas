@@ -494,7 +494,7 @@ export async function hydrateCatalogFromServer(options?: {
   if (hasRemote) {
     if (remote.products.length > 0) {
       writeServerProductIds(remote.products.map((p) => normalizeProductImages(p)))
-      const mergeLocal = options?.mergeLocal ?? Boolean(options?.pushIfEmpty)
+      const mergeLocal = options?.mergeLocal !== false
       db.products = mergeLocal
         ? mergeProductLists(db.products, remote.products)
         : remote.products.map((p) => normalizeProductImages(p))

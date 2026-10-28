@@ -268,8 +268,13 @@ function verissimo_media_cache_dir(): string {
  *
  * @return array{body: string, mime: string}|null
  */
-function verissimo_resize_image_blob(string $data, int $maxW, int $quality = 82): ?array {
-  $maxW = max(80, min(1200, $maxW));
+function verissimo_resize_image_blob(string $data, int $maxW, int $quality = 76): ?array {
+  $maxW = max(80, min(960, $maxW));
+  if ($maxW <= 400) {
+    $quality = min($quality, 72);
+  } elseif ($maxW <= 720) {
+    $quality = min($quality, 76);
+  }
   if (!function_exists('imagecreatefromstring')) {
     return null;
   }
@@ -283,12 +288,8 @@ function verissimo_resize_image_blob(string $data, int $maxW, int $quality = 82)
     imagedestroy($src);
     return null;
   }
-  if ($w <= $maxW) {
-    imagedestroy($src);
-    return null;
-  }
-  $newW = $maxW;
-  $newH = (int) round($h * ($newW / $w));
+  $newW = min($maxW, $w);
+  $newH = (int) max(1, round($h * ($newW / $w)));
   $dst = imagecreatetruecolor($newW, $newH);
   if ($dst === false) {
     imagedestroy($src);

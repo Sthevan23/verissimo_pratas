@@ -17,6 +17,7 @@ import {
   getUnpublishedProductIds,
   setStock,
 } from '../../services/adminStore'
+import { fetchRemoteCatalog } from '../../services/remoteCatalog'
 import { useAdminToast } from '../../context/AdminToastContext'
 import { formatPrice } from '../../utils/format'
 import type { AdminProduct } from '../../types/admin'
@@ -99,6 +100,8 @@ export function AdminProducts({ area = 'available' }: AdminProductsProps) {
   const [editingPrice, setEditingPrice] = useState<string | null>(null)
   const [priceValue, setPriceValue] = useState('')
   const [syncing, setSyncing] = useState(false)
+  const [syncFailed, setSyncFailed] = useState(false)
+  const [serverProductCount, setServerProductCount] = useState<number | null>(null)
   const [applyingDiscount, setApplyingDiscount] = useState(false)
   const unpublishedCount = useMemo(() => getUnpublishedProductIds().length, [products])
 
@@ -110,21 +113,37 @@ export function AdminProducts({ area = 'available' }: AdminProductsProps) {
 
   const refresh = useCallback(() => setProducts(getAdminProducts()), [])
 
+  const syncFromServer = useCallback(async () => {
+    setSyncing(true)
+    setSyncFailed(false)
+    const remote = await fetchRemoteCatalog()
+    if (remote?.products?.length) {
+      setServerProductCount(remote.products.length)
+    }
+    const ok = await hydrateCatalogFromServer({ pushIfEmpty: true, mergeLocal: true })
+    refresh()
+    setSyncing(false)
+    if (ok) {
+      showToast('Catálogo sincronizado com o site.')
+    } else {
+      setSyncFailed(true)
+      showToast(
+        'Não foi possível baixar o catálogo do site. Verifique a internet e toque em Sincronizar.',
+        'error'
+      )
+    }
+    return ok
+  }, [refresh, showToast])
+
   useEffect(() => {
     let alive = true
-    ;(async () => {
-      setSyncing(true)
-      const ok = await hydrateCatalogFromServer({ pushIfEmpty: true })
-      if (alive) {
-        refresh()
-        if (ok) showToast('Catálogo sincronizado com o site.')
-        setSyncing(false)
-      }
-    })()
+    void syncFromServer().then(() => {
+      if (!alive) return
+    })
     return () => {
       alive = false
     }
-  }, [refresh, showToast])
+  }, [syncFromServer])
 
   const publishNow = async () => {
     setSyncing(true)
@@ -306,6 +325,14 @@ export function AdminProducts({ area = 'available' }: AdminProductsProps) {
             </button>
             <button
               type="button"
+              onClick={() => void syncFromServer()}
+              disabled={syncing}
+              className="admin-btn-secondary text-[10px] disabled:opacity-50"
+            >
+              Sincronizar
+            </button>
+            <button
+              type="button"
               onClick={publishNow}
               disabled={syncing}
               className="admin-btn-secondary text-[10px] disabled:opacity-50"
@@ -318,6 +345,29 @@ export function AdminProducts({ area = 'available' }: AdminProductsProps) {
           </div>
         }
       />
+
+      {(syncFailed ||
+        (serverProductCount != null &&
+          serverProductCount > products.length + 2)) && (
+        <div className="admin-card p-4 mb-4 border-sky-300 bg-sky-50 text-sm text-sky-950">
+          <p className="font-medium mb-1">Painel desatualizado</p>
+          <p className="text-sky-900/90 mb-3">
+            {serverProductCount != null && serverProductCount > products.length
+              ? `O site tem ${serverProductCount} produtos; aqui aparecem ${products.length}. `
+              : ''}
+            Peças cadastradas ontem podem estar só no servidor — toque em{' '}
+            <strong>Sincronizar</strong> para puxar tudo.
+          </p>
+          <button
+            type="button"
+            onClick={() => void syncFromServer()}
+            disabled={syncing}
+            className="admin-btn-primary text-[10px]"
+          >
+            Sincronizar agora
+          </button>
+        </div>
+      )}
 
       {unpublishedCount > 0 && (
         <div className="admin-card p-4 mb-4 border-amber-300 bg-amber-50 text-sm text-amber-950">
