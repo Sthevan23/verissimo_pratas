@@ -88,13 +88,17 @@ try {
   $outMime = $mime;
 
   if ($requestedW > 0 && stripos($mime, 'gif') === false) {
-    $cacheKey = 'w' . $requestedW . '_' . preg_replace('/[^a-zA-Z0-9._-]+/', '_', $name) . '.jpg';
+    $jpegQ = isset($_GET['q']) ? max(75, min(95, (int) $_GET['q'])) : 90;
+    if (!isset($_GET['q'])) {
+      $jpegQ = $requestedW >= 900 ? 92 : ($requestedW >= 560 ? 90 : 88);
+    }
+    $cacheKey = 'w' . $requestedW . '_q' . $jpegQ . '_v3_' . preg_replace('/[^a-zA-Z0-9._-]+/', '_', $name) . '.jpg';
     $cachePath = verissimo_media_cache_dir() . DIRECTORY_SEPARATOR . $cacheKey;
     if (is_file($cachePath) && is_readable($cachePath)) {
       $outBody = file_get_contents($cachePath);
       $outMime = 'image/jpeg';
     } else {
-      $resized = verissimo_resize_image_blob($data, $requestedW);
+      $resized = verissimo_resize_image_blob($data, $requestedW, $jpegQ);
       if ($resized !== null) {
         @file_put_contents($cachePath, $resized['body'], LOCK_EX);
         $outBody = $resized['body'];

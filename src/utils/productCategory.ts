@@ -52,6 +52,38 @@ function isPulseiraBerloqueProduct(name: string, description?: string): boolean 
   return /pulseira.*berloque|berloque.*pulseira|para berloques|pulseira de berloques/i.test(text)
 }
 
+/** Berloque com nome, família, data, foto etc. — vai em Personalizados → Berloques */
+export function isPersonalizedBerloqueProduct(name: string, description?: string, slug = ''): boolean {
+  const text = textBlob(name, slug, description)
+  if (!/berloque/.test(text)) return false
+  return (
+    /personalizad|encomenda|sob medida|gravur/i.test(text) ||
+    /com nome| c\/ nome|nome e|nome com|plaquinha|nascimento|dados do nascimento|digital|assinatura|com foto|com data|fam[ií]lia|forever|pata com nome|menina e menino com|cora[cç][aã]o com nome|berloque com dado/i.test(
+      text
+    )
+  )
+}
+
+/** Pingente da linha masculina */
+export function isMasculinePingenteProduct(name: string, description?: string, slug = ''): boolean {
+  const text = textBlob(name, slug, description)
+  if (!/pingente/.test(text)) return false
+  return /masculin|manto masculino|linha masculina|para homem|crucifixo com manto masculino/i.test(text)
+}
+
+function isColarProduct(name: string, slug: string, description?: string): boolean {
+  const text = textBlob(name, slug, description)
+  return (
+    /\bcolar\b|\bcolares\b|choker|escapul/i.test(text) ||
+    /^colar-/i.test(slug.trim())
+  )
+}
+
+function isBrincoProduct(name: string, slug: string): boolean {
+  const text = textBlob(name, slug)
+  return /\bbrinco/i.test(text) && !/\bcolar\b/i.test(text) && !/^colar-/i.test(slug.trim())
+}
+
 /** Inferência pelo nome/slug — cada peça na vitrine correta */
 export function detectCategoryFromText(
   name: string,
@@ -78,14 +110,18 @@ export function detectCategoryFromText(
     return 'masculinos'
   }
   if (/piercing|helix|tragus|septo|umbigo|labret|daith/.test(text)) return 'piercings'
-  if (/colar|choker|escapul/.test(text)) return 'colares'
+  if (isColarProduct(name, slug, description)) return 'colares'
   if (/corrente/.test(text)) return 'correntes'
-  if (/pingente/.test(text)) return 'pingentes'
+  if (/pingente/.test(text)) {
+    if (isMasculinePingenteProduct(name, description, slug)) return 'masculinos-pingente'
+    return 'pingentes'
+  }
   if (/berloque/.test(text)) {
+    if (isPersonalizedBerloqueProduct(name, description, slug)) return 'personalizados-berloques'
     if (isPulseiraBerloqueProduct(name, description)) return 'berloques-pulseiras'
     return 'berloques'
   }
-  if (/brinco/.test(text)) return 'brincos'
+  if (isBrincoProduct(name, slug)) return 'brincos'
   if (/pulseira|bracelete/.test(text)) {
     if (isInfantilProduct(name)) return 'pulseiras-infantil'
     if (isBraceleteProduct(name)) return 'pulseiras-braceletes'
@@ -103,16 +139,23 @@ function refineBrincosSubcategory(category: CategorySlug, name: string): Categor
   return 'brincos'
 }
 
-function storefrontFamily(cat: string): string {
-  if (isBrincosCategory(cat)) return 'brincos'
-  if (cat === 'piercings') return 'piercings'
-  if (cat === 'colares') return 'colares'
-  if (isPulseirasCategory(cat)) return 'pulseiras'
-  if (cat === 'aneis') return 'aneis'
-  if (isBerloquesCategory(cat)) return 'berloques'
-  if (isPersonalizadosCategory(cat)) return 'personalizados'
-  if (isMasculinosCategory(cat)) return 'masculinos'
-  return cat
+function finalizeCategory(category: CategorySlug, name: string, slug: string, description?: string): CategorySlug {
+  if (isColarProduct(name, slug, description)) return 'colares'
+  if (isPersonalizedBerloqueProduct(name, description, slug)) return 'personalizados-berloques'
+  if (isMasculinePingenteProduct(name, description, slug)) return 'masculinos-pingente'
+
+  if (isBrincosCategory(category)) return refineBrincosSubcategory(category, name)
+
+  if (category === 'pulseiras') {
+    if (isBraceleteProduct(name)) return 'pulseiras-braceletes'
+    if (isInfantilProduct(name)) return 'pulseiras-infantil'
+  }
+
+  if (category === 'berloques' && isPulseiraBerloqueProduct(name, description)) {
+    return 'berloques-pulseiras'
+  }
+
+  return category
 }
 
 /** Corrige categoria errada no cadastro (ex.: colar marcado como brinco) */
@@ -126,28 +169,19 @@ export function normalizeProductCategory(input: {
   const detected = detectCategoryFromText(input.name, input.slug, input.description)
 
   if (detected) {
-    const sameFamily = storefrontFamily(detected) === storefrontFamily(current)
-    if (!sameFamily) {
-      return isBrincosCategory(detected)
-        ? refineBrincosSubcategory(detected, input.name)
-        : detected
-    }
+    return finalizeCategory(
+      isBrincosCategory(detected) ? refineBrincosSubcategory(detected, input.name) : detected,
+      input.name,
+      input.slug,
+      input.description
+    )
   }
 
-  if (isBrincosCategory(current)) {
-    return refineBrincosSubcategory(current, input.name)
+  if (isBrincosCategory(current) && isColarProduct(input.name, input.slug, input.description)) {
+    return 'colares'
   }
 
-  if (current === 'pulseiras') {
-    if (isBraceleteProduct(input.name)) return 'pulseiras-braceletes'
-    if (isInfantilProduct(input.name)) return 'pulseiras-infantil'
-  }
-
-  if (current === 'berloques' && isPulseiraBerloqueProduct(input.name, input.description)) {
-    return 'berloques-pulseiras'
-  }
-
-  return current
+  return finalizeCategory(current, input.name, input.slug, input.description)
 }
 
 /** Filtro da vitrine — só o que pertence à categoria do card */
@@ -186,13 +220,17 @@ export function matchesStoreCategoryFilter(
   }
 
   if (category === 'berloques') {
-    return isBerloquesCategory(cat)
+    return cat === 'berloques' || cat === 'berloques-pulseiras'
   }
   if (category === 'berloques-pulseiras') {
     return (
       cat === 'berloques-pulseiras' ||
       (cat === 'berloques' && isPulseiraBerloqueProduct(product.name, product.description))
     )
+  }
+
+  if (category === 'pingentes') {
+    return cat === 'pingentes'
   }
 
   if (category === 'personalizados') {

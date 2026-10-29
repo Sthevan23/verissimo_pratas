@@ -123,7 +123,7 @@ const MASCULINOS_TIPOS = [
 ] as const
 
 /** Quantos cards montam de uma vez — evita centenas de fotos na primeira tela. */
-const CATALOG_PAGE_SIZE = 16
+const CATALOG_PAGE_SIZE = 20
 
 function productHasSize(product: Product, size: string): boolean {
   const sizes = resolveProductSizes(product.category, product.sizes)

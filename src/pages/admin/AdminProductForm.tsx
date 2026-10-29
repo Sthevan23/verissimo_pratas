@@ -14,6 +14,7 @@ import { useAdminToast } from '../../context/AdminToastContext'
 import { calcMargin, slugify } from '../../context/AdminToastContext'
 import { compressImageFile, uploadProductFile } from '../../services/remoteCatalog'
 import { formatProductOptions, parseProductOptions } from '../../utils/productOptions'
+import { normalizeProductCategory } from '../../utils/productCategory'
 import type { AdminProduct } from '../../types/admin'
 import type { CategorySlug } from '../../types'
 
@@ -244,6 +245,12 @@ export function AdminProductForm() {
       if (/bracelete|bracelet/i.test(product.name) && category === 'aneis') {
         category = 'pulseiras-braceletes' as CategorySlug
       }
+      category = normalizeProductCategory({
+        name: product.name,
+        slug,
+        description: product.description,
+        category: String(category),
+      })
       const parsedOptions = parseProductOptions(optionsText)
       const parsedSizes = parseSizesText(sizesText)
       const salePrice =

@@ -22,7 +22,7 @@ import {
   formatPrice,
 } from '../utils/format'
 import { ProductCard } from '../components/ProductCard'
-import { catalogCardImageUrl, catalogDetailImageUrl } from '../utils/catalogImage'
+import { catalogDetailImageUrl, catalogThumbImageUrl } from '../utils/catalogImage'
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { Button } from '../components/ui/Button'
 import { ShippingCalculator } from '../components/ShippingCalculator'
@@ -68,7 +68,7 @@ export function ProductDetails() {
   }
 
   const displayImages = product.images.map((img) => catalogDetailImageUrl(img))
-  const thumbImages = product.images.map((img) => catalogCardImageUrl(img))
+  const thumbImages = product.images.map((img) => catalogThumbImageUrl(img))
 
   const listPrice = product.price
   const currentPrice = product.salePrice ?? product.price

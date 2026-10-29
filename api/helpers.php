@@ -268,13 +268,9 @@ function verissimo_media_cache_dir(): string {
  *
  * @return array{body: string, mime: string}|null
  */
-function verissimo_resize_image_blob(string $data, int $maxW, int $quality = 76): ?array {
-  $maxW = max(80, min(960, $maxW));
-  if ($maxW <= 400) {
-    $quality = min($quality, 72);
-  } elseif ($maxW <= 720) {
-    $quality = min($quality, 76);
-  }
+function verissimo_resize_image_blob(string $data, int $maxW, int $quality = 90): ?array {
+  $maxW = max(80, min(2400, $maxW));
+  $quality = max(75, min(95, $quality));
   if (!function_exists('imagecreatefromstring')) {
     return null;
   }
@@ -440,6 +436,27 @@ function verissimo_is_pulseiras_category(string $cat): bool {
   return in_array($cat, ['pulseiras', 'pulseiras-braceletes', 'pulseiras-infantil'], true);
 }
 
+function verissimo_is_personalized_berloque(string $name, string $slug, string $description = ''): bool {
+  $text = mb_strtolower("$name $slug $description", 'UTF-8');
+  if (!preg_match('/berloque/u', $text)) return false;
+  return (bool) preg_match(
+    '/personalizad|encomenda|sob medida|gravur|com nome| c\/ nome|nome e|nome com|plaquinha|nascimento|dados do nascimento|digital|assinatura|com foto|com data|fam[ií]lia|forever|pata com nome|menina e menino com|cora[cç][aã]o com nome|berloque com dado/u',
+    $text
+  );
+}
+
+function verissimo_is_masculine_pingente(string $name, string $slug, string $description = ''): bool {
+  $text = mb_strtolower("$name $slug $description", 'UTF-8');
+  if (!preg_match('/pingente/u', $text)) return false;
+  return (bool) preg_match('/masculin|manto masculino|linha masculina|para homem|crucifixo com manto masculino/u', $text);
+}
+
+function verissimo_is_colar_product(string $name, string $slug, string $description = ''): bool {
+  $text = mb_strtolower("$name $slug $description", 'UTF-8');
+  if (preg_match('/\bcolar\b|\bcolares\b|choker|escapul/u', $text)) return true;
+  return (bool) preg_match('/^colar-/i', trim($slug));
+}
+
 function verissimo_detect_category_from_text(string $name, string $slug, string $description = ''): ?string {
   $text = mb_strtolower("$name $slug $description", 'UTF-8');
   if (preg_match('/personalizad|encomenda|sob medida/u', $text)) {
@@ -460,14 +477,18 @@ function verissimo_detect_category_from_text(string $name, string $slug, string 
     return 'masculinos';
   }
   if (preg_match('/piercing|helix|tragus|septo|umbigo|labret|daith/u', $text)) return 'piercings';
-  if (preg_match('/colar|choker|escapul/u', $text)) return 'colares';
+  if (verissimo_is_colar_product($name, $slug, $description)) return 'colares';
   if (preg_match('/corrente/u', $text)) return 'correntes';
-  if (preg_match('/pingente/u', $text)) return 'pingentes';
+  if (preg_match('/pingente/u', $text)) {
+    if (verissimo_is_masculine_pingente($name, $slug, $description)) return 'masculinos-pingente';
+    return 'pingentes';
+  }
   if (preg_match('/berloque/u', $text)) {
+    if (verissimo_is_personalized_berloque($name, $slug, $description)) return 'personalizados-berloques';
     if (preg_match('/pulseira.*berloque|berloque.*pulseira|para berloques/u', $text)) return 'berloques-pulseiras';
     return 'berloques';
   }
-  if (preg_match('/brinco/u', $text)) return 'brincos';
+  if (preg_match('/\bbrinco/u', $text) && !preg_match('/\bcolar\b/u', $text) && !preg_match('/^colar-/i', trim($slug))) return 'brincos';
   if (preg_match('/pulseira|bracelete/u', $text)) {
     if (preg_match('/infantil|crian[cç]a|baby|kids/u', $text)) return 'pulseiras-infantil';
     if (preg_match('/bracelete|bracelet/u', $text)) return 'pulseiras-braceletes';
@@ -497,6 +518,21 @@ function verissimo_refine_brincos_subcategory(string $category, string $name): s
   return 'brincos';
 }
 
+function verissimo_finalize_product_category(string $category, string $name, string $slug, string $desc): string {
+  if (verissimo_is_colar_product($name, $slug, $desc)) return 'colares';
+  if (verissimo_is_personalized_berloque($name, $slug, $desc)) return 'personalizados-berloques';
+  if (verissimo_is_masculine_pingente($name, $slug, $desc)) return 'masculinos-pingente';
+  if (verissimo_is_brincos_category($category)) return verissimo_refine_brincos_subcategory($category, $name);
+  if ($category === 'pulseiras') {
+    if (preg_match('/bracelete|bracelet/i', $name)) return 'pulseiras-braceletes';
+    if (preg_match('/infantil|crian[cç]a|baby|kids/i', $name)) return 'pulseiras-infantil';
+  }
+  if ($category === 'berloques' && preg_match('/pulseira.*berloque|berloque.*pulseira|para berloques/i', "$name $desc")) {
+    return 'berloques-pulseiras';
+  }
+  return $category;
+}
+
 function verissimo_normalize_product_category(array $product): array {
   $name = (string) ($product['name'] ?? '');
   $slug = (string) ($product['slug'] ?? '');
@@ -506,22 +542,14 @@ function verissimo_normalize_product_category(array $product): array {
   $next = $current;
 
   if ($detected !== null) {
-    $sameFamily = verissimo_storefront_family($detected) === verissimo_storefront_family($current);
-    if (!$sameFamily) {
-      $next = verissimo_is_brincos_category($detected)
-        ? verissimo_refine_brincos_subcategory($detected, $name)
-        : $detected;
-    }
+    $next = verissimo_is_brincos_category($detected)
+      ? verissimo_refine_brincos_subcategory($detected, $name)
+      : $detected;
+  } elseif (verissimo_is_brincos_category($current) && verissimo_is_colar_product($name, $slug, $desc)) {
+    $next = 'colares';
   }
 
-  if (verissimo_is_brincos_category($next)) {
-    $next = verissimo_refine_brincos_subcategory($next, $name);
-  } elseif ($next === 'pulseiras') {
-    if (preg_match('/bracelete|bracelet/i', $name)) $next = 'pulseiras-braceletes';
-    elseif (preg_match('/infantil|crian[cç]a|baby|kids/i', $name)) $next = 'pulseiras-infantil';
-  } elseif ($next === 'berloques' && preg_match('/pulseira.*berloque|berloque.*pulseira|para berloques/i', "$name $desc")) {
-    $next = 'berloques-pulseiras';
-  }
+  $next = verissimo_finalize_product_category($next, $name, $slug, $desc);
 
   if ($next !== $current) {
     $product['category'] = $next;

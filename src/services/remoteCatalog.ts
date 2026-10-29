@@ -137,6 +137,8 @@ async function compressWithCanvas(
   canvas.height = ch
   const ctx = canvas.getContext('2d')
   if (!ctx) return null
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
   ctx.drawImage(source, 0, 0, cw, ch)
 
   const blob: Blob | null = await new Promise((resolve) =>
@@ -148,14 +150,14 @@ async function compressWithCanvas(
 }
 
 /** Compacta imagem (galeria/câmera) — converte HEIC e fotos grandes para JPEG */
-export async function compressImageFile(file: File, maxSide = 1400, quality = 0.82): Promise<File> {
+export async function compressImageFile(file: File, maxSide = 2560, quality = 0.94): Promise<File> {
   if (!isImageFile(file)) {
     throw new Error('Arquivo não é uma imagem válida.')
   }
 
-  // Já pequena e JPEG — envia direto
+  // JPEG até ~2,5 MB — mantém qualidade do celular (só converte HEIC/PNG pesado)
   if (
-    file.size < 400_000 &&
+    file.size < 2_500_000 &&
     (file.type === 'image/jpeg' || file.name.toLowerCase().endsWith('.jpg'))
   ) {
     return file
