@@ -4,6 +4,7 @@
  * POST JSON: { "cep": "37170-000", "subtotal": 289, "items": [{ "quantity": 1 }] }
  */
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/shipping_logic.php';
 verissimo_api_headers();
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
@@ -27,260 +28,22 @@ if (!is_array($items) || count($items) === 0) {
   $items = [['quantity' => 1]];
 }
 
-$cfg = verissimo_cfg();
-$token = trim((string) ($cfg['superfrete_token'] ?? getenv('SUPERFRETE_TOKEN') ?: ''));
-$originCep = preg_replace('/\D+/', '', (string) ($cfg['origin_cep'] ?? '37170000'));
-if (strlen($originCep) !== 8) {
-  $originCep = '37170000';
-}
-
-$freeNational = (float) ($cfg['free_shipping_national'] ?? 499);
-$freeLocal = (float) ($cfg['free_shipping_local'] ?? 159);
-
-$address = verissimo_lookup_cep($cep);
-$isLocal =
-  $address
-  && (
-    stripos((string) ($address['localidade'] ?? ''), 'boa esperan') !== false
-    || (string) ($address['ibge'] ?? '') === '3107109'
-  );
-
 $totalQty = 0;
 foreach ($items as $item) {
   $totalQty += max(1, (int) ($item['quantity'] ?? 1));
 }
-if ($totalQty < 1) {
-  $totalQty = 1;
-}
 
-$options = [];
-
-// Retirada — sempre disponível
-$options[] = [
-  'id' => 'retirada-loja',
-  'name' => 'Retirar',
-  'company' => 'Verissimo',
-  'price' => 0,
-  'delivery_time' => 0,
-  'currency' => 'R$',
-  'free' => true,
-];
-
-if ($isLocal && $subtotal >= $freeLocal) {
-  $options[] = [
-    'id' => 'local-gratis',
-    'name' => 'Entrega local — Boa Esperança',
-    'company' => 'Verissimo',
-    'price' => 0,
-    'delivery_time' => 1,
-    'currency' => 'R$',
-    'free' => true,
-  ];
-}
-
-$quotes = [];
-$error = null;
-
-if ($token === '') {
-  // Sem token: ainda permite finalizar com frete a combinar no WhatsApp
-  $error = 'Cotação SuperFrete pendente — frete a combinar no WhatsApp.';
-} else {
-  $env = strtolower((string) ($cfg['superfrete_env'] ?? 'production'));
-  $base = $env === 'sandbox'
-    ? 'https://sandbox.superfrete.com'
-    : 'https://api.superfrete.com';
-
-  $headers = [
-    'Accept: application/json',
-    'Content-Type: application/json',
-    'Authorization: Bearer ' . $token,
-    'User-Agent: VerissimoPratas/1.0 (verissimopratass@gmail.com)',
-  ];
-
-  // Joias: embalagem pequena (mínimos Correios ~16×11×2 cm).
-  // Mesmas medidas para Mini/PAC/SEDEX — caixa grande no PAC inflava a cotação.
-  // Seguro desligado: valor declarado aumentava o frete sem necessidade.
-  // ~100g base + 50g/peça extra (joia + embalagem). Mini Envios só até 300g.
-  $weight = round(max(0.1, 0.1 + (0.05 * max(0, $totalQty - 1))), 3);
-  $height = min(8, max(2, 2 + (int) floor(($totalQty - 1) / 4)));
-  $width = min(16, max(11, 11 + (int) floor(($totalQty - 1) / 3)));
-  $length = min(20, max(16, 16 + (int) floor(($totalQty - 1) / 2)));
-
-  $payload = [
-    'from' => ['postal_code' => $originCep],
-    'to' => ['postal_code' => $cep],
-    'services' => '1,2,17',
-    'options' => [
-      'own_hand' => false,
-      'receipt' => false,
-      'insurance_value' => 0,
-      'use_insurance_value' => false,
-    ],
-    'package' => [
-      'height' => $height,
-      'width' => $width,
-      'length' => $length,
-      'weight' => $weight,
-    ],
-  ];
-
-  $errors = [];
-  $ch = curl_init($base . '/api/v0/calculator');
-  curl_setopt_array($ch, [
-    CURLOPT_POST => true,
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_HTTPHEADER => $headers,
-    CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
-    CURLOPT_TIMEOUT => 25,
-  ]);
-  $resp = curl_exec($ch);
-  $http = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-  $curlErr = curl_error($ch);
-  curl_close($ch);
-
-  if ($resp === false) {
-    $errors[] = $curlErr ?: 'sem resposta';
-  } else {
-    $data = json_decode($resp, true);
-    if ($http >= 400 || !is_array($data)) {
-      $errors[] = is_array($data)
-        ? (string) ($data['message'] ?? $data['error'] ?? 'Erro na cotação')
-        : 'Erro na cotação SuperFrete';
-    } else {
-      $list = isset($data[0]) ? $data : (isset($data['data']) && is_array($data['data']) ? $data['data'] : [$data]);
-      foreach ($list as $row) {
-        if (!is_array($row)) continue;
-        if (!empty($row['error'])) {
-          $errors[] = (string) ($row['name'] ?? 'serviço') . ': ' . (is_string($row['error']) ? $row['error'] : json_encode($row['error'], JSON_UNESCAPED_UNICODE));
-          continue;
-        }
-        if (isset($row['price']) === false && isset($row['final_price']) === false) continue;
-        // `price` = valor SuperFrete (com desconto da plataforma). `final_price` costuma ser tabela cheia.
-        $rawPrice = $row['price'] ?? $row['final_price'];
-        if (is_string($rawPrice)) {
-          $rawPrice = preg_replace('/[^\d,.-]/', '', $rawPrice) ?? '';
-          // Formato BR: 1.234,56 → 1234.56
-          if (strpos($rawPrice, ',') !== false) {
-            $rawPrice = str_replace('.', '', $rawPrice);
-            $rawPrice = str_replace(',', '.', $rawPrice);
-          }
-        }
-        $price = round((float) $rawPrice, 2);
-        if ($price < 0) continue;
-        $company = '';
-        if (isset($row['company']) && is_array($row['company'])) {
-          $company = (string) ($row['company']['name'] ?? '');
-        } elseif (isset($row['company']) && is_string($row['company'])) {
-          $company = $row['company'];
-        }
-        $id = (string) ($row['id'] ?? $row['service'] ?? uniqid('sf_', true));
-        // Evita duplicar o mesmo serviço
-        $exists = false;
-        foreach ($quotes as $q) {
-          if ((string) $q['id'] === $id) {
-            $exists = true;
-            break;
-          }
-        }
-        if ($exists) continue;
-        $quotes[] = [
-          'id' => $id,
-          'name' => (string) ($row['name'] ?? 'Correios'),
-          'company' => $company !== '' ? $company : 'Correios / SuperFrete',
-          'price' => round($price, 2),
-          'delivery_time' => isset($row['delivery_time']) ? (int) $row['delivery_time'] : null,
-          'currency' => (string) ($row['currency'] ?? 'R$'),
-          'free' => false,
-        ];
-      }
-    }
-  }
-
-  if (count($quotes) === 0) {
-    $error = count($errors) ? implode(' · ', array_unique($errors)) : 'Nenhuma opção de frete disponível para este CEP.';
-  }
-}
-
-// Frete grátis nacional: zera só a opção mais barata (PAC/Mini); SEDEX e demais ficam pagos
-if ($subtotal >= $freeNational) {
-  if (count($quotes) > 0) {
-    $cheapestIdx = 0;
-    $cheapestPrice = (float) $quotes[0]['price'];
-    for ($i = 1, $n = count($quotes); $i < $n; $i++) {
-      $p = (float) $quotes[$i]['price'];
-      if ($p < $cheapestPrice) {
-        $cheapestPrice = $p;
-        $cheapestIdx = $i;
-      }
-    }
-    $quotes[$cheapestIdx]['price'] = 0;
-    $quotes[$cheapestIdx]['free'] = true;
-    $baseName = (string) $quotes[$cheapestIdx]['name'];
-    if (stripos($baseName, 'grátis') === false && stripos($baseName, 'gratis') === false) {
-      $quotes[$cheapestIdx]['name'] = $baseName . ' — frete grátis';
-    }
-  } else {
-    $options[] = [
-      'id' => 'correios-gratis',
-      'name' => 'Correios — frete grátis',
-      'company' => 'Correios / SuperFrete',
-      'price' => 0,
-      'delivery_time' => null,
-      'currency' => 'R$',
-      'free' => true,
-    ];
-  }
-}
-
-$merged = array_merge($options, $quotes);
-
-// Sem cotação paga disponível: opção para combinar no WhatsApp (não bloqueia checkout)
-if (count($merged) === 0) {
-  $merged[] = [
-    'id' => 'combinar-whatsapp',
-    'name' => 'Frete a combinar no WhatsApp',
-    'company' => 'Verissimo',
-    'price' => 0,
-    'delivery_time' => null,
-    'currency' => 'R$',
-    'free' => false,
-  ];
-}
-
-usort($merged, static function ($a, $b) {
-  return ($a['price'] <=> $b['price']) ?: strcmp((string) $a['name'], (string) $b['name']);
-});
+$built = verissimo_build_shipping_options($cep, $subtotal, $totalQty);
+$cfg = verissimo_cfg();
+$originCep = preg_replace('/\D+/', '', (string) ($cfg['origin_cep'] ?? '37170000'));
 
 verissimo_json([
   'ok' => true,
   'cep' => $cep,
-  'address' => $address,
+  'address' => $built['address'],
   'origin_cep' => $originCep,
   'provider' => 'superfrete',
-  'options' => $merged,
-  'error' => $error,
-  'configured' => $token !== '',
+  'options' => $built['options'],
+  'error' => $built['error'],
+  'configured' => $built['configured'],
 ]);
-
-function verissimo_lookup_cep(string $cep): ?array {
-  $url = 'https://viacep.com.br/ws/' . $cep . '/json/';
-  $ch = curl_init($url);
-  curl_setopt_array($ch, [
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_TIMEOUT => 8,
-    CURLOPT_HTTPHEADER => ['Accept: application/json'],
-  ]);
-  $resp = curl_exec($ch);
-  curl_close($ch);
-  if ($resp === false) return null;
-  $data = json_decode($resp, true);
-  if (!is_array($data) || !empty($data['erro'])) return null;
-  return [
-    'cep' => (string) ($data['cep'] ?? $cep),
-    'logradouro' => (string) ($data['logradouro'] ?? ''),
-    'bairro' => (string) ($data['bairro'] ?? ''),
-    'localidade' => (string) ($data['localidade'] ?? ''),
-    'uf' => (string) ($data['uf'] ?? ''),
-    'ibge' => (string) ($data['ibge'] ?? ''),
-  ];
-}

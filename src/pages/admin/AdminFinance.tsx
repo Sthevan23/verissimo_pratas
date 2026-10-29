@@ -4,7 +4,9 @@ import { Plus } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { PageHeader, Modal } from '../../components/admin/Modal'
 import { StatCard } from '../../components/admin/StatCard'
-import { getDashboardStats, getDatabase, saveDb } from '../../services/adminStore'
+import { getDatabase, saveDb } from '../../services/adminStore'
+import { useStoreOrders } from '../../hooks/useStoreOrders'
+import { computeDashboardStatsFromOrders, monthLocalExpenses } from '../../services/orderAnalytics'
 import { useAdminToast } from '../../context/AdminToastContext'
 import { formatPrice } from '../../utils/format'
 import { DollarSign, TrendingDown, TrendingUp, Wallet } from 'lucide-react'
@@ -17,8 +19,17 @@ export function AdminFinance() {
   const [tab, setTab] = useState<'overview' | 'fluxo' | 'pagar' | 'receber'>('overview')
   const [modal, setModal] = useState<'entrada' | 'saida' | null>(null)
   const [form, setForm] = useState({ description: '', category: 'Vendas', amount: '', date: new Date().toISOString().split('T')[0], paymentMethod: 'Pix', notes: '' })
-  const stats = useMemo(() => getDashboardStats(), [])
+  const { orders, loading: ordersLoading, error: ordersError } = useStoreOrders()
   const db = useMemo(() => getDatabase(), [])
+  const stats = useMemo(
+    () =>
+      computeDashboardStatsFromOrders(
+        orders,
+        db.products,
+        monthLocalExpenses(db.transactions)
+      ),
+    [orders, db.products, db.transactions]
+  )
 
   const chartData = useMemo(() => {
     const entries = db.transactions.filter((t) => t.type === 'entrada').reduce((s, t) => s + t.amount, 0)
@@ -52,6 +63,15 @@ export function AdminFinance() {
   return (
     <>
       <Helmet><title>Financeiro — Verissimo Admin</title></Helmet>
+      {(ordersLoading || ordersError) && (
+        <p className={`text-sm mb-4 ${ordersError ? 'text-amber-800 bg-amber-50 border border-amber-200 px-4 py-3' : 'text-muted'}`}>
+          {ordersLoading ? 'Carregando faturamento do servidor…' : ordersError}
+        </p>
+      )}
+      <p className="text-xs text-muted mb-4">
+        Faturamento e ticket médio vêm dos pedidos pagos no servidor. Despesas manuais e fluxo de caixa permanecem neste módulo.
+      </p>
+
       <PageHeader
         title="Financeiro"
         subtitle="Gestão financeira completa"

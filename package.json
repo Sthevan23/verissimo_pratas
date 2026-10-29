@@ -7,6 +7,8 @@
     "dev": "node scripts/ensure-dev.mjs && vite",
     "build": "node scripts/postbuild.mjs",
     "lint": "oxlint",
+    "test": "php tests/php/run-tests.php",
+    "test:php": "php tests/php/run-tests.php",
     "preview": "vite preview"
   },
   "dependencies": {

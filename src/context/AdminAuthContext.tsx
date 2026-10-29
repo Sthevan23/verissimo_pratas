@@ -3,6 +3,7 @@ import {
   getSession,
   loginAdmin,
   logoutAdmin,
+  refreshAdminSession,
   hasPermission,
   type AdminSession,
 } from '../services/authService'
@@ -23,28 +24,19 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const existing = getSession()
-    if (!existing) {
+    void refreshAdminSession().then((s) => {
+      setSession(s)
       setLoading(false)
-      return
-    }
-    // Valida sessão no servidor (tokens antigos / senha embutida no JS param de valer)
-    void fetch('/api/auth.php', {
-      headers: { 'X-Verissimo-Token': existing.token },
-      cache: 'no-store',
     })
-      .then(async (res) => {
-        if (!res.ok) {
-          await logoutAdmin()
-          setSession(null)
-          return
-        }
-        setSession(existing)
-      })
-      .catch(() => {
-        setSession(existing)
-      })
-      .finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => {
+    const onExpired = () => {
+      void logoutAdmin()
+      setSession(null)
+    }
+    window.addEventListener('verissimo-admin-session-expired', onExpired)
+    return () => window.removeEventListener('verissimo-admin-session-expired', onExpired)
   }, [])
 
   const login = useCallback(async (email: string, password: string, remember = false) => {
@@ -63,8 +55,9 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   const canAccess = useCallback(
     (module: string) => {
-      if (!session) return false
-      return hasPermission(session.role as AdminRole, module)
+      const active = session ?? getSession()
+      if (!active) return false
+      return hasPermission(active.role as AdminRole, module)
     },
     [session]
   )

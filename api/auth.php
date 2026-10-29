@@ -1,8 +1,8 @@
 <?php
 /**
  * Login admin — sessão no servidor
- * POST { email, password, remember? } → { ok, token, session }
- * POST { action: "logout" } + header X-Verissimo-Token
+ * POST { email, password, remember? } → cookies HttpOnly + { ok, session }
+ * POST { action: "logout" } — invalida sessão e cookies
  * GET  + header → { ok, session }
  */
 require_once __DIR__ . '/helpers.php';
@@ -40,6 +40,7 @@ if (!is_array($body)) {
 
 if (($body['action'] ?? '') === 'logout') {
   verissimo_destroy_session(verissimo_request_token());
+  verissimo_clear_auth_cookies();
   verissimo_json(['ok' => true]);
 }
 
@@ -58,18 +59,17 @@ if ($expectedPass === '' || !hash_equals($expectedEmail, $email) || !hash_equals
   verissimo_json(['ok' => false, 'error' => 'Email ou senha inválidos.'], 401);
 }
 
-$token = verissimo_create_session($expectedEmail, 'Administrador', 'administrador', $remember);
-$ttlMs = ($remember ? 30 : 8) * 60 * 60 * 1000;
+$created = verissimo_create_session($expectedEmail, 'Administrador', 'administrador', $remember);
+verissimo_set_auth_cookies($created['token'], $created['csrf'], (int) $created['expiresAt']);
 
 verissimo_json([
   'ok' => true,
-  'token' => $token,
   'session' => [
     'userId' => 'admin',
     'email' => $expectedEmail,
     'name' => 'Administrador',
     'role' => 'administrador',
-    'expiresAt' => (int) (microtime(true) * 1000) + $ttlMs,
+    'expiresAt' => ((int) $created['expiresAt']) * 1000,
     'remember' => $remember,
   ],
 ]);

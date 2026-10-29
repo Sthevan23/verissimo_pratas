@@ -51,6 +51,7 @@ export function Cart() {
       total,
       couponCode: couponDiscount > 0 ? couponCode : undefined,
       cep: shippingCep,
+      shippingOptionId: shippingOpt.id,
       shippingLabel: `${shippingOpt.company} — ${shippingOpt.name}`,
       city: shippingAddress
         ? [shippingAddress.localidade, shippingAddress.uf].filter(Boolean).join('/')

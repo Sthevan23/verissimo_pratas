@@ -5,6 +5,7 @@
  * POST → salva (admin) — mescla com dados existentes
  */
 require __DIR__ . '/helpers.php';
+require_once __DIR__ . '/operational_store.php';
 verissimo_api_headers();
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
@@ -91,6 +92,14 @@ if ($method === 'POST') {
   }
   if (file_put_contents($path, $json, LOCK_EX) === false) {
     verissimo_json(['ok' => false, 'error' => 'Falha ao gravar catálogo'], 500);
+  }
+  $pdo = verissimo_db_try();
+  if ($pdo instanceof PDO && verissimo_operational_db_ready($pdo)) {
+    try {
+      verissimo_sync_catalog_products_to_db($pdo, $out['products']);
+    } catch (Throwable $e) {
+      verissimo_json(['ok' => false, 'error' => 'Catálogo gravado, mas falha ao sincronizar estoque no banco'], 500);
+    }
   }
   verissimo_json([
     'ok' => true,

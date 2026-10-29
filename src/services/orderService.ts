@@ -1,23 +1,9 @@
 import type { Order, OrderItem, OrderStatus } from '../types/admin'
 import type { CartItem } from '../types'
-import { getAdminAuthHeaders, getSession } from './authService'
+import { adminFetch, getAdminAuthHeaders, isAdminLoggedIn } from './authService'
 
 const ORDERS_URL = '/api/orders.php'
-
-export type CheckoutOrderPayload = {
-  cart: CartItem[]
-  subtotal: number
-  discount: number
-  shipping: number
-  total: number
-  couponCode?: string
-  cep?: string
-  shippingLabel?: string
-  city?: string
-  street?: string
-  streetNumber?: string
-  neighborhood?: string
-}
+const IDEMPOTENCY_KEY = 'verissimo-checkout-idempotency'
 
 function cartToOrderItems(cart: CartItem[]): OrderItem[] {
   return cart.map((item) => ({
@@ -30,6 +16,43 @@ function cartToOrderItems(cart: CartItem[]): OrderItem[] {
     size: item.selectedSize,
     choices: item.selectedChoices,
   }))
+}
+
+function checkoutIdempotencyKey(): string {
+  try {
+    let key = sessionStorage.getItem(IDEMPOTENCY_KEY)
+    if (!key) {
+      key = crypto.randomUUID()
+      sessionStorage.setItem(IDEMPOTENCY_KEY, key)
+    }
+    return key
+  } catch {
+    return crypto.randomUUID()
+  }
+}
+
+export function clearCheckoutIdempotencyKey(): void {
+  try {
+    sessionStorage.removeItem(IDEMPOTENCY_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
+export type CheckoutOrderPayload = {
+  cart: CartItem[]
+  subtotal: number
+  discount: number
+  shipping: number
+  total: number
+  couponCode?: string
+  cep?: string
+  shippingLabel?: string
+  shippingOptionId?: string
+  city?: string
+  street?: string
+  streetNumber?: string
+  neighborhood?: string
 }
 
 export async function createStoreOrder(
@@ -49,6 +72,10 @@ export async function createStoreOrder(
     payload.shippingLabel,
   ].filter(Boolean)
 
+  if (!payload.shippingOptionId) {
+    return { order: null, error: 'Opção de frete inválida.' }
+  }
+
   try {
     const res = await fetch(ORDERS_URL, {
       method: 'POST',
@@ -57,22 +84,26 @@ export async function createStoreOrder(
         customerName: 'Cliente WhatsApp',
         customerEmail: '',
         customerPhone: '',
-        items: cartToOrderItems(payload.cart),
-        subtotal: payload.subtotal,
-        discount: payload.discount,
+        items: cartToOrderItems(payload.cart).map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          size: item.size,
+          choices: item.choices,
+        })),
+        couponCode: payload.couponCode,
         shipping: payload.shipping,
-        total: payload.total,
-        paymentMethod: 'whatsapp',
+        shippingOptionId: payload.shippingOptionId,
         shippingAddress: addressParts.join(' · '),
         shippingLabel: payload.shippingLabel ?? '',
         cep: payload.cep ?? '',
-        couponCode: payload.couponCode,
+        idempotencyKey: checkoutIdempotencyKey(),
       }),
     })
     const data = await res.json()
     if (!data?.ok || !data.order) {
       return { order: null, error: (data?.error as string) || 'Não foi possível registrar o pedido.' }
     }
+    clearCheckoutIdempotencyKey()
     return { order: data.order as Order }
   } catch {
     return { order: null, error: 'Erro de conexão ao registrar o pedido.' }
@@ -80,9 +111,9 @@ export async function createStoreOrder(
 }
 
 export async function fetchStoreOrders(): Promise<Order[]> {
-  if (!getSession()?.token) return []
+  if (!isAdminLoggedIn()) return []
   try {
-    const res = await fetch(ORDERS_URL, {
+    const res = await adminFetch(ORDERS_URL, {
       headers: getAdminAuthHeaders(false),
     })
     const data = await res.json()
@@ -120,9 +151,9 @@ export type OrderUpdatePayload = {
 }
 
 export async function updateStoreOrder(payload: OrderUpdatePayload): Promise<Order | null> {
-  if (!getSession()?.token) return null
+  if (!isAdminLoggedIn()) return null
   try {
-    const res = await fetch(ORDERS_URL, {
+    const res = await adminFetch(ORDERS_URL, {
       method: 'PUT',
       headers: getAdminAuthHeaders(true),
       body: JSON.stringify(payload),

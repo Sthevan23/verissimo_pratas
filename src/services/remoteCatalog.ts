@@ -1,5 +1,5 @@
 import type { AdminCategory, AdminProduct, StoreSettings } from '../types/admin'
-import { getAdminAuthHeaders, getSession } from './authService'
+import { adminFetch, getAdminAuthHeaders, isAdminLoggedIn } from './authService'
 
 export interface RemoteSiteCatalog {
   products: AdminProduct[]
@@ -34,9 +34,9 @@ export async function pushCatalogToServer(payload: {
   categories?: AdminCategory[]
   settings?: StoreSettings
 }): Promise<{ ok: boolean; linkedImages?: number; orphanImages?: number }> {
-  if (!getSession()?.token) return { ok: false }
+  if (!isAdminLoggedIn()) return { ok: false }
   try {
-    const res = await fetch('/api/catalog.php', {
+    const res = await adminFetch('/api/catalog.php', {
       method: 'POST',
       headers: writeHeaders(),
       body: JSON.stringify(payload),
@@ -54,18 +54,16 @@ export async function pushCatalogToServer(payload: {
   }
 }
 
-export function isAdminLoggedIn(): boolean {
-  return Boolean(getSession()?.token)
-}
+export { isAdminLoggedIn } from './authService'
 
 /** Envia arquivo de imagem para o servidor */
 export async function uploadProductFile(file: File): Promise<string> {
-  if (!getSession()?.token) {
+  if (!isAdminLoggedIn()) {
     throw new Error('Faça login no admin para enviar fotos.')
   }
   const form = new FormData()
   form.append('file', file, file.name || 'foto.jpg')
-  const res = await fetch('/api/upload.php', {
+  const res = await adminFetch('/api/upload.php', {
     method: 'POST',
     headers: getAdminAuthHeaders(false),
     body: form,

@@ -2,18 +2,23 @@ import type { AdminRole } from '../types/admin'
 
 const SESSION_KEY = 'verissimo-admin-session'
 
+/** Metadados da sessão — token fica só no cookie HttpOnly `verissimo_admin`. */
 export interface AdminSession {
   userId: string
   email: string
   name: string
   role: AdminRole
-  /** Token de sessão emitido por /api/auth.php (não é a senha) */
-  token: string
   expiresAt: number
   remember: boolean
 }
 
-function persistSession(session: AdminSession): void {
+function readCsrfCookie(): string {
+  if (typeof document === 'undefined') return ''
+  const match = document.cookie.match(/(?:^|;\s*)verissimo_csrf=([^;]+)/)
+  return match ? decodeURIComponent(match[1]) : ''
+}
+
+function persistSessionMeta(session: AdminSession): void {
   const raw = JSON.stringify(session)
   if (session.remember) {
     localStorage.setItem(SESSION_KEY, raw)
@@ -21,6 +26,57 @@ function persistSession(session: AdminSession): void {
   } else {
     sessionStorage.setItem(SESSION_KEY, raw)
     localStorage.removeItem(SESSION_KEY)
+  }
+}
+
+function readSessionMeta(): AdminSession | null {
+  const raw = sessionStorage.getItem(SESSION_KEY) ?? localStorage.getItem(SESSION_KEY)
+  if (!raw) return null
+  try {
+    const session = JSON.parse(raw) as AdminSession & { token?: string; csrf?: string }
+    if (session.expiresAt < Date.now()) return null
+    if (!readCsrfCookie()) return null
+    return {
+      userId: session.userId,
+      email: session.email,
+      name: session.name,
+      role: session.role,
+      expiresAt: session.expiresAt,
+      remember: session.remember,
+    }
+  } catch {
+    return null
+  }
+}
+
+export async function refreshAdminSession(): Promise<AdminSession | null> {
+  try {
+    const res = await fetch('/api/auth.php', {
+      credentials: 'include',
+      cache: 'no-store',
+    })
+    const data = await res.json()
+    if (!res.ok || !data?.ok || !data.session) {
+      clearSessionMeta()
+      return null
+    }
+    if (!readCsrfCookie()) {
+      clearSessionMeta()
+      return null
+    }
+    const meta = readSessionMeta()
+    const session: AdminSession = {
+      userId: String(data.session.userId ?? meta?.userId ?? 'admin'),
+      email: String(data.session.email ?? meta?.email ?? ''),
+      name: String(data.session.name ?? meta?.name ?? 'Administrador'),
+      role: (data.session.role as AdminRole) || meta?.role || 'administrador',
+      expiresAt: Number(data.session.expiresAt) || Date.now() + 8 * 60 * 60 * 1000,
+      remember: meta?.remember ?? false,
+    }
+    persistSessionMeta(session)
+    return session
+  } catch {
+    return readSessionMeta()
   }
 }
 
@@ -32,14 +88,21 @@ export async function loginAdmin(
   try {
     const res = await fetch('/api/auth.php', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, remember }),
     })
     const data = await res.json()
-    if (!res.ok || !data?.ok || !data.token || !data.session) {
+    if (!res.ok || !data?.ok || !data.session) {
       return {
         success: false,
         error: (data?.error as string) || 'Email ou senha inválidos.',
+      }
+    }
+    if (!readCsrfCookie() && !data.csrf) {
+      return {
+        success: false,
+        error: 'Não foi possível iniciar sessão segura. Tente de novo.',
       }
     }
 
@@ -48,52 +111,71 @@ export async function loginAdmin(
       email: String(data.session.email),
       name: String(data.session.name ?? 'Administrador'),
       role: (data.session.role as AdminRole) || 'administrador',
-      token: String(data.token),
       expiresAt: Number(data.session.expiresAt) || Date.now() + 8 * 60 * 60 * 1000,
       remember,
     }
-    persistSession(session)
+    persistSessionMeta(session)
     return { success: true, session }
   } catch {
     return { success: false, error: 'Não foi possível conectar ao servidor. Tente de novo.' }
   }
 }
 
-export function getSession(): AdminSession | null {
-  const raw = sessionStorage.getItem(SESSION_KEY) ?? localStorage.getItem(SESSION_KEY)
-  if (!raw) return null
-  try {
-    const session: AdminSession = JSON.parse(raw)
-    if (!session.token || session.expiresAt < Date.now()) {
-      logoutAdmin()
-      return null
-    }
-    return session
-  } catch {
-    return null
-  }
+function clearSessionMeta(): void {
+  sessionStorage.removeItem(SESSION_KEY)
+  localStorage.removeItem(SESSION_KEY)
 }
 
-/** Header de autenticação para APIs admin (catálogo, upload, pedidos). */
+export function getSession(): AdminSession | null {
+  return readSessionMeta()
+}
+
+export function isAdminLoggedIn(): boolean {
+  return getSession() !== null
+}
+
+/** Headers para APIs admin — autenticação via cookie + CSRF. */
 export function getAdminAuthHeaders(json = true): HeadersInit {
-  const token = getSession()?.token
+  const csrf = readCsrfCookie()
   const headers: Record<string, string> = {}
   if (json) headers['Content-Type'] = 'application/json'
-  if (token) headers['X-Verissimo-Token'] = token
+  if (csrf) headers['X-Verissimo-CSRF'] = csrf
   return headers
 }
 
+export async function adminFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(init.headers)
+  const csrf = readCsrfCookie()
+  if (csrf && !headers.has('X-Verissimo-CSRF')) {
+    headers.set('X-Verissimo-CSRF', csrf)
+  }
+  const res = await fetch(input, { ...init, credentials: 'include', headers })
+  if (res.status === 403) {
+    try {
+      const body = await res.clone().json()
+      const code = body?.code as string | undefined
+      if (code === 'SESSION_UPGRADE_REQUIRED' || code === 'CSRF_INVALID') {
+        clearSessionMeta()
+        if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
+          window.dispatchEvent(new CustomEvent('verissimo-admin-session-expired'))
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  return res
+}
+
 export async function logoutAdmin(): Promise<void> {
-  const token = getSession()?.token
-  sessionStorage.removeItem(SESSION_KEY)
-  localStorage.removeItem(SESSION_KEY)
-  if (!token) return
+  clearSessionMeta()
   try {
     await fetch('/api/auth.php', {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        'X-Verissimo-Token': token,
+        ...(readCsrfCookie() ? { 'X-Verissimo-CSRF': readCsrfCookie() } : {}),
       },
       body: JSON.stringify({ action: 'logout' }),
     })

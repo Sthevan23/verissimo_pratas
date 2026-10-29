@@ -16,7 +16,7 @@ function verissimo_api_headers(): void {
     header('Access-Control-Allow-Origin: ' . verissimo_primary_origin());
   }
   header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, OPTIONS');
-  header('Access-Control-Allow-Headers: Content-Type, X-Verissimo-Token');
+  header('Access-Control-Allow-Headers: Content-Type, X-Verissimo-Token, X-Verissimo-CSRF');
   if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
     http_response_code(204);
     exit;
@@ -60,6 +60,13 @@ function verissimo_json(array $payload, int $code = 200): void {
 }
 
 function verissimo_data_dir(): string {
+  $override = getenv('VERISSIMO_TEST_DATA_DIR');
+  if (is_string($override) && $override !== '') {
+    if (!is_dir($override)) {
+      mkdir($override, 0755, true);
+    }
+    return rtrim($override, '/\\');
+  }
   $dir = __DIR__ . '/data';
   if (!is_dir($dir)) {
     mkdir($dir, 0755, true);
@@ -113,25 +120,60 @@ function verissimo_admin_password(): string {
   return (string) ($cfg['api_token'] ?? '');
 }
 
-function verissimo_create_session(string $email, string $name, string $role, bool $remember): string {
+/** @return array{token: string, csrf: string, expiresAt: int} */
+function verissimo_create_session(string $email, string $name, string $role, bool $remember): array {
   $token = bin2hex(random_bytes(32));
+  $csrf = bin2hex(random_bytes(32));
   $ttl = $remember ? 30 * 24 * 60 * 60 : 8 * 60 * 60;
   $sessions = verissimo_read_sessions();
   $now = time();
+  $expiresAt = $now + $ttl;
   // limpa expiradas
   $sessions = array_values(array_filter($sessions, static function ($s) use ($now) {
     return is_array($s) && (int) ($s['expiresAt'] ?? 0) > $now;
   }));
   $sessions[] = [
     'tokenHash' => hash('sha256', $token),
+    'csrfToken' => hash('sha256', $csrf),
     'email' => $email,
     'name' => $name,
     'role' => $role,
-    'expiresAt' => $now + $ttl,
+    'expiresAt' => $expiresAt,
     'createdAt' => $now,
   ];
   verissimo_write_sessions($sessions);
-  return $token;
+  return ['token' => $token, 'csrf' => $csrf, 'expiresAt' => $expiresAt];
+}
+
+function verissimo_https_request(): bool {
+  return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+}
+
+function verissimo_set_auth_cookies(string $token, string $csrf, int $expiresAt): void {
+  $secure = verissimo_https_request();
+  $opts = [
+    'expires' => $expiresAt,
+    'path' => '/',
+    'secure' => $secure,
+    'httponly' => true,
+    'samesite' => 'Lax',
+  ];
+  setcookie('verissimo_admin', $token, $opts);
+  setcookie('verissimo_csrf', $csrf, [
+    'expires' => $expiresAt,
+    'path' => '/',
+    'secure' => $secure,
+    'httponly' => false,
+    'samesite' => 'Lax',
+  ]);
+}
+
+function verissimo_clear_auth_cookies(): void {
+  $past = time() - 3600;
+  $secure = verissimo_https_request();
+  setcookie('verissimo_admin', '', ['expires' => $past, 'path' => '/', 'secure' => $secure, 'httponly' => true, 'samesite' => 'Lax']);
+  setcookie('verissimo_csrf', '', ['expires' => $past, 'path' => '/', 'secure' => $secure, 'httponly' => false, 'samesite' => 'Lax']);
 }
 
 function verissimo_find_session(?string $token): ?array {
@@ -152,7 +194,12 @@ function verissimo_find_session(?string $token): ?array {
       continue;
     }
     if (hash_equals((string) ($s['tokenHash'] ?? ''), $hash)) {
+      if ((string) ($s['csrfToken'] ?? '') === '') {
+        $changed = true;
+        continue;
+      }
       $found = $s;
+      $found['_token'] = $token;
     }
     $kept[] = $s;
   }
@@ -173,7 +220,33 @@ function verissimo_destroy_session(?string $token): void {
 }
 
 function verissimo_request_token(): string {
-  return trim((string) ($_SERVER['HTTP_X_VERISSIMO_TOKEN'] ?? ''));
+  $header = trim((string) ($_SERVER['HTTP_X_VERISSIMO_TOKEN'] ?? ''));
+  if ($header !== '') return $header;
+  return trim((string) ($_COOKIE['verissimo_admin'] ?? ''));
+}
+
+function verissimo_require_csrf(?array $session): void {
+  $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+  if (!in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
+    return;
+  }
+  $csrfHeader = trim((string) ($_SERVER['HTTP_X_VERISSIMO_CSRF'] ?? ''));
+  $csrfCookie = trim((string) ($_COOKIE['verissimo_csrf'] ?? ''));
+  $provided = $csrfHeader !== '' ? $csrfHeader : $csrfCookie;
+  if ($provided === '' || !is_array($session)) {
+    verissimo_json(['ok' => false, 'error' => 'CSRF inválido'], 403);
+  }
+  $expectedHash = (string) ($session['csrfToken'] ?? '');
+  if ($expectedHash === '') {
+    verissimo_json([
+      'ok' => false,
+      'error' => 'Sessão desatualizada. Faça login novamente.',
+      'code' => 'SESSION_UPGRADE_REQUIRED',
+    ], 403);
+  }
+  if (!hash_equals($expectedHash, hash('sha256', $provided))) {
+    verissimo_json(['ok' => false, 'error' => 'CSRF inválido. Faça login novamente.', 'code' => 'CSRF_INVALID'], 403);
+  }
 }
 
 /**
@@ -181,10 +254,12 @@ function verissimo_request_token(): string {
  * Não aceita mais senha/api_token estático vindo do JavaScript.
  */
 function verissimo_require_write_token(): void {
-  $session = verissimo_find_session(verissimo_request_token());
+  $token = verissimo_request_token();
+  $session = verissimo_find_session($token);
   if ($session === null) {
     verissimo_json(['ok' => false, 'error' => 'Não autorizado. Faça login no admin.'], 401);
   }
+  verissimo_require_csrf($session);
 }
 
 function verissimo_catalog_path(): string {

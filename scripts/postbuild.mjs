@@ -4,15 +4,7 @@
  * 1) usa vite.index.html para o build
  * 2) publica dist + api na raiz do projeto (e em deploy/public_html)
  */
-import {
-  cpSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-  rmSync,
-  copyFileSync,
-} from 'node:fs'
+import { cpSync, existsSync, mkdirSync, rmSync, copyFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { execSync } from 'node:child_process'
 
@@ -44,21 +36,17 @@ if (!existsSync(dist)) {
   process.exit(1)
 }
 
-// 3. Preservar senha MySQL do deploy
-const existingLocalPath = join(deploy, 'api', 'config.local.php')
-const rootLocalPath = join(root, 'api', 'config.local.php')
-const savedLocal = existsSync(existingLocalPath)
-  ? readFileSync(existingLocalPath, 'utf8')
-  : existsSync(rootLocalPath)
-    ? readFileSync(rootLocalPath, 'utf8')
-    : null
+// 3. API no dist (nunca incluir config.local.php — só no servidor ou api/ local gitignored)
+function stripPrivateApiConfig(apiDir) {
+  const local = join(apiDir, 'config.local.php')
+  if (existsSync(local)) rmSync(local, { force: true })
+}
 
 // 4. API no dist (sem config.local)
 const distApi = join(dist, 'api')
 if (existsSync(distApi)) rmSync(distApi, { recursive: true, force: true })
 copyDir(apiSrc, distApi)
-const distLocal = join(distApi, 'config.local.php')
-if (existsSync(distLocal)) rmSync(distLocal, { force: true })
+stripPrivateApiConfig(distApi)
 if (existsSync(publicHtaccess)) {
   copyFileSync(publicHtaccess, join(dist, '.htaccess'))
 }
@@ -88,12 +76,9 @@ for (const folder of ['products', 'categories']) {
   }
 }
 
-// API na raiz: fonte já está em api/ — só garantir config.local
+// API na raiz: não sobrescrever config.local.php (dev local, gitignored)
 const rootApi = join(root, 'api')
 mkdirSync(join(rootApi, 'data'), { recursive: true })
-if (savedLocal) {
-  writeFileSync(join(rootApi, 'config.local.php'), savedLocal, 'utf8')
-}
 
 // Pasta uploads (fotos do painel)
 mkdirSync(join(root, 'uploads', 'products'), { recursive: true })
@@ -101,10 +86,7 @@ mkdirSync(join(root, 'uploads', 'products'), { recursive: true })
 // 6. Sincronizar deploy/public_html
 if (existsSync(deploy)) rmSync(deploy, { recursive: true, force: true })
 copyDir(dist, deploy)
-if (savedLocal) {
-  mkdirSync(join(deploy, 'api'), { recursive: true })
-  writeFileSync(join(deploy, 'api', 'config.local.php'), savedLocal, 'utf8')
-}
+stripPrivateApiConfig(join(deploy, 'api'))
 mkdirSync(join(deploy, 'api', 'data'), { recursive: true })
 mkdirSync(join(deploy, 'api', 'data', 'images'), { recursive: true })
 if (existsSync(join(apiSrc, 'data', '.htaccess'))) {
@@ -122,7 +104,7 @@ if (existsSync(join(apiSrc, 'data', 'images', '.gitkeep'))) {
     join(deploy, 'api', 'data', 'images', '.gitkeep')
   )
 }
-for (const file of ['helpers.php', 'upload.php', 'catalog.php', 'media.php', 'shipping.php', 'orders.php', 'set-superfrete.php', 'auth.php', 'config.php', 'db.php', 'ping.php', 'ping-db.php']) {
+for (const file of ['helpers.php', 'upload.php', 'catalog.php', 'media.php', 'shipping.php', 'shipping_logic.php', 'orders.php', 'order_logic.php', 'operational_store.php', 'migrate.php', 'set-superfrete.php', 'auth.php', 'config.php', 'db.php', 'ping.php', 'ping-db.php']) {
   const src = join(apiSrc, file)
   if (existsSync(src)) {
     mkdirSync(join(deploy, 'api'), { recursive: true })
@@ -136,11 +118,16 @@ if (existsSync(join(root, 'uploads', 'products', '.htaccess'))) {
     join(deploy, 'uploads', 'products', '.htaccess')
   )
 }
-if (existsSync(join(root, 'uploads', 'products', '.gitkeep'))) {
+  if (existsSync(join(root, 'uploads', 'products', '.gitkeep'))) {
   copyFileSync(
     join(root, 'uploads', 'products', '.gitkeep'),
     join(deploy, 'uploads', 'products', '.gitkeep')
   )
 }
+stripPrivateApiConfig(join(deploy, 'api'))
 
-console.log('Build publicado na raiz + deploy/public_html (pronto para Hostinger Git)')
+execSync('node scripts/verify-tracked-secrets.mjs', { stdio: 'inherit', cwd: root })
+
+console.log(
+  'Build publicado na raiz + deploy/public_html (sem config.local.php — configure no servidor Hostinger)'
+)

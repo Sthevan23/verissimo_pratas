@@ -14,6 +14,7 @@ export type CheckoutParams = {
   total: number
   couponCode?: string
   cep?: string
+  shippingOptionId?: string
   shippingLabel?: string
   city?: string
   street?: string
