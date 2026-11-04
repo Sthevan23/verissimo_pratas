@@ -2,11 +2,13 @@ import { Helmet } from 'react-helmet-async'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ProductCard } from '../components/ProductCard'
+import { ProductGridCell } from '../components/ProductGridCell'
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { categoryLabels } from '../data/categories'
 import { DEFAULT_RING_SIZES, resolveProductSizes } from '../data/sizes'
-import { getStoreProducts } from '../services/storeService'
+import { getStoreCategoryLabels, getStoreProducts } from '../services/storeService'
 import type { Product } from '../types'
+import { resolveStoreCategoryParam, storeCategoryUrl } from '../utils/categoryNav'
 import {
   isPersonalizadosCategory,
   matchesStoreCategoryFilter,
@@ -183,7 +185,8 @@ function filterCatalog(params: {
 
 export function Products() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const category = searchParams.get('categoria')
+  const rawCategory = searchParams.get('categoria')
+  const category = resolveStoreCategoryParam(rawCategory)
   const query = searchParams.get('q')
   const isPromo = searchParams.get('promocao') === 'true'
   const sizeFilter = searchParams.get('tamanho')?.trim() || ''
@@ -263,6 +266,21 @@ export function Products() {
     setVisibleCount(CATALOG_PAGE_SIZE)
   }, [filterKey])
 
+  useEffect(() => {
+    if (!rawCategory) return
+    if (!category) {
+      const next = new URLSearchParams(searchParams)
+      next.delete('categoria')
+      setSearchParams(next, { replace: true })
+      return
+    }
+    if (rawCategory !== category) {
+      const next = new URLSearchParams(searchParams)
+      next.set('categoria', category)
+      setSearchParams(next, { replace: true })
+    }
+  }, [rawCategory, category, searchParams, setSearchParams])
+
   const visibleProducts = useMemo(
     () => filtered.slice(0, visibleCount),
     [filtered, visibleCount]
@@ -276,8 +294,9 @@ export function Products() {
     setSearchParams(next, { replace: true })
   }
 
+  const categoryName = category ? getStoreCategoryLabels()[category] ?? categoryLabels[category] : null
   const title = category
-    ? categoryLabels[category] ?? 'Produtos'
+    ? categoryName ?? 'Produtos'
     : isPromo
       ? 'Ofertas especiais'
       : query
@@ -294,7 +313,7 @@ export function Products() {
         />
       </Helmet>
 
-      <div className="header-offset pb-16 sm:pb-20">
+      <div className="header-offset pb-28 sm:pb-32">
         <div className="container-brand">
           <AnimateIn className="text-center mb-10 lg:mb-12">
             <p className="text-[11px] tracking-[0.3em] uppercase text-muted mb-3">
@@ -314,10 +333,10 @@ export function Products() {
 
           {familyHub && (
             <div
-              className={`grid gap-3 sm:gap-4 mb-12 lg:mb-16 ${
+              className={`mb-12 grid gap-3 sm:gap-4 lg:mb-16 ${
                 familyHub.tipos.length > 3
-                  ? 'grid-cols-2 lg:grid-cols-4'
-                  : 'grid-cols-1 sm:grid-cols-3'
+                  ? 'grid-cols-2 lg:grid-cols-4 [grid-template-columns:repeat(2,minmax(0,1fr))] lg:[grid-template-columns:repeat(4,minmax(0,1fr))]'
+                  : 'grid-cols-1 sm:grid-cols-3 sm:[grid-template-columns:repeat(3,minmax(0,1fr))]'
               }`}
             >
               {familyHub.tipos.map((tipo) => {
@@ -325,7 +344,7 @@ export function Products() {
                 return (
                   <Link
                     key={tipo.slug}
-                    to={`/produtos?categoria=${tipo.slug}`}
+                    to={storeCategoryUrl(tipo.slug)}
                     className={`group border px-5 py-6 text-center transition-colors ${
                       active
                         ? 'border-brand-green bg-brand-green text-white'
@@ -441,9 +460,11 @@ export function Products() {
             </p>
           ) : (
             <>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-10 lg:gap-x-6">
+              <div className="product-grid">
                 {visibleProducts.map((product, i) => (
-                  <ProductCard key={product.id} product={product} index={i} />
+                  <ProductGridCell key={product.id}>
+                    <ProductCard product={product} index={i} />
+                  </ProductGridCell>
                 ))}
               </div>
               {hasMore && (

@@ -10,6 +10,34 @@ require $root . '/api/helpers.php';
 require $root . '/api/order_logic.php';
 require $root . '/api/shipping_logic.php';
 
+$categoryProduct = ['id' => 'cat-test-product', 'name' => 'Colar com brinco', 'category' => 'brincos'];
+assert_eq(verissimo_normalize_product_category($categoryProduct)['category'], 'brincos', 'categoria explícita não é sobrescrita por heurística do nome');
+$catalogCategoryCheck = verissimo_validate_catalog_categories(
+  [['id' => 'p1', 'category' => 'brincos']],
+  [['id' => 'category-1', 'slug' => 'brincos']]
+);
+assert_true($catalogCategoryCheck['ok'], 'produto referencia categoria existente');
+$missingCategoryCheck = verissimo_validate_catalog_categories(
+  [['id' => 'p1', 'category' => 'brincos']],
+  [['id' => 'category-1', 'slug' => 'aneis']]
+);
+assert_true(!$missingCategoryCheck['ok'], 'produto sem categoria correspondente é rejeitado');
+$duplicateCategoryCheck = verissimo_validate_catalog_categories(
+  [],
+  [['id' => 'category-1', 'slug' => 'brincos'], ['id' => 'category-2', 'slug' => 'brincos']]
+);
+assert_true(!$duplicateCategoryCheck['ok'], 'slugs duplicados são rejeitados');
+$caseMismatchCategoryCheck = verissimo_validate_catalog_categories(
+  [],
+  [['id' => 'category-1', 'slug' => 'Brincos']]
+);
+assert_true(!$caseMismatchCategoryCheck['ok'], 'slug deve usar formato canônico minúsculo');
+$duplicateIdCategoryCheck = verissimo_validate_catalog_categories(
+  [],
+  [['id' => 'category-1', 'slug' => 'brincos'], ['id' => 'category-1', 'slug' => 'aneis']]
+);
+assert_true(!$duplicateIdCategoryCheck['ok'], 'IDs de categoria duplicados são rejeitados');
+
 $failed = 0;
 
 function assert_true(bool $cond, string $msg): void {

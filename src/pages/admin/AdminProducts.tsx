@@ -105,11 +105,9 @@ export function AdminProducts({ area = 'available' }: AdminProductsProps) {
   const [applyingDiscount, setApplyingDiscount] = useState(false)
   const unpublishedCount = useMemo(() => getUnpublishedProductIds().length, [products])
 
-  const categories = useMemo(() => {
-    return getDatabase()
-      .categories.filter((c) => c.active)
-      .sort((a, b) => a.order - b.order)
-  }, [products])
+  const categories = [...getDatabase().categories]
+    .filter((c) => c.active)
+    .sort((a, b) => a.order - b.order)
 
   const refresh = useCallback(() => setProducts(getAdminProducts()), [])
 

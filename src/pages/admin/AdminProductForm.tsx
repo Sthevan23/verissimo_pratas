@@ -240,16 +240,11 @@ export function AdminProductForm() {
       // saveProduct garante slug único (evita abrir outro produto no site)
       const slug = product.slug || slugify(product.name)
       const sku = product.sku || `VP-${Date.now().toString().slice(-6)}`
-      // Bracelete cadastrado como Anéis (padrão antigo) → Pulseiras / Braceletes
-      let category = product.category
-      if (/bracelete|bracelet/i.test(product.name) && category === 'aneis') {
-        category = 'pulseiras-braceletes' as CategorySlug
-      }
-      category = normalizeProductCategory({
+      const category = normalizeProductCategory({
         name: product.name,
         slug,
         description: product.description,
-        category: String(category),
+        category: String(product.category),
       })
       const parsedOptions = parseProductOptions(optionsText)
       const parsedSizes = parseSizesText(sizesText)

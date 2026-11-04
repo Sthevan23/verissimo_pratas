@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import type { Product } from '../types'
 import { AnimateIn } from './ui/AnimateIn'
 import { ProductCard } from './ProductCard'
+import { ProductGridCell } from './ProductGridCell'
 
 interface ProductGridProps {
   products: Product[]
@@ -41,9 +42,11 @@ export function ProductGrid({
           </Link>
         </AnimateIn>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-10 lg:gap-x-6 lg:gap-y-12">
+        <div className="product-grid">
           {products.map((product, i) => (
-            <ProductCard key={product.id} product={product} index={i} />
+            <ProductGridCell key={product.id}>
+              <ProductCard product={product} index={i} />
+            </ProductGridCell>
           ))}
         </div>
       </div>

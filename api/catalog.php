@@ -75,12 +75,17 @@ if ($method === 'POST') {
   $products = $catFix['products'];
 
   $existing = verissimo_read_catalog($path);
+  $categories = isset($payload['categories']) && is_array($payload['categories'])
+    ? array_values($payload['categories'])
+    : array_values($existing['categories'] ?? []);
+  $categoryValidation = verissimo_validate_catalog_categories($products, $categories);
+  if (!$categoryValidation['ok']) {
+    verissimo_json(['ok' => false, 'error' => $categoryValidation['error']], 400);
+  }
   $out = [
     'updatedAt' => gmdate('c'),
     'products' => array_values($products),
-    'categories' => isset($payload['categories']) && is_array($payload['categories'])
-      ? array_values($payload['categories'])
-      : $existing['categories'],
+    'categories' => $categories,
     'settings' => isset($payload['settings']) && is_array($payload['settings'])
       ? $payload['settings']
       : $existing['settings'],

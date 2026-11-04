@@ -55,14 +55,18 @@ export function AdminCategories() {
   }
 
   const save = async (cat: AdminCategory) => {
-    if (!cat.name || !cat.slug) {
-      showToast('Preencha nome e slug.', 'error')
-      return
+    try {
+      saveCategory(cat)
+      refresh()
+      setEditing(null)
+      const result = await publishCatalogToServer()
+      showToast(
+        result.ok ? 'Categoria salva e publicada no site.' : 'Salva neste aparelho; falha ao publicar no site.',
+        result.ok ? 'success' : 'error'
+      )
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Falha ao salvar categoria.', 'error')
     }
-    saveCategory(cat)
-    refresh()
-    setEditing(null)
-    showToast('Categoria salva neste aparelho.')
   }
 
   const publishNow = async () => {
@@ -76,12 +80,23 @@ export function AdminCategories() {
   }
 
   const remove = (id: string) => {
-    deleteCategory(id)
-    refresh()
-    showToast('Categoria excluída.')
+    try {
+      deleteCategory(id)
+      refresh()
+      setDeleteId(null)
+      void publishCatalogToServer().then((result) => {
+        showToast(result.ok ? 'Categoria excluída e publicada.' : 'Categoria excluída localmente; falha ao publicar.', result.ok ? 'success' : 'error')
+      })
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Falha ao excluir categoria.', 'error')
+      setDeleteId(null)
+    }
   }
 
   const homeCount = categories.filter((c) => c.active && c.showOnHome !== false).length
+  const productsWithoutCategory = getDatabase().products.filter(
+    (product) => !categories.some((category) => category.slug === product.category)
+  )
 
   return (
     <>
@@ -123,9 +138,21 @@ export function AdminCategories() {
         <strong className="text-graphite">Publicar no site</strong> para todos verem.
       </div>
 
+      {productsWithoutCategory.length > 0 && (
+        <div className="admin-card mb-4 border border-amber-300 p-4 text-sm">
+          <strong>{productsWithoutCategory.length} produto(s) usam uma categoria inexistente.</strong>
+          <p className="mt-1 text-muted">Revise a associação no cadastro de cada produto antes de publicar. Nenhum produto foi movido automaticamente.</p>
+          <ul className="mt-2 space-y-1">
+            {productsWithoutCategory.map((product) => (
+              <li key={product.id} className="truncate">{product.name} · {product.category || 'sem slug'}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="space-y-3">
         {categories.map((cat) => (
-          <div key={cat.id} className="admin-card p-4 flex items-center gap-4">
+          <div key={cat.id} className="admin-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4">
             <GripVertical className="w-4 h-4 text-muted shrink-0" />
             <img
               src={cat.image || 'https://via.placeholder.com/48'}
@@ -150,6 +177,9 @@ export function AdminCategories() {
                 /produtos?categoria={cat.slug || '—'}
               </p>
             </div>
+            <p className="text-xs text-muted sm:px-4">
+              {getDatabase().products.filter((p) => p.category === cat.slug).length} produto(s) associado(s)
+            </p>
             <div className="flex gap-2 shrink-0">
               <button
                 type="button"

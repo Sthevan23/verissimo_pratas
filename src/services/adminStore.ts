@@ -124,7 +124,7 @@ function ensureSeedCategories(db: AdminDatabase): boolean {
   return changed
 }
 
-/** Coloca colares, piercings, brincos etc. na categoria certa conforme o nome */
+/** Corrige slug inválido ou erro grosseiro — não troca categoria escolhida no admin */
 function reconcileProductCategories(db: AdminDatabase): boolean {
   let changed = false
   for (const p of db.products) {
@@ -386,6 +386,9 @@ function mergeProductLists(local: AdminProduct[], remote: AdminProduct[]): Admin
 export function saveProduct(product: AdminProduct): AdminProduct {
   const db = getDatabase()
   const idx = db.products.findIndex((p) => p.id === product.id)
+  if (!db.categories.some((category) => category.slug === String(product.category))) {
+    throw new Error('Selecione uma categoria cadastrada antes de salvar o produto.')
+  }
   product.slug = ensureUniqueProductSlug(db, product)
   product.category = normalizeProductCategory({
     name: product.name,
@@ -721,9 +724,29 @@ export function saveDb(db: AdminDatabase) { saveDatabase(db) }
 
 export function saveCategory(category: AdminCategory): AdminCategory {
   const db = getDatabase()
-  const cat = migrateCategory(category)
+  const cat = migrateCategory({
+    ...category,
+    name: category.name.trim(),
+    slug: category.slug.trim().toLowerCase().replace(/\s+/g, '-'),
+  })
+  if (!cat.id || !cat.name || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(cat.slug)) {
+    throw new Error('Informe nome e slug válido para a categoria.')
+  }
+  if (db.categories.some((c) => c.id !== cat.id && c.slug === cat.slug)) {
+    throw new Error('Já existe uma categoria com este slug.')
+  }
   const idx = db.categories.findIndex((c) => c.id === cat.id)
-  if (idx >= 0) db.categories[idx] = cat
+  if (idx >= 0) {
+    const oldSlug = db.categories[idx].slug
+    if (oldSlug !== cat.slug) {
+      db.products = db.products.map((product) =>
+        product.category === oldSlug
+          ? { ...product, category: cat.slug as AdminProduct['category'], updatedAt: now() }
+          : product
+      )
+    }
+    db.categories[idx] = cat
+  }
   else db.categories.push(cat)
   saveDatabase(db)
   addAudit('update', 'category', cat.id, `Atualizou categoria ${cat.name}`)
@@ -733,7 +756,18 @@ export function saveCategory(category: AdminCategory): AdminCategory {
 export function deleteCategory(id: string): void {
   const db = getDatabase()
   const cat = db.categories.find((c) => c.id === id)
-  db.categories = db.categories.filter((c) => c.id !== id)
+  if (cat && db.products.some((product) => product.category === cat.slug)) {
+    throw new Error('Esta categoria ainda tem produtos. Reassocie os produtos antes de excluí-la.')
+  }
+  if (cat && seedCategories.some((seed) => seed.slug === cat.slug)) {
+    // Keep the stable category identity so seed reconciliation cannot recreate
+    // it after deletion and historical product/category references stay valid.
+    db.categories = db.categories.map((current) =>
+      current.id === id ? { ...current, active: false, showOnHome: false } : current
+    )
+  } else {
+    db.categories = db.categories.filter((c) => c.id !== id)
+  }
   saveDatabase(db)
   if (cat) addAudit('delete', 'category', id, `Excluiu categoria ${cat.name}`)
 }

@@ -59,11 +59,11 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
 
   return (
     <article
-      className="group"
+      className="group flex h-full min-w-0 flex-col"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <div className="relative aspect-[3/4] bg-off-white overflow-hidden mb-3 sm:mb-4">
+      <div className="relative mb-3 aspect-[3/4] shrink-0 overflow-hidden bg-off-white sm:mb-4">
         <Link to={productPath(product)} className="absolute inset-0 block">
           {!imgBroken && primarySrc ? (
             <img
@@ -159,60 +159,66 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
         </div>
       </div>
 
-      <div className="space-y-1 sm:space-y-1.5">
-        <Link to={productPath(product)}>
-          <h3 className="text-xs sm:text-sm font-light text-graphite leading-snug hover:text-charcoal transition-colors line-clamp-2">
+      <div className="flex min-h-0 flex-1 flex-col pt-0.5">
+        <Link to={productPath(product)} className="mb-1 block min-w-0">
+          <h3 className="product-card__title text-xs font-light text-graphite transition-colors hover:text-charcoal sm:text-sm">
             {product.name}
           </h3>
         </Link>
 
-        <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
+        <div className="product-card__price">
           {product.salePrice ? (
-            <>
-              <span className="text-xs sm:text-sm text-muted line-through">
-                {formatPrice(product.price)}
-              </span>
-              <span className="text-xs sm:text-sm font-medium text-graphite">
-                {formatPrice(product.salePrice)}
-              </span>
-              <span className="text-[9px] sm:text-[10px] text-silver-dark">
+            <div className="flex h-full min-w-0 flex-col justify-center gap-0.5">
+              <div className="flex min-w-0 items-baseline gap-x-1.5 overflow-hidden">
+                <span className="shrink-0 text-xs text-muted line-through sm:text-sm">
+                  {formatPrice(product.price)}
+                </span>
+                <span className="truncate text-xs font-medium text-graphite sm:text-sm">
+                  {formatPrice(product.salePrice)}
+                </span>
+              </div>
+              <span className="text-[9px] text-silver-dark sm:text-[10px]">
                 -{calcDiscount(product.price, product.salePrice)}%
               </span>
-            </>
+            </div>
           ) : (
-            <span className="text-xs sm:text-sm font-medium text-graphite">
-              {formatPrice(product.price)}
-            </span>
+            <div className="flex h-full items-center">
+              <span className="text-xs font-medium text-graphite sm:text-sm">
+                {formatPrice(product.price)}
+              </span>
+            </div>
           )}
         </div>
 
-        <p className="text-[10px] sm:text-[11px] text-muted font-light">
+        <p className="product-card__installments text-[10px] font-light text-muted sm:text-[11px]">
           {formatInstallments(currentPrice)}
         </p>
 
-        {!product.inStock ? (
-          <Link
-            to={productPath(product)}
-            className="lg:hidden w-full mt-2 min-h-11 py-2.5 border border-border text-[10px] tracking-[0.2em] uppercase text-muted flex items-center justify-center"
-          >
-            Esgotado
-          </Link>
-        ) : needsSelection ? (
-          <Link
-            to={productPath(product)}
-            className="lg:hidden w-full mt-2 min-h-11 py-2.5 border border-border text-[10px] tracking-[0.2em] uppercase text-graphite active:border-graphite active:bg-off-white transition-colors flex items-center justify-center"
-          >
-            Escolher opções
-          </Link>
-        ) : (
-          <button
-            type="button"
-            onClick={handleBuy}
-            className="lg:hidden w-full mt-2 min-h-11 py-2.5 border border-border text-[10px] tracking-[0.2em] uppercase text-graphite active:border-graphite active:bg-off-white transition-colors"
-          >
-            Comprar
-          </button>
-        )}
+        <div className="mt-2 shrink-0 lg:hidden">
+          {!product.inStock ? (
+            <Link
+              to={productPath(product)}
+              className="flex min-h-11 w-full items-center justify-center border border-border py-2.5 text-[10px] tracking-[0.2em] uppercase text-muted"
+            >
+              Esgotado
+            </Link>
+          ) : needsSelection ? (
+            <Link
+              to={productPath(product)}
+              className="flex min-h-11 w-full items-center justify-center border border-border py-2.5 text-[10px] tracking-[0.2em] uppercase text-graphite transition-colors active:border-graphite active:bg-off-white"
+            >
+              Escolher opções
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={handleBuy}
+              className="min-h-11 w-full border border-border py-2.5 text-[10px] tracking-[0.2em] uppercase text-graphite transition-colors active:border-graphite active:bg-off-white"
+            >
+              Comprar
+            </button>
+          )}
+        </div>
       </div>
     </article>
   )

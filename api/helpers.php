@@ -609,43 +609,42 @@ function verissimo_finalize_product_category(string $category, string $name, str
 }
 
 function verissimo_normalize_product_category(array $product): array {
-  $name = (string) ($product['name'] ?? '');
-  $slug = (string) ($product['slug'] ?? '');
-  $desc = (string) ($product['description'] ?? '');
-  $current = (string) ($product['category'] ?? 'brincos');
-  $detected = verissimo_detect_category_from_text($name, $slug, $desc);
-  $next = $current;
-
-  if ($detected !== null) {
-    $next = verissimo_is_brincos_category($detected)
-      ? verissimo_refine_brincos_subcategory($detected, $name)
-      : $detected;
-  } elseif (verissimo_is_brincos_category($current) && verissimo_is_colar_product($name, $slug, $desc)) {
-    $next = 'colares';
-  }
-
-  $next = verissimo_finalize_product_category($next, $name, $slug, $desc);
-
-  if ($next !== $current) {
-    $product['category'] = $next;
-    $product['updatedAt'] = gmdate('c');
-  }
+  // category é uma decisão explícita do catálogo/admin. Não reclassifique por
+  // nome/descrição: termos como "colar" aparecem em conjuntos e podem mudar
+  // o vínculo correto sem o administrador perceber.
   return $product;
 }
 
 /** @return array{products: array, changed: bool} */
 function verissimo_reconcile_product_categories(array $products): array {
-  $out = [];
-  $changed = false;
-  foreach ($products as $p) {
-    if (!is_array($p)) {
-      $out[] = $p;
-      continue;
+  return ['products' => array_values($products), 'changed' => false];
+}
+
+/** Validate catalog category identity and product references before persistence. */
+function verissimo_validate_catalog_categories(array $products, array $categories): array {
+  $slugs = [];
+  $ids = [];
+  foreach ($categories as $category) {
+    if (!is_array($category)) return ['ok' => false, 'error' => 'Categoria inválida'];
+    $rawId = (string) ($category['id'] ?? '');
+    $id = trim($rawId);
+    $rawSlug = trim((string) ($category['slug'] ?? ''));
+    $slug = strtolower($rawSlug);
+    if ($id === '' || $rawId !== $id || $rawSlug !== $slug || !preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)) {
+      return ['ok' => false, 'error' => 'Categoria sem identificador ou slug válido'];
     }
-    $before = (string) ($p['category'] ?? '');
-    $p = verissimo_normalize_product_category($p);
-    if ((string) ($p['category'] ?? '') !== $before) $changed = true;
-    $out[] = $p;
+    if (isset($ids[$id]) || isset($slugs[$slug])) {
+      return ['ok' => false, 'error' => 'Identificador ou slug de categoria duplicado'];
+    }
+    $ids[$id] = true;
+    $slugs[$slug] = true;
   }
-  return ['products' => $out, 'changed' => $changed];
+  foreach ($products as $product) {
+    if (!is_array($product)) return ['ok' => false, 'error' => 'Produto inválido'];
+    $slug = trim((string) ($product['category'] ?? ''));
+    if ($slug === '' || !isset($slugs[$slug])) {
+      return ['ok' => false, 'error' => 'Produto referencia uma categoria inexistente'];
+    }
+  }
+  return ['ok' => true];
 }

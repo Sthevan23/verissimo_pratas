@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { HOME_CATEGORY_NAV } from '../data/categories'
+import { storeCategoryUrl } from '../utils/categoryNav'
 import { AnimateIn } from './ui/AnimateIn'
 
 export function Categories() {
@@ -15,12 +16,12 @@ export function Categories() {
           </h2>
         </AnimateIn>
 
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3 lg:gap-5">
-          {HOME_CATEGORY_NAV.map((cat, i) => (
-            <AnimateIn key={cat.slug} delay={i * 0.08}>
+        <div className="category-grid">
+          {HOME_CATEGORY_NAV.map((cat) => (
+            <div key={cat.slug} className="relative isolate min-w-0">
               <Link
-                to={`/produtos?categoria=${cat.slug}`}
-                className="group relative block aspect-[3/4] overflow-hidden bg-off-white active:opacity-95"
+                to={storeCategoryUrl(cat.slug)}
+                className="group relative block aspect-[3/4] w-full overflow-hidden bg-off-white active:opacity-95"
               >
                 <img
                   src={cat.image}
@@ -38,7 +39,7 @@ export function Categories() {
                   </span>
                 </div>
               </Link>
-            </AnimateIn>
+            </div>
           ))}
         </div>
       </div>

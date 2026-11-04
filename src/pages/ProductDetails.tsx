@@ -22,7 +22,9 @@ import {
   formatPrice,
 } from '../utils/format'
 import { ProductCard } from '../components/ProductCard'
+import { ProductGridCell } from '../components/ProductGridCell'
 import { catalogDetailImageUrl, catalogThumbImageUrl } from '../utils/catalogImage'
+import { storeCategoryUrl } from '../utils/categoryNav'
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { Button } from '../components/ui/Button'
 import { ShippingCalculator } from '../components/ShippingCalculator'
@@ -223,7 +225,7 @@ export function ProductDetails() {
                   </Link>
                   <span className="mx-1.5">·</span>
                   <Link
-                    to={`/produtos?categoria=${product.category}`}
+                    to={storeCategoryUrl(product.category)}
                     className="hover:text-graphite"
                   >
                     {categoryName}
@@ -494,9 +496,11 @@ export function ProductDetails() {
               <h2 className="heading-display text-2xl lg:text-3xl text-graphite mb-8 text-center">
                 Você também pode gostar
               </h2>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-3 gap-y-8 sm:gap-x-4 lg:gap-x-6">
+              <div className="product-grid">
                 {related.map((p, i) => (
-                  <ProductCard key={p.id} product={p} index={i} />
+                  <ProductGridCell key={p.id}>
+                    <ProductCard product={p} index={i} />
+                  </ProductGridCell>
                 ))}
               </div>
             </section>

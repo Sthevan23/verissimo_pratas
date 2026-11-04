@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import { getStoreCategories, searchStoreProducts } from '../services/storeService'
+import { storeCategoryUrl } from '../utils/categoryNav'
 import type { CartItem, Product, SearchResult } from '../types'
 import {
   normalizeCartLineSelection,
@@ -292,7 +293,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           type: 'category',
           id: cat.slug,
           label: cat.name,
-          href: `/produtos?categoria=${cat.slug}`,
+          href: storeCategoryUrl(cat.slug),
           image: cat.image,
         })
       }

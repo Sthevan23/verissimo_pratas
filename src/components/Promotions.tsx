@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { getSaleProducts } from '../data/products'
 import { AnimateIn } from './ui/AnimateIn'
 import { ProductCard } from './ProductCard'
+import { ProductGridCell } from './ProductGridCell'
 
 export function Promotions() {
   const saleProducts = getSaleProducts()
@@ -23,9 +24,11 @@ export function Promotions() {
           </p>
         </AnimateIn>
 
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-10 lg:gap-x-8 lg:gap-y-12 max-w-5xl mx-auto">
+        <div className="product-grid product-grid-3 mx-auto max-w-5xl">
           {saleProducts.map((product, i) => (
-            <ProductCard key={product.id} product={product} index={i} />
+            <ProductGridCell key={product.id}>
+              <ProductCard product={product} index={i} />
+            </ProductGridCell>
           ))}
         </div>
 
