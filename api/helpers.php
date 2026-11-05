@@ -112,14 +112,14 @@ function verissimo_admin_email(): string {
   return $email !== '' ? $email : 'verissimopratass@gmail.com';
 }
 
-function verissimo_admin_password(): string {
+function verissimo_admin_password_hash(): string {
   $cfg = verissimo_cfg();
-  $pass = (string) ($cfg['admin_password'] ?? getenv('VERISSIMO_ADMIN_PASSWORD') ?: '');
-  if ($pass !== '') return $pass;
-  // Compat: usa api_token como senha se admin_password ainda não foi definido
-  return (string) ($cfg['api_token'] ?? '');
+  return trim((string) ($cfg['admin_password_hash'] ?? getenv('VERISSIMO_ADMIN_PASSWORD_HASH') ?: ''));
 }
 
+function verissimo_password_matches_hash(string $password, string $hash): bool {
+  return $password !== '' && $hash !== '' && password_verify($password, $hash);
+}
 /** @return array{token: string, csrf: string, expiresAt: int} */
 function verissimo_create_session(string $email, string $name, string $role, bool $remember): array {
   $token = bin2hex(random_bytes(32));
@@ -291,12 +291,14 @@ function verissimo_rate_limit(string $bucket, int $max, int $windowSec): void {
   if (!is_dir($dir)) {
     mkdir($dir, 0755, true);
   }
-  $ip = $_SERVER['HTTP_CF_CONNECTING_IP']
-    ?? $_SERVER['HTTP_X_FORWARDED_FOR']
-    ?? $_SERVER['REMOTE_ADDR']
-    ?? 'unknown';
-  if (str_contains((string) $ip, ',')) {
-    $ip = trim(explode(',', (string) $ip)[0]);
+  // Cabeçalhos X-Forwarded-For / CF-Connecting-IP são controlados pelo cliente:
+  // só são usados quando o servidor está atrás de proxy confiável (config trust_proxy_headers).
+  $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+  if (!empty(verissimo_cfg()['trust_proxy_headers'])) {
+    $forwarded = $_SERVER['HTTP_CF_CONNECTING_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
+    if ($forwarded !== '') {
+      $ip = trim(explode(',', (string) $forwarded)[0]);
+    }
   }
   $file = $dir . '/' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $bucket . '_' . $ip) . '.json';
   $now = time();
@@ -439,40 +441,7 @@ function verissimo_reconcile_orphan_images(array $products): array {
   $linkedNames = [];
 
   foreach ($byPrefix as $prefix => $files) {
-    $targetIdx = null;
-
-    foreach ($products as $idx => $p) {
-      if (!is_array($p)) continue;
-      foreach ($p['images'] ?? [] as $img) {
-        if (!is_string($img)) continue;
-        $name = verissimo_catalog_image_filename($img);
-        if ($name !== null && stripos($name, $prefix) === 0) {
-          $targetIdx = $idx;
-          break 2;
-        }
-      }
-    }
-
-    if ($targetIdx === null && preg_match('/^vp-(\d{14})$/i', $prefix, $m)) {
-      $uploadAt = DateTime::createFromFormat('YmdHis', $m[1]);
-      if ($uploadAt instanceof DateTime) {
-        $uploadTs = $uploadAt->getTimestamp();
-        $bestIdx = null;
-        $bestDiff = 999999;
-        foreach ($products as $idx => $p) {
-          if (!is_array($p)) continue;
-          $raw = (string) ($p['updatedAt'] ?? $p['createdAt'] ?? '');
-          $updatedTs = strtotime($raw);
-          if ($updatedTs === false) continue;
-          $diff = abs($updatedTs - $uploadTs);
-          if ($diff <= 300 && $diff < $bestDiff) {
-            $bestDiff = $diff;
-            $bestIdx = $idx;
-          }
-        }
-        $targetIdx = $bestIdx;
-      }
-    }
+    $targetIdx = verissimo_find_orphan_image_prefix_target($products, $prefix);
 
     if ($targetIdx === null) continue;
 
@@ -501,6 +470,19 @@ function verissimo_reconcile_orphan_images(array $products): array {
   $remaining = array_values(array_filter($orphans, static fn($f) => !in_array($f, $linkedNames, true)));
 
   return ['products' => $products, 'linked' => $linked, 'orphans' => $remaining];
+}
+
+/** Pure target lookup: link an orphan only to a product already using the same upload prefix. */
+function verissimo_find_orphan_image_prefix_target(array $products, string $prefix): ?int {
+  foreach ($products as $idx => $product) {
+    if (!is_array($product)) continue;
+    foreach ($product['images'] ?? [] as $image) {
+      if (!is_string($image)) continue;
+      $filename = verissimo_catalog_image_filename($image);
+      if ($filename !== null && stripos($filename, $prefix) === 0) return (int) $idx;
+    }
+  }
+  return null;
 }
 
 function verissimo_is_brincos_category(string $cat): bool {
@@ -646,5 +628,55 @@ function verissimo_validate_catalog_categories(array $products, array $categorie
       return ['ok' => false, 'error' => 'Produto referencia uma categoria inexistente'];
     }
   }
+  return ['ok' => true];
+}
+
+/** Validate product catalog payload before either JSON or SQL persistence. */
+function verissimo_validate_catalog_products($products): array {
+  if (!is_array($products) || !array_is_list($products)) {
+    return ['ok' => false, 'error' => 'Campo products deve ser uma lista.'];
+  }
+
+  $ids = [];
+  foreach ($products as $index => $product) {
+    if (!is_array($product) || array_is_list($product)) {
+      return ['ok' => false, 'error' => 'Produto na posicao ' . ($index + 1) . ' deve ser um objeto.'];
+    }
+    $id = $product['id'] ?? null;
+    if (!is_string($id) || trim($id) === '') {
+      return ['ok' => false, 'error' => 'Cada produto precisa de um id de texto nao vazio.'];
+    }
+    $idKey = 'id:' . $id;
+    if (isset($ids[$idKey])) {
+      return ['ok' => false, 'error' => 'IDs de produto duplicados: ' . $id];
+    }
+    $ids[$idKey] = true;
+
+    if (!array_key_exists('price', $product) || !is_numeric($product['price'])
+      || !is_finite((float) $product['price']) || (float) $product['price'] < 0) {
+      return ['ok' => false, 'error' => 'Preco do produto ' . $id . ' deve ser numerico, finito e maior ou igual a zero.'];
+    }
+    if (array_key_exists('salePrice', $product) && $product['salePrice'] !== null && $product['salePrice'] !== ''
+      && (!is_numeric($product['salePrice']) || !is_finite((float) $product['salePrice']) || (float) $product['salePrice'] < 0)) {
+      return ['ok' => false, 'error' => 'Preco promocional do produto ' . $id . ' deve ser numerico, finito e maior ou igual a zero.'];
+    }
+    if (array_key_exists('stock', $product) && (!is_int($product['stock']) || $product['stock'] < 0)) {
+      return ['ok' => false, 'error' => 'Estoque do produto ' . $id . ' deve ser um inteiro maior ou igual a zero.'];
+    }
+    if (array_key_exists('status', $product) && !in_array($product['status'], ['active', 'draft', 'archived'], true)) {
+      return ['ok' => false, 'error' => 'Status invalido para o produto ' . $id . '.'];
+    }
+    if (array_key_exists('images', $product)) {
+      if (!is_array($product['images']) || !array_is_list($product['images'])) {
+        return ['ok' => false, 'error' => 'Imagens do produto ' . $id . ' devem ser uma lista de textos.'];
+      }
+      foreach ($product['images'] as $image) {
+        if (!is_string($image)) {
+          return ['ok' => false, 'error' => 'Cada imagem do produto ' . $id . ' deve ser texto.'];
+        }
+      }
+    }
+  }
+
   return ['ok' => true];
 }

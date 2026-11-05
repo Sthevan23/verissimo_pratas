@@ -85,7 +85,9 @@ function verissimo_write_catalog_file(array $catalog): bool {
 function verissimo_product_row_from_array(array $product): array {
   $id = (string) ($product['id'] ?? '');
   $stock = max(0, (int) ($product['stock'] ?? 0));
-  $inStock = !empty($product['inStock']) || $stock > 0;
+  $inStock = $stock > 0;
+  $product['stock'] = $stock;
+  $product['inStock'] = $inStock;
   return [
     'id' => $id,
     'stock' => $stock,
@@ -99,11 +101,19 @@ function verissimo_product_row_from_array(array $product): array {
   ];
 }
 
-function verissimo_sync_catalog_products_to_db(PDO $pdo, array $products, bool $preserveStockOnUpdate = false): void {
-  if (!verissimo_operational_db_ready($pdo)) return;
+function verissimo_sync_catalog_products_to_db(
+  PDO $pdo,
+  array $products,
+  bool $preserveStockOnUpdate = false,
+  bool $replaceProducts = false,
+  bool $allowMassDelete = false
+): array {
+  if (!verissimo_operational_db_ready($pdo)) return $products;
   $pdo->beginTransaction();
   try {
     $ids = [];
+    $syncedProducts = [];
+    $lockStock = $pdo->prepare('SELECT stock, in_stock FROM vp_products WHERE id = ? FOR UPDATE');
     $onDuplicate = $preserveStockOnUpdate
       ? 'status = VALUES(status),
          price_cents = VALUES(price_cents),
@@ -122,22 +132,80 @@ function verissimo_sync_catalog_products_to_db(PDO $pdo, array $products, bool $
     );
     foreach ($products as $p) {
       if (!is_array($p) || empty($p['id'])) continue;
+      $preservedInStock = null;
+      if ($preserveStockOnUpdate) {
+        $lockStock->execute([(string) $p['id']]);
+        $existingStock = $lockStock->fetch(PDO::FETCH_ASSOC);
+        if ($existingStock) {
+          $p['stock'] = (int) $existingStock['stock'];
+          $preservedInStock = (int) $existingStock['in_stock'];
+          $p['inStock'] = $preservedInStock === 1;
+        }
+      }
       $row = verissimo_product_row_from_array($p);
+      if ($preservedInStock !== null) {
+        $row['in_stock'] = $preservedInStock;
+        $p['inStock'] = $preservedInStock === 1;
+        $row['product_json'] = json_encode($p, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+      }
       $stmt->execute([
         ':id' => $row['id'],
         ':stock' => $row['stock'],
         ':in_stock' => $row['in_stock'],
         ':status' => $row['status'],
-        ':price_cents' => verissimo_money_to_cents($p['price'] ?? 0),
+        ':price_cents' => $row['price_cents'],
         ':sale_price_cents' => $row['sale_price_cents'],
         ':product_json' => $row['product_json'],
       ]);
       $ids[] = $row['id'];
+      $p['stock'] = $row['stock'];
+      $p['inStock'] = $row['in_stock'] === 1;
+      $syncedProducts[] = $p;
+    }
+    if ($replaceProducts) {
+      $total = (int) $pdo->query('SELECT COUNT(*) FROM vp_products')->fetchColumn();
+      if ($ids === []) {
+        $selectRemoved = $pdo->query('SELECT * FROM vp_products');
+        $removedRows = $selectRemoved->fetchAll(PDO::FETCH_ASSOC);
+      } else {
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $selectRemoved = $pdo->prepare('SELECT * FROM vp_products WHERE id NOT IN (' . $placeholders . ')');
+        $selectRemoved->execute($ids);
+        $removedRows = $selectRemoved->fetchAll(PDO::FETCH_ASSOC);
+      }
+      $removing = count($removedRows);
+      // Proteção: uma lista vinda de um navegador defasado não pode apagar o catálogo.
+      if ($removing > 0 && !$allowMassDelete && ($ids === [] || $removing * 10 > max(1, $total))) {
+        throw new RuntimeException('Publicação removeria ' . $removing . ' de ' . $total . ' produtos. Exclusão em massa não confirmada.');
+      }
+      if ($removing > 0) {
+        verissimo_backup_product_rows($removedRows);
+      }
+      if ($ids === []) {
+        $pdo->exec('DELETE FROM vp_products');
+      } else {
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $pdo->prepare('DELETE FROM vp_products WHERE id NOT IN (' . $placeholders . ')')->execute($ids);
+      }
     }
     $pdo->commit();
+    return $syncedProducts;
   } catch (Throwable $e) {
     $pdo->rollBack();
     throw $e;
+  }
+}
+
+/** Grava as linhas de vp_products que serão removidas, antes do DELETE. Falha aborta a operação. */
+function verissimo_backup_product_rows(array $rows): void {
+  $dir = verissimo_data_dir() . '/backups';
+  if (!is_dir($dir)) {
+    mkdir($dir, 0700, true);
+  }
+  $path = $dir . '/vp_products-' . gmdate('YmdHis') . '-' . bin2hex(random_bytes(4)) . '.json';
+  $json = json_encode($rows, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+  if ($json === false || file_put_contents($path, $json, LOCK_EX) === false) {
+    throw new RuntimeException('Falha ao gravar backup dos produtos removidos.');
   }
 }
 
@@ -343,6 +411,7 @@ function verissimo_assemble_order_array(array $body, array $built): array {
     'cep' => (string) ($body['cep'] ?? ''),
     'couponCode' => $built['couponCode'] ?? null,
     'channel' => 'whatsapp',
+    'stockDeducted' => !empty($built['stockDeducted']),
     'notes' => (string) ($body['notes'] ?? 'Pedido enviado via WhatsApp'),
     'createdAt' => $now,
     'updatedAt' => $now,
@@ -390,6 +459,9 @@ function verissimo_create_order_db(
       $pdo->rollBack();
       return ['ok' => false, 'error' => $built['error'], 'code' => $built['code'] ?? 400];
     }
+    // Every newly created order reserves inventory, independently of payment method.
+    $built['stockDeducted'] = true;
+    $built['deductions'] = verissimo_aggregate_stock_deductions($built['deductions']);
 
     $lockRow = $pdo->prepare(
       'SELECT stock, status, product_json FROM vp_products WHERE id = ? FOR UPDATE'
@@ -538,6 +610,9 @@ function verissimo_create_order_json(
       verissimo_release_operational_lock($lock);
       return ['ok' => false, 'error' => $built['error'], 'code' => $built['code'] ?? 400];
     }
+    // Every newly created order reserves inventory, independently of payment method.
+    $built['stockDeducted'] = true;
+    $built['deductions'] = verissimo_aggregate_stock_deductions($built['deductions']);
 
     foreach ($built['deductions'] as $d) {
       $pid = (string) $d['productId'];
@@ -591,64 +666,200 @@ function verissimo_create_order_json(
 
 function verissimo_update_order_json(string $id, array $body): array {
   $lock = verissimo_acquire_operational_lock();
-  $orders = verissimo_read_orders_json();
-  $found = false;
-  $updated = null;
-  foreach ($orders as &$o) {
-    if (($o['id'] ?? '') !== $id) continue;
-    $stringFields = [
-      'customerName', 'customerEmail', 'customerPhone', 'shippingAddress',
-      'shippingLabel', 'cep', 'notes', 'status', 'paymentStatus', 'paymentMethod',
-    ];
-    foreach ($stringFields as $field) {
-      if (array_key_exists($field, $body)) {
-        $o[$field] = (string) $body[$field];
+  try {
+    $catalog = verissimo_read_catalog_file();
+    $catalogSnapshot = json_decode(json_encode($catalog), true);
+    $orders = verissimo_read_orders_json();
+    $found = false;
+    $updated = null;
+    $shouldRestore = false;
+    foreach ($orders as &$o) {
+      if (($o['id'] ?? '') !== $id) continue;
+      $wasCancelled = ($o['status'] ?? '') === 'cancelado';
+      $willCancel = array_key_exists('status', $body) && (string) $body['status'] === 'cancelado';
+      $shouldReserve = $wasCancelled && array_key_exists('status', $body) && !$willCancel
+        && !(bool) ($o['stockDeducted'] ?? true);
+      $shouldRestore = $willCancel && !$wasCancelled && (bool) ($o['stockDeducted'] ?? true) && empty($o['stockRestored']);
+      if ($shouldReserve) {
+        $productsById = [];
+        foreach (($catalog['products'] ?? []) as $product) {
+          if (is_array($product) && isset($product['id'])) $productsById[(string) $product['id']] = $product;
+        }
+        foreach (verissimo_order_stock_quantities($o) as $productId => $quantity) {
+          if (!isset($productsById[$productId])) {
+            unset($o);
+            return ['ok' => false, 'error' => 'Produto do pedido nao encontrado para reservar estoque', 'code' => 409];
+          }
+          if ((string) ($productsById[$productId]['status'] ?? 'active') !== 'active') {
+            unset($o);
+            return ['ok' => false, 'error' => 'Produto indisponivel para reabrir pedido', 'code' => 409];
+          }
+          $available = max(0, (int) ($productsById[$productId]['stock'] ?? 0));
+          if ($quantity > $available) {
+            unset($o);
+            return ['ok' => false, 'error' => 'Estoque insuficiente para reabrir pedido', 'code' => 409];
+          }
+          $productsById[$productId]['stock'] = $available - $quantity;
+          $productsById[$productId]['inStock'] = $productsById[$productId]['stock'] > 0;
+        }
+        $catalog['products'] = array_map(static function ($product) use ($productsById) {
+          return is_array($product) && isset($product['id']) ? ($productsById[(string) $product['id']] ?? $product) : $product;
+        }, $catalog['products'] ?? []);
+        $o['stockDeducted'] = true;
+        $o['stockRestored'] = false;
       }
+      if ($shouldRestore) {
+        $productsById = [];
+        foreach (($catalog['products'] ?? []) as $product) {
+          if (is_array($product) && isset($product['id'])) $productsById[(string) $product['id']] = $product;
+        }
+        foreach (verissimo_order_stock_quantities($o) as $productId => $quantity) {
+          if (!isset($productsById[$productId])) {
+            unset($o);
+            return ['ok' => false, 'error' => 'Produto do pedido nao encontrado para restaurar estoque', 'code' => 409];
+          }
+          $productsById[$productId]['stock'] = max(0, (int) ($productsById[$productId]['stock'] ?? 0)) + $quantity;
+          $productsById[$productId]['inStock'] = $productsById[$productId]['stock'] > 0;
+        }
+        $catalog['products'] = array_map(static function ($product) use ($productsById) {
+          return is_array($product) && isset($product['id']) ? ($productsById[(string) $product['id']] ?? $product) : $product;
+        }, $catalog['products'] ?? []);
+        $o['stockDeducted'] = false;
+        $o['stockRestored'] = true;
+      }
+      $stringFields = ['customerName', 'customerEmail', 'customerPhone', 'shippingAddress', 'shippingLabel', 'cep', 'notes', 'status', 'paymentStatus', 'paymentMethod'];
+      foreach ($stringFields as $field) if (array_key_exists($field, $body)) $o[$field] = (string) $body[$field];
+      if (($o['status'] ?? '') === 'pago') $o['paymentStatus'] = 'pago';
+      $o['updatedAt'] = gmdate('c');
+      $found = true;
+      $updated = $o;
+      break;
     }
-    if (($o['status'] ?? '') === 'pago') {
-      $o['paymentStatus'] = 'pago';
+    unset($o);
+    if (!$found) return ['ok' => false, 'error' => 'Pedido nao encontrado', 'code' => 404];
+    if (($shouldRestore || $shouldReserve) && !verissimo_write_catalog_file($catalog)) return ['ok' => false, 'error' => 'Falha ao atualizar estoque', 'code' => 500];
+    if (!verissimo_write_orders_json($orders)) {
+      if (($shouldRestore || $shouldReserve) && is_array($catalogSnapshot)) verissimo_write_catalog_file($catalogSnapshot);
+      return ['ok' => false, 'error' => 'Falha ao gravar pedido', 'code' => 500];
     }
-    $o['updatedAt'] = gmdate('c');
-    $found = true;
-    $updated = $o;
-    break;
-  }
-  unset($o);
-  if (!$found) {
+    return ['ok' => true, 'order' => $updated];
+  } catch (Throwable $e) {
+    return ['ok' => false, 'error' => 'Falha ao atualizar pedido', 'code' => 500];
+  } finally {
     verissimo_release_operational_lock($lock);
-    return ['ok' => false, 'error' => 'Pedido não encontrado', 'code' => 404];
   }
-  verissimo_write_orders_json($orders);
-  verissimo_release_operational_lock($lock);
-  return ['ok' => true, 'order' => $updated];
 }
 
 function verissimo_update_order_db(PDO $pdo, string $id, array $body): array {
-  $stmt = $pdo->prepare('SELECT payload FROM vp_orders WHERE id = ? LIMIT 1');
-  $stmt->execute([$id]);
-  $raw = $stmt->fetchColumn();
-  if ($raw === false) {
-    return ['ok' => false, 'error' => 'Pedido não encontrado', 'code' => 404];
-  }
-  $o = json_decode((string) $raw, true);
-  if (!is_array($o)) {
-    return ['ok' => false, 'error' => 'Pedido corrompido', 'code' => 500];
-  }
-  $stringFields = [
-    'customerName', 'customerEmail', 'customerPhone', 'shippingAddress',
-    'shippingLabel', 'cep', 'notes', 'status', 'paymentStatus', 'paymentMethod',
-  ];
-  foreach ($stringFields as $field) {
-    if (array_key_exists($field, $body)) {
-      $o[$field] = (string) $body[$field];
+  try {
+    $pdo->beginTransaction();
+    $stmt = $pdo->prepare('SELECT payload FROM vp_orders WHERE id = ? FOR UPDATE');
+    $stmt->execute([$id]);
+    $raw = $stmt->fetchColumn();
+    if ($raw === false) { $pdo->rollBack(); return ['ok' => false, 'error' => 'Pedido nao encontrado', 'code' => 404]; }
+    $o = json_decode((string) $raw, true);
+    if (!is_array($o)) { $pdo->rollBack(); return ['ok' => false, 'error' => 'Pedido corrompido', 'code' => 500]; }
+    $wasCancelled = ($o['status'] ?? '') === 'cancelado';
+    $willCancel = array_key_exists('status', $body) && (string) $body['status'] === 'cancelado';
+    $shouldReserve = $wasCancelled && array_key_exists('status', $body) && !$willCancel
+      && !(bool) ($o['stockDeducted'] ?? true);
+    $shouldRestore = $willCancel && !$wasCancelled && (bool) ($o['stockDeducted'] ?? true) && empty($o['stockRestored']);
+    if ($shouldReserve) {
+      $quantities = verissimo_order_stock_quantities($o);
+      ksort($quantities, SORT_STRING);
+      $lockProduct = $pdo->prepare('SELECT stock, status, product_json FROM vp_products WHERE id = ? FOR UPDATE');
+      $saveProduct = $pdo->prepare('UPDATE vp_products SET stock = ?, in_stock = ?, product_json = ? WHERE id = ? AND stock >= ?');
+      foreach ($quantities as $productId => $quantity) {
+        $lockProduct->execute([$productId]);
+        $row = $lockProduct->fetch(PDO::FETCH_ASSOC);
+        if (!$row) { $pdo->rollBack(); return ['ok' => false, 'error' => 'Produto do pedido nao encontrado para reservar estoque', 'code' => 409]; }
+        if ((string) ($row['status'] ?? '') !== 'active') { $pdo->rollBack(); return ['ok' => false, 'error' => 'Produto indisponivel para reabrir pedido', 'code' => 409]; }
+        $stock = max(0, (int) ($row['stock'] ?? 0));
+        if ($quantity > $stock) { $pdo->rollBack(); return ['ok' => false, 'error' => 'Estoque insuficiente para reabrir pedido', 'code' => 409]; }
+        $product = json_decode((string) ($row['product_json'] ?? '{}'), true);
+        if (!is_array($product)) $product = [];
+        $newStock = $stock - $quantity;
+        $product['stock'] = $newStock;
+        $product['inStock'] = $newStock > 0;
+        $saveProduct->execute([$newStock, $newStock > 0 ? 1 : 0, json_encode($product, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), $productId, $quantity]);
+        if ($saveProduct->rowCount() !== 1) { $pdo->rollBack(); return ['ok' => false, 'error' => 'Estoque insuficiente para reabrir pedido', 'code' => 409]; }
+      }
+      $o['stockDeducted'] = true;
+      $o['stockRestored'] = false;
     }
+    if ($shouldRestore) {
+      $quantities = verissimo_order_stock_quantities($o);
+      ksort($quantities, SORT_STRING);
+      $lockProduct = $pdo->prepare('SELECT stock, product_json FROM vp_products WHERE id = ? FOR UPDATE');
+      $saveProduct = $pdo->prepare('UPDATE vp_products SET stock = ?, in_stock = ?, product_json = ? WHERE id = ?');
+      foreach ($quantities as $productId => $quantity) {
+        $lockProduct->execute([$productId]);
+        $row = $lockProduct->fetch(PDO::FETCH_ASSOC);
+        if (!$row) { $pdo->rollBack(); return ['ok' => false, 'error' => 'Produto do pedido nao encontrado para restaurar estoque', 'code' => 409]; }
+        $product = json_decode((string) ($row['product_json'] ?? '{}'), true);
+        if (!is_array($product)) $product = [];
+        $newStock = max(0, (int) ($row['stock'] ?? 0)) + $quantity;
+        $product['stock'] = $newStock;
+        $product['inStock'] = $newStock > 0;
+        $saveProduct->execute([$newStock, $newStock > 0 ? 1 : 0, json_encode($product, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), $productId]);
+      }
+      $o['stockDeducted'] = false;
+      $o['stockRestored'] = true;
+    }
+    $stringFields = ['customerName', 'customerEmail', 'customerPhone', 'shippingAddress', 'shippingLabel', 'cep', 'notes', 'status', 'paymentStatus', 'paymentMethod'];
+    foreach ($stringFields as $field) if (array_key_exists($field, $body)) $o[$field] = (string) $body[$field];
+    if (($o['status'] ?? '') === 'pago') $o['paymentStatus'] = 'pago';
+    $o['updatedAt'] = gmdate('c');
+    $payload = json_encode($o, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $pdo->prepare('UPDATE vp_orders SET payload = ? WHERE id = ?')->execute([$payload, $id]);
+    $pdo->commit();
+    if ($shouldRestore || $shouldReserve) verissimo_sync_catalog_file_from_db($pdo);
+    return ['ok' => true, 'order' => $o];
+  } catch (Throwable $e) {
+    if ($pdo->inTransaction()) $pdo->rollBack();
+    return ['ok' => false, 'error' => 'Falha ao atualizar pedido', 'code' => 500];
   }
-  if (($o['status'] ?? '') === 'pago') {
-    $o['paymentStatus'] = 'pago';
-  }
-  $o['updatedAt'] = gmdate('c');
-  $payload = json_encode($o, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-  $pdo->prepare('UPDATE vp_orders SET payload = ? WHERE id = ?')->execute([$payload, $id]);
-  return ['ok' => true, 'order' => $o];
 }
 
+/** @return array<string, int> */
+function verissimo_order_stock_quantities(array $order): array {
+  $quantities = [];
+  foreach (($order['items'] ?? []) as $item) {
+    if (!is_array($item)) continue;
+    $productId = (string) ($item['productId'] ?? '');
+    $quantity = max(0, (int) ($item['quantity'] ?? 0));
+    if ($productId !== '' && $quantity > 0) $quantities[$productId] = ($quantities[$productId] ?? 0) + $quantity;
+  }
+  return $quantities;
+}
+
+/** @return array<int, array{productId: string, qty: int}> */
+function verissimo_aggregate_stock_deductions(array $deductions): array {
+  $quantities = [];
+  foreach ($deductions as $item) {
+    if (!is_array($item)) continue;
+    $productId = (string) ($item['productId'] ?? '');
+    $quantity = max(0, (int) ($item['qty'] ?? 0));
+    if ($productId !== '' && $quantity > 0) $quantities[$productId] = ($quantities[$productId] ?? 0) + $quantity;
+  }
+  ksort($quantities, SORT_STRING);
+  $deductions = [];
+  foreach ($quantities as $productId => $quantity) $deductions[] = ['productId' => (string) $productId, 'qty' => $quantity];
+  return $deductions;
+}
+
+function verissimo_sync_catalog_file_from_db(PDO $pdo): void {
+  $lock = verissimo_acquire_operational_lock();
+  try {
+    $catalog = verissimo_read_catalog_file();
+    $map = verissimo_load_products_map($pdo);
+    $catalog['products'] = array_map(static function ($product) use ($map) {
+      return is_array($product) && isset($product['id']) ? ($map[(string) $product['id']] ?? $product) : $product;
+    }, $catalog['products'] ?? []);
+    verissimo_write_catalog_file($catalog);
+  } catch (Throwable $ignored) {
+    // The JSON catalog is a projection; MySQL remains the transactional source.
+  } finally {
+    verissimo_release_operational_lock($lock);
+  }
+}

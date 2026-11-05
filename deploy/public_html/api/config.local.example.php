@@ -5,7 +5,7 @@
  * Servidor Hostinger → host localhost
  * PC local → host = hostname do Remote MySQL no hPanel
  *
- * Login do admin: admin_email + admin_password (NÃO vão no JavaScript do site).
+ * Login do admin: admin_email + admin_password_hash (hash somente no servidor).
  */
 $httpHost = $_SERVER['HTTP_HOST'] ?? 'cli';
 $isLocalDev = (bool) preg_match('/^(localhost|127\.0\.0\.1)(:\d+)?$/i', $httpHost);
@@ -21,12 +21,14 @@ return [
 
   /** Credenciais do painel /admin (ficam só no servidor) */
   'admin_email' => 'verissimopratass@gmail.com',
-  'admin_password' => 'COLOQUE_UMA_SENHA_FORTE',
+  // Gere com: php scripts/hash-admin-password.php
+  'admin_password_hash' => 'COLE_AQUI_O_HASH_GERADO',
 
-  /** Token legado interno (não use no frontend). Login usa admin_password. */
-  'api_token' => 'GERE_UM_TOKEN_ALEATORIO_LONGO',
+  /** Tokens estaticos nao sao aceitos para autenticacao administrativa. */
 
   'site_origin' => 'https://verissimopratas.com.br',
+  /** true somente se o site estiver atrás de proxy/CDN confiável (ex.: Cloudflare) */
+  'trust_proxy_headers' => false,
   'allowed_origins' => [
     'https://verissimopratas.com.br',
     'https://www.verissimopratas.com.br',
