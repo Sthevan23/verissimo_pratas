@@ -6,7 +6,7 @@ import { ProductGridCell } from '../components/ProductGridCell'
 import { AnimateIn } from '../components/ui/AnimateIn'
 import { categoryLabels } from '../data/categories'
 import { DEFAULT_RING_SIZES, resolveProductSizes } from '../data/sizes'
-import { getStoreCategoryLabels, getStoreProducts } from '../services/storeService'
+import { getStoreCategoryLabels, getStoreCategoryRank, getStoreProducts } from '../services/storeService'
 import type { Product } from '../types'
 import { resolveStoreCategoryParam, storeCategoryUrl } from '../utils/categoryNav'
 import {
@@ -180,7 +180,14 @@ function filterCatalog(params: {
   if (isPromo) {
     result = result.filter((p) => p.isOnSale)
   }
-  return result
+  // Mesma categoria em sequência, na ordem das categorias do admin; dentro dela, por nome.
+  const rank = getStoreCategoryRank()
+  const position = (category: string) => rank.get(category) ?? Number.MAX_SAFE_INTEGER
+  return result.sort(
+    (a, b) =>
+      position(String(a.category)) - position(String(b.category)) ||
+      a.name.localeCompare(b.name, 'pt-BR')
+  )
 }
 
 export function Products() {

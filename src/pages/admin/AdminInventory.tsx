@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, Fragment } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { Plus, Minus } from 'lucide-react'
 import { PageHeader } from '../../components/admin/Modal'
 import { StatusBadge } from '../../components/admin/StatusBadge'
-import { getAdminProducts, adjustStock, setStock } from '../../services/adminStore'
+import { getAdminProducts, getDatabase, adjustStock, setStock } from '../../services/adminStore'
 import { useAdminToast } from '../../context/AdminToastContext'
 import type { StockStatus } from '../../types/admin'
 
@@ -15,9 +15,18 @@ export function AdminInventory() {
   const { showToast } = useAdminToast()
   const [refresh, setRefresh] = useState(0)
   const [draftQty, setDraftQty] = useState<Record<string, string>>({})
-  const products = useMemo(() => {
+  const { products, categoryNames } = useMemo(() => {
     void refresh
-    return getAdminProducts()
+    const db = getDatabase()
+    const categoryOrder = new Map(db.categories.map((c) => [String(c.slug), c.order]))
+    const categoryNames = new Map(db.categories.map((c) => [String(c.slug), c.name]))
+    const rank = (category: string) => categoryOrder.get(category) ?? Number.MAX_SAFE_INTEGER
+    const products = [...getAdminProducts()].sort(
+      (a, b) =>
+        rank(String(a.category)) - rank(String(b.category)) ||
+        a.name.localeCompare(b.name, 'pt-BR')
+    )
+    return { products, categoryNames }
   }, [refresh])
 
   const applyQty = (id: string, current: number) => {
@@ -55,8 +64,16 @@ export function AdminInventory() {
               </tr>
             </thead>
             <tbody>
-              {products.map((p) => (
-                <tr key={p.id}>
+              {products.map((p, i) => (
+                <Fragment key={p.id}>
+                {p.category !== products[i - 1]?.category && (
+                  <tr className="bg-off-white">
+                    <td colSpan={4} className="admin-table-td text-[11px] uppercase tracking-wider text-muted">
+                      {categoryNames.get(String(p.category)) ?? String(p.category)}
+                    </td>
+                  </tr>
+                )}
+                <tr>
                   <td className="admin-table-td">
                     <div className="flex items-center gap-2">
                       <img src={p.images[0]} alt="" className="w-8 h-8 object-cover" />
@@ -123,6 +140,7 @@ export function AdminInventory() {
                     </div>
                   </td>
                 </tr>
+                </Fragment>
               ))}
             </tbody>
           </table>

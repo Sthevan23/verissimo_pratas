@@ -74,6 +74,11 @@ export function searchStoreProducts(query: string): Product[] {
   )
 }
 
+/** Posição de cada categoria (slug → ordem do admin), para agrupar produtos na vitrine. */
+export function getStoreCategoryRank(): Map<string, number> {
+  return new Map(getDatabase().categories.map((c) => [String(c.slug), c.order]))
+}
+
 export function getStoreCategories(): Category[] {
   const db = getDatabase()
   return db.categories
