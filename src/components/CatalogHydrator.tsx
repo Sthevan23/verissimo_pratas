@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fetchRemoteCatalog, normalizeProductImages } from '../services/remoteCatalog'
-import { setStorefrontCatalog } from '../services/catalogMemory'
+import { setStorefrontCatalog, setStorefrontProductOrder } from '../services/catalogMemory'
 import { isPublishedOnStorefront } from '../services/storeService'
 
 /**
@@ -24,6 +24,7 @@ export function CatalogHydrator({ children }: { children: React.ReactNode }) {
 
         const normalized = remote.products.map((p) => normalizeProductImages(p))
         setStorefrontCatalog(normalized.filter(isPublishedOnStorefront))
+        setStorefrontProductOrder(remote.settings?.productOrder)
         setVersion((v) => v + 1)
       } catch (err) {
         console.warn('Catálogo remoto indisponível; usando cache local', err)

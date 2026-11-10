@@ -213,7 +213,11 @@ export interface AuditEntry {
   createdAt: string
 }
 
+/** Ordem dos produtos no catálogo da vitrine e nas listas do painel. */
+export type ProductOrder = 'categoria' | 'nome' | 'preco_menor' | 'preco_maior'
+
 export interface StoreSettings {
+  productOrder?: ProductOrder
   storeName: string
   logo: string
   favicon: string

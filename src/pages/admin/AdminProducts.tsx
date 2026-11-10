@@ -20,6 +20,7 @@ import {
 import { fetchRemoteCatalog } from '../../services/remoteCatalog'
 import { useAdminToast } from '../../context/AdminToastContext'
 import { formatPrice } from '../../utils/format'
+import { sortByProductOrder } from '../../utils/productOrder'
 import type { AdminProduct } from '../../types/admin'
 
 type DiscountScope = 'all' | 'category' | 'selected'
@@ -72,12 +73,6 @@ function clearSalePrice(p: AdminProduct): AdminProduct {
     isOnSale: false,
     badge: p.badge === 'promocao' ? undefined : p.badge,
   }
-}
-
-function productSortKey(p: AdminProduct): number {
-  const raw = p.updatedAt || p.createdAt || ''
-  const t = Date.parse(raw)
-  return Number.isNaN(t) ? 0 : t
 }
 
 type AdminProductsProps = {
@@ -165,7 +160,7 @@ export function AdminProducts({ area = 'available' }: AdminProductsProps) {
       showToast(`${p.name} foi para a aba Esgotados.`)
     } else {
       setStock(p.id, 1, 'Marcado como disponível')
-      showToast(`${p.name} voltou para Disponíveis — publique no site se ainda não publicou.`)
+      showToast(`${p.name} voltou para Disponíveis. Estoque atualizado no servidor.`)
     }
     setSelected((prev) => prev.filter((id) => id !== p.id))
     refresh()
@@ -197,7 +192,9 @@ export function AdminProducts({ area = 'available' }: AdminProductsProps) {
     const list = searched.filter((p) =>
       availabilityTab === 'available' ? p.stock > 0 : p.stock <= 0
     )
-    return [...list].sort((a, b) => productSortKey(b) - productSortKey(a))
+    const db = getDatabase()
+    const categoryOrder = new Map(db.categories.map((c) => [String(c.slug), c.order]))
+    return sortByProductOrder(list, db.settings.productOrder, categoryOrder)
   }, [searched, availabilityTab])
 
   const setAvailabilityTab = (tab: AvailabilityTab) => {
@@ -213,11 +210,15 @@ export function AdminProducts({ area = 'available' }: AdminProductsProps) {
     setSelected(selected.length === filtered.length ? [] : filtered.map((p) => p.id))
   }
 
-  const saveInlinePrice = (product: AdminProduct) => {
+  const saveInlinePrice = async (product: AdminProduct) => {
     const val = parseFloat(priceValue.replace(',', '.'))
     if (isNaN(val) || val <= 0) return
     saveProduct({ ...product, price: val })
-    showToast('Preço atualizado.')
+    const published = await publishCatalogToServer()
+    showToast(
+      published.ok ? 'Preco atualizado.' : 'Preco salvo localmente, mas falhou ao publicar.',
+      published.ok ? 'success' : 'error'
+    )
     setEditingPrice(null)
     refresh()
   }
@@ -539,8 +540,8 @@ export function AdminProducts({ area = 'available' }: AdminProductsProps) {
                           autoFocus
                           value={priceValue}
                           onChange={(e) => setPriceValue(e.target.value)}
-                          onBlur={() => saveInlinePrice(p)}
-                          onKeyDown={(e) => e.key === 'Enter' && saveInlinePrice(p)}
+                          onBlur={() => void saveInlinePrice(p)}
+                          onKeyDown={(e) => e.key === 'Enter' && void saveInlinePrice(p)}
                           className="w-24 px-2 py-1 border border-graphite text-sm"
                         />
                       ) : (
@@ -582,8 +583,8 @@ export function AdminProducts({ area = 'available' }: AdminProductsProps) {
                           <Pencil className="w-3.5 h-3.5" />
                         </Link>
                         <button
-                          onClick={() => {
-                            duplicateProduct(p.id)
+                          onClick={async () => {
+                            await duplicateProduct(p.id)
                             showToast('Produto duplicado.')
                             refresh()
                           }}

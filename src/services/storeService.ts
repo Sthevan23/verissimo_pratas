@@ -1,7 +1,7 @@
 import type { Product, Category } from '../types'
-import type { AdminProduct } from '../types/admin'
+import type { AdminProduct, ProductOrder } from '../types/admin'
 import { getDatabase } from './adminStore'
-import { getStorefrontCatalog } from './catalogMemory'
+import { getStorefrontCatalog, getStorefrontProductOrder } from './catalogMemory'
 import { categoryLabels, homeCategories as fallbackHomeCategories } from '../data/categories'
 import { resolveProductSizes } from '../data/sizes'
 import { normalizeProductImageUrl } from './remoteCatalog'
@@ -77,6 +77,11 @@ export function searchStoreProducts(query: string): Product[] {
 /** Posição de cada categoria (slug → ordem do admin), para agrupar produtos na vitrine. */
 export function getStoreCategoryRank(): Map<string, number> {
   return new Map(getDatabase().categories.map((c) => [String(c.slug), c.order]))
+}
+
+/** Ordem escolhida no painel: a publicada no site, ou a local se ainda não houver catálogo. */
+export function getStoreProductOrder(): ProductOrder {
+  return getStorefrontProductOrder() ?? getDatabase().settings.productOrder ?? 'categoria'
 }
 
 export function getStoreCategories(): Category[] {

@@ -6,6 +6,7 @@ import { StatusBadge } from '../../components/admin/StatusBadge'
 import { getAdminProducts, getDatabase, adjustStock, setStock } from '../../services/adminStore'
 import { useAdminToast } from '../../context/AdminToastContext'
 import type { StockStatus } from '../../types/admin'
+import { sortByProductOrder } from '../../utils/productOrder'
 
 function getStockStatus(stock: number): StockStatus {
   return stock <= 0 ? 'esgotado' : 'em_estoque'
@@ -15,18 +16,14 @@ export function AdminInventory() {
   const { showToast } = useAdminToast()
   const [refresh, setRefresh] = useState(0)
   const [draftQty, setDraftQty] = useState<Record<string, string>>({})
-  const { products, categoryNames } = useMemo(() => {
+  const { products, categoryNames, groupByCategory } = useMemo(() => {
     void refresh
     const db = getDatabase()
     const categoryOrder = new Map(db.categories.map((c) => [String(c.slug), c.order]))
     const categoryNames = new Map(db.categories.map((c) => [String(c.slug), c.name]))
-    const rank = (category: string) => categoryOrder.get(category) ?? Number.MAX_SAFE_INTEGER
-    const products = [...getAdminProducts()].sort(
-      (a, b) =>
-        rank(String(a.category)) - rank(String(b.category)) ||
-        a.name.localeCompare(b.name, 'pt-BR')
-    )
-    return { products, categoryNames }
+    const mode = db.settings.productOrder ?? 'categoria'
+    const products = sortByProductOrder(getAdminProducts(), mode, categoryOrder)
+    return { products, categoryNames, groupByCategory: mode === 'categoria' }
   }, [refresh])
 
   const applyQty = (id: string, current: number) => {
@@ -66,7 +63,7 @@ export function AdminInventory() {
             <tbody>
               {products.map((p, i) => (
                 <Fragment key={p.id}>
-                {p.category !== products[i - 1]?.category && (
+                {groupByCategory && p.category !== products[i - 1]?.category && (
                   <tr className="bg-off-white">
                     <td colSpan={4} className="admin-table-td text-[11px] uppercase tracking-wider text-muted">
                       {categoryNames.get(String(p.category)) ?? String(p.category)}

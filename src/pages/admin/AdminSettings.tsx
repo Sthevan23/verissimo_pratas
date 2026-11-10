@@ -6,6 +6,7 @@ import { getDatabase, saveDb, publishCatalogToServer } from '../../services/admi
 import { useAdminToast } from '../../context/AdminToastContext'
 import { compressImageFile, uploadProductFile } from '../../services/remoteCatalog'
 import type { StoreSettings } from '../../types/admin'
+import { PRODUCT_ORDER_OPTIONS } from '../../utils/productOrder'
 
 export function AdminSettings() {
   const { showToast } = useAdminToast()
@@ -141,6 +142,20 @@ export function AdminSettings() {
                 value={settings.maxInstallments}
                 onChange={(e) => update('maxInstallments', parseInt(e.target.value, 10))}
               />
+            </div>
+            <div>
+              <label className="admin-label">Ordem dos produtos (catálogo e estoque)</label>
+              <select
+                className="admin-input"
+                value={settings.productOrder ?? 'categoria'}
+                onChange={(e) => update('productOrder', e.target.value)}
+              >
+                {PRODUCT_ORDER_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </>
         )}
