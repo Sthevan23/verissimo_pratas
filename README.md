@@ -47,10 +47,12 @@ npm test             # php tests/php/run-tests.php
 Copie `api/config.local.example.php` → `api/config.local.php` (local ou **somente no servidor** Hostinger):
 
 - `host`, `name`, `user`, `pass` — MySQL
-- `admin_email`, `admin_password` — login do painel (somente servidor)
+- `admin_email`, `admin_password_hash` — login do painel (somente servidor; migre o valor legado com `php scripts/hash-admin-password.php`)
 - `superfrete_token`, `origin_cep`, `free_shipping_*` — frete
 
-Variáveis de ambiente opcionais: `VERISSIMO_ADMIN_EMAIL`, `VERISSIMO_ADMIN_PASSWORD`, `SUPERFRETE_TOKEN`.
+Variáveis de ambiente opcionais: `VERISSIMO_ADMIN_EMAIL`, `VERISSIMO_ADMIN_PASSWORD_HASH`, `SUPERFRETE_TOKEN`.
+
+Para migrar o login existente, execute `php scripts/hash-admin-password.php` no ambiente que contém `api/config.local.php` ou as variáveis legadas. O script reconhece `admin_password` e o fallback histórico `api_token` (incluindo `VERISSIMO_API_TOKEN`), imprime somente o hash e não altera a configuração. Configure o resultado como `admin_password_hash`/`VERISSIMO_ADMIN_PASSWORD_HASH` e remova a credencial legada antes de atualizar o backend.
 
 FTP deploy: `deploy/.ftp-credentials.json` (gitignored) com `host`, `user`, `password`, `remoteDir`.
 

@@ -7,6 +7,8 @@ export interface RemoteSiteCatalog {
   settings: StoreSettings | null
 }
 
+const inventoryUpdateQueue = new Map<string, Promise<boolean>>()
+
 function writeHeaders(): HeadersInit {
   return getAdminAuthHeaders(true)
 }
@@ -39,7 +41,7 @@ export async function pushCatalogToServer(payload: {
     const res = await adminFetch('/api/catalog.php', {
       method: 'POST',
       headers: writeHeaders(),
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, replaceProducts: true }),
     })
     if (res.status === 401) return { ok: false }
     if (!res.ok) return { ok: false }
@@ -52,6 +54,32 @@ export async function pushCatalogToServer(payload: {
   } catch {
     return { ok: false }
   }
+}
+
+/** Update only one product's server inventory, serializing writes per product. */
+export function updateRemoteProductInventory(productId: string, stock: number): Promise<boolean> {
+  const previous = inventoryUpdateQueue.get(productId) ?? Promise.resolve(true)
+  const send = async (): Promise<boolean> => {
+    if (!isAdminLoggedIn()) return false
+    try {
+      const res = await adminFetch('/api/inventory.php', {
+        method: 'POST',
+        headers: getAdminAuthHeaders(true),
+        body: JSON.stringify({ productId, stock }),
+      })
+      if (!res.ok) return false
+      const data = await res.json()
+      return Boolean(data?.ok)
+    } catch {
+      return false
+    }
+  }
+  const operation = previous.then(send, send)
+  inventoryUpdateQueue.set(productId, operation)
+  void operation.then(() => {
+    if (inventoryUpdateQueue.get(productId) === operation) inventoryUpdateQueue.delete(productId)
+  })
+  return operation
 }
 
 export { isAdminLoggedIn } from './authService'

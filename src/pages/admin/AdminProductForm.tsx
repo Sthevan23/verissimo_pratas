@@ -12,7 +12,7 @@ import {
 import { getDatabase } from '../../services/adminStore'
 import { useAdminToast } from '../../context/AdminToastContext'
 import { calcMargin, slugify } from '../../context/AdminToastContext'
-import { compressImageFile, uploadProductFile } from '../../services/remoteCatalog'
+import { compressImageFile, updateRemoteProductInventory, uploadProductFile } from '../../services/remoteCatalog'
 import { formatProductOptions, parseProductOptions } from '../../utils/productOptions'
 import { normalizeProductCategory } from '../../utils/productCategory'
 import type { AdminProduct } from '../../types/admin'
@@ -66,9 +66,11 @@ export function AdminProductForm() {
   const [loadingCatalog, setLoadingCatalog] = useState(!isNew)
   const galleryInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
+  const loadedStockRef = useRef<number | null>(null)
   const categories = getDatabase().categories
 
   const applyProductToForm = (p: AdminProduct) => {
+    loadedStockRef.current = p.stock
     setProduct(p)
     const formatted = formatProductOptions(p.options)
     setOptionsText(formatted)
@@ -88,6 +90,7 @@ export function AdminProductForm() {
         const p = getAdminProduct(id)
         if (p) applyProductToForm(p)
       } else {
+        loadedStockRef.current = null
         setOptionsText('')
         setSizesText('')
         setOptionLabelText('Modelo')
@@ -112,7 +115,17 @@ export function AdminProductForm() {
       inStock: next.stock > 0,
     })
     setProduct(saved)
-    return publishCatalogToServer()
+    const published = await publishCatalogToServer()
+    if (!published.ok) return published
+    if (!isNew && loadedStockRef.current !== null && saved.stock !== loadedStockRef.current) {
+      const inventoryUpdated = await updateRemoteProductInventory(saved.id, saved.stock)
+      if (!inventoryUpdated) {
+        return { ok: false, error: 'Produto publicado, mas falhou a atualizacao do estoque no servidor.' }
+      }
+      loadedStockRef.current = saved.stock
+      await hydrateCatalogFromServer({ mergeLocal: false })
+    }
+    return published
   }
 
   const margin = calcMargin(product.costPrice, product.salePrice ?? product.price)
@@ -272,9 +285,21 @@ export function AdminProductForm() {
       setOptionValuesText(first?.values?.join(', ') || '')
       setProduct(saved)
       const pub = await publishCatalogToServer()
-      if (!pub.ok) {
+      let publishError = pub.error
+      let publishedOk = pub.ok
+      if (pub.ok && !isNew && loadedStockRef.current !== null && saved.stock !== loadedStockRef.current) {
+        const inventoryUpdated = await updateRemoteProductInventory(saved.id, saved.stock)
+        if (inventoryUpdated) {
+          loadedStockRef.current = saved.stock
+          await hydrateCatalogFromServer({ mergeLocal: false })
+        } else {
+          publishedOk = false
+          publishError = 'Produto publicado, mas falhou a atualizacao do estoque no servidor.'
+        }
+      }
+      if (!publishedOk) {
         showToast(
-          pub.error ||
+          publishError ||
             'Produto salvo neste aparelho, mas não publicou no site. Entre de novo no admin e salve outra vez.',
           'error'
         )

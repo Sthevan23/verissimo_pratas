@@ -12,8 +12,9 @@ import {
   getStoreProductOrder,
   getStoreProducts,
 } from '../services/storeService'
-import { sortByProductOrder } from '../utils/productOrder'
+import { PRODUCT_ORDER_OPTIONS, sortByProductOrder } from '../utils/productOrder'
 import type { Product } from '../types'
+import type { ProductOrder } from '../types/admin'
 import { resolveStoreCategoryParam, storeCategoryUrl } from '../utils/categoryNav'
 import {
   isPersonalizadosCategory,
@@ -186,7 +187,7 @@ function filterCatalog(params: {
   if (isPromo) {
     result = result.filter((p) => p.isOnSale)
   }
-  return sortByProductOrder(result, getStoreProductOrder(), getStoreCategoryRank())
+  return result
 }
 
 export function Products() {
@@ -239,9 +240,19 @@ export function Products() {
               }
             : null
 
+  const orderParam = searchParams.get('ordem')
+  const sortMode: ProductOrder = PRODUCT_ORDER_OPTIONS.some((o) => o.value === orderParam)
+    ? (orderParam as ProductOrder)
+    : getStoreProductOrder()
+
   const baseFiltered = useMemo(
-    () => filterCatalog({ category, query, isPromo }),
-    [category, query, isPromo]
+    () =>
+      sortByProductOrder(
+        filterCatalog({ category, query, isPromo }),
+        sortMode,
+        getStoreCategoryRank()
+      ),
+    [category, query, isPromo, sortMode]
   )
 
   const sizeOptions = useMemo(
@@ -292,6 +303,12 @@ export function Products() {
     [filtered, visibleCount]
   )
   const hasMore = visibleCount < filtered.length
+
+  const setSortMode = (value: string) => {
+    const next = new URLSearchParams(searchParams)
+    next.set('ordem', value)
+    setSearchParams(next, { replace: true })
+  }
 
   const setSizeFilter = (size: string | null) => {
     const next = new URLSearchParams(searchParams)
@@ -372,6 +389,30 @@ export function Products() {
               })}
             </div>
           )}
+
+          <div className="mb-10 lg:mb-12 flex flex-col sm:flex-row sm:items-center sm:justify-center gap-3 sm:gap-4">
+            <label
+              htmlFor="ordenar-produtos"
+              className="text-[11px] tracking-[0.25em] uppercase text-muted text-center sm:text-left shrink-0"
+            >
+              Ordenar por
+            </label>
+            <select
+              id="ordenar-produtos"
+              value={sortMode}
+              onChange={(e) => setSortMode(e.target.value)}
+              className="w-full sm:w-auto min-w-[11rem] appearance-none border border-border bg-cream px-4 py-2.5 pr-10 text-sm text-graphite focus:outline-none focus:border-brand-green bg-[length:12px] bg-[right_0.85rem_center] bg-no-repeat"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B6B6B' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+              }}
+            >
+              {PRODUCT_ORDER_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {showSizeFilter && sizeOptions.length > 0 && (
             <div className="mb-10 lg:mb-12 flex flex-col sm:flex-row sm:items-center sm:justify-center gap-3 sm:gap-4">

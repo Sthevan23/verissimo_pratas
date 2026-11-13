@@ -217,12 +217,11 @@ CREATE TABLE `product_images` (
 
 -- ---------- DADOS INICIAIS — VERISSIMO PRATAS 925 ----------
 
--- Admin: verissimopratass@gmail.com / senha: Verissimo@2026 (troque depois)
-INSERT INTO `admins` (`email`, `password_hash`) VALUES (
-  'verissimopratass@gmail.com',
-  'Verissimo@2026'
-);
-
+-- Admin provisioning: this dump intentionally creates no administrator account.
+-- Generate password_hash(..., PASSWORD_DEFAULT) in a secure PHP CLI setup,
+-- then configure admin_password_hash privately on the server. If the legacy
+-- admins table is used, insert only the administrator email and generated hash
+-- through a controlled, authenticated process; never place either in this dump.
 INSERT INTO `settings` (
   `id`, `name`, `tagline`, `logo`, `banner`, `sobre_image`, `whatsapp`,
   `instagram`, `instagram_user`, `facebook`, `email`, `address`, `hours`,

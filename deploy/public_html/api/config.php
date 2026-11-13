@@ -21,9 +21,7 @@ return [
   'pass' => getenv('VERISSIMO_DB_PASS') ?: '',
   'charset' => 'utf8mb4',
   'admin_email' => getenv('VERISSIMO_ADMIN_EMAIL') ?: 'verissimopratass@gmail.com',
-  'admin_password' => getenv('VERISSIMO_ADMIN_PASSWORD') ?: '',
-  /** Legado — login usa admin_password; se vazio, admin_password cai neste valor */
-  'api_token' => getenv('VERISSIMO_API_TOKEN') ?: '',
+  'admin_password_hash' => getenv('VERISSIMO_ADMIN_PASSWORD_HASH') ?: '',
   'site_origin' => getenv('VERISSIMO_SITE_ORIGIN') ?: 'https://verissimopratas.com.br',
   'superfrete_token' => getenv('SUPERFRETE_TOKEN') ?: '',
   'superfrete_env' => getenv('SUPERFRETE_ENV') ?: 'production',

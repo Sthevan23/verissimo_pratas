@@ -53,9 +53,13 @@ if ($email === '' || $password === '') {
 }
 
 $expectedEmail = strtolower(verissimo_admin_email());
-$expectedPass = verissimo_admin_password();
+$expectedPasswordHash = verissimo_admin_password_hash();
 
-if ($expectedPass === '' || !hash_equals($expectedEmail, $email) || !hash_equals($expectedPass, $password)) {
+if (
+  $expectedPasswordHash === ''
+  || !hash_equals($expectedEmail, $email)
+  || !verissimo_password_matches_hash($password, $expectedPasswordHash)
+) {
   verissimo_json(['ok' => false, 'error' => 'Email ou senha inválidos.'], 401);
 }
 

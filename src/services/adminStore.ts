@@ -18,11 +18,13 @@ import {
   isAdminLoggedIn,
   normalizeProductImages,
   pushCatalogToServer,
+  updateRemoteProductInventory,
 } from './remoteCatalog'
 import { isLegacyForeignImage, localCategoryImage, stripLegacyImages } from '../utils/legacyImages'
 import { normalizeProductCategory } from '../utils/productCategory'
 
 const STORAGE_KEY = 'verissimo-admin-db-v5'
+let catalogPublishQueue: Promise<void> = Promise.resolve()
 /** IDs conhecidos no catálogo público (api/catalog.php) — usado para avisar produtos só no navegador */
 const SERVER_SNAPSHOT_KEY = 'verissimo-server-product-ids-v1'
 
@@ -377,7 +379,7 @@ function mergeProductLists(local: AdminProduct[], remote: AdminProduct[]): Admin
     const localAt = String(norm.updatedAt ?? norm.createdAt ?? '')
     const remoteAt = String(existing.updatedAt ?? existing.createdAt ?? '')
     if (localAt > remoteAt) {
-      map.set(p.id, norm)
+      map.set(p.id, { ...norm, stock: existing.stock, inStock: existing.inStock })
     }
   }
   return Array.from(map.values())
@@ -409,12 +411,11 @@ export function saveProduct(product: AdminProduct): AdminProduct {
     addAudit('create', 'product', product.id, `Criou o produto ${product.name}`)
   }
   saveDatabase(db)
-  void publishCatalogToServer()
   return product
 }
 
-/** Sobe fotos base64 + publica catálogo no servidor (visível no site) */
-export async function publishCatalogToServer(): Promise<{
+/** Sobe fotos base64 e prepara dados do catálogo para publicação explícita. */
+async function publishCatalogToServerNow(): Promise<{
   ok: boolean
   error?: string
   linkedImages?: number
@@ -478,6 +479,18 @@ export async function publishCatalogToServer(): Promise<{
   }
 }
 
+export function publishCatalogToServer(): Promise<{
+  ok: boolean
+  error?: string
+  linkedImages?: number
+  orphanImages?: number
+}> {
+  const publish = () => publishCatalogToServerNow()
+  const current = catalogPublishQueue.then(publish, publish)
+  catalogPublishQueue = current.then(() => undefined, () => undefined)
+  return current
+}
+
 /** Baixa catálogo do servidor e atualiza o painel/vitrine local */
 export async function hydrateCatalogFromServer(options?: {
   /** Só no painel admin: se o servidor estiver vazio, envia os produtos deste aparelho */
@@ -539,7 +552,7 @@ export function archiveProduct(id: string): void {
   if (p) { p.status = 'archived'; p.updatedAt = now(); saveDatabase(db); addAudit('archive', 'product', id, `Arquivou ${p.name}`) }
 }
 
-export function duplicateProduct(id: string): AdminProduct {
+export async function duplicateProduct(id: string): Promise<AdminProduct> {
   const original = getAdminProduct(id)!
   const copy: AdminProduct = {
     ...original,
@@ -551,7 +564,10 @@ export function duplicateProduct(id: string): AdminProduct {
     createdAt: now(),
     updatedAt: now(),
   }
-  return saveProduct(copy)
+  const saved = saveProduct(copy)
+  const published = await publishCatalogToServer()
+  if (!published.ok) console.warn('Produto duplicado localmente, mas a publicacao falhou.')
+  return saved
 }
 
 export function bulkUpdateProducts(ids: string[], updates: Partial<AdminProduct>): void {
@@ -674,7 +690,7 @@ export function adjustStock(productId: string, delta: number, reason: string): v
   const p = db.products.find((x) => x.id === productId)
   if (!p) return
   const prev = p.stock
-  p.stock = Math.max(0, p.stock + delta)
+  p.stock = Math.max(0, Math.trunc(p.stock + delta))
   p.inStock = p.stock > 0
   p.updatedAt = now()
   db.inventoryMovements.unshift({
@@ -690,7 +706,9 @@ export function adjustStock(productId: string, delta: number, reason: string): v
     createdAt: now(),
   })
   saveDatabase(db)
-  void publishCatalogToServer()
+  void updateRemoteProductInventory(productId, p.stock).then((ok) => {
+    if (!ok) console.warn('Falha ao sincronizar ajuste de estoque com o servidor.')
+  })
 }
 
 export function setStock(productId: string, quantity: number, reason: string): void {
@@ -698,7 +716,7 @@ export function setStock(productId: string, quantity: number, reason: string): v
   const p = db.products.find((x) => x.id === productId)
   if (!p) return
   const prev = p.stock
-  p.stock = Math.max(0, quantity)
+  p.stock = Math.max(0, Math.trunc(quantity))
   p.inStock = p.stock > 0
   p.updatedAt = now()
   db.inventoryMovements.unshift({
@@ -714,7 +732,9 @@ export function setStock(productId: string, quantity: number, reason: string): v
     createdAt: now(),
   })
   saveDatabase(db)
-  void publishCatalogToServer()
+  void updateRemoteProductInventory(productId, p.stock).then((ok) => {
+    if (!ok) console.warn('Falha ao sincronizar ajuste de estoque com o servidor.')
+  })
 }
 
 // ─── Generic getters ───

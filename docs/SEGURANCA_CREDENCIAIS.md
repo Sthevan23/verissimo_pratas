@@ -5,7 +5,7 @@
 - `api/config.local.php` e `deploy/public_html/api/config.local.php`
 - `deploy/.ftp-credentials.json`
 - `.env` com valores reais
-- `api/data/sessions.json`, `catalog.json`, `orders.json` e dumps `.sql`
+- `api/data/sessions.json`, `catalog.json`, `orders.json` e dumps com dados reais
 
 Use apenas `api/config.local.example.php` (placeholders) como referência versionada.
 
@@ -17,7 +17,7 @@ Use apenas `api/config.local.example.php` (placeholders) como referência versio
 2. **Arquivo no servidor (não commitar)**  
    Em `public_html/api/config.local.php` (ou `api/` conforme layout do site), copie o conteúdo de `config.local.example.php` e preencha:
    - `pass` — senha MySQL
-   - `admin_email` / `admin_password` — login do `/admin`
+   - `admin_email` / `admin_password_hash` - acesso ao `/admin`; armazene somente o hash.
    - `superfrete_token`, `superfrete_env`, `origin_cep` — frete
    - `site_origin` e `allowed_origins` — domínio HTTPS da loja
 
@@ -39,8 +39,8 @@ Se `config.local.php` (ou equivalente) já foi commitado, trate as chaves como *
 | Credencial | Onde rotacionar |
 |------------|-----------------|
 | Senha MySQL | hPanel → Bancos de dados → usuário do banco → nova senha; atualizar `pass` em `config.local.php` no servidor |
-| Senha admin (`admin_password`) | Editar `config.local.php` no servidor; fazer logout/login no painel |
-| `api_token` (legado) | Gerar valor novo em `config.local.php` se ainda usado como fallback de senha |
+| Senha admin legada | Gerar `admin_password_hash` com `php scripts/hash-admin-password.php` antes de atualizar o backend |
+| `api_token` legado | O script de migracao reconhece o fallback historico; remova-o da configuracao privada apos migrar e verificar integracoes externas |
 | Token SuperFrete | Painel SuperFrete → revogar/gerar token; atualizar `superfrete_token` no servidor |
 | Senha FTP | hPanel → FTP → alterar senha; atualizar `deploy/.ftp-credentials.json` **local** (gitignored) |
 
@@ -58,3 +58,15 @@ Remover o arquivo do commit atual **não apaga** segredos de commits antigos. Se
 node scripts/verify-tracked-secrets.mjs
 npm run build   # também executa a verificação ao final
 ```
+## Migracao segura do login administrativo
+
+O backend aceita somente `admin_password_hash` (ou a variavel `VERISSIMO_ADMIN_PASSWORD_HASH`) e verifica a senha com `password_verify`. Nao usa `admin_password` em texto claro nem `api_token` como senha.
+
+Antes de atualizar o backend no servidor, preserve a senha atual sem troca-la:
+
+1. Execute `php scripts/hash-admin-password.php` no servidor/checkout seguro que tem a configuracao legada. O utilitario reconhece `admin_password`, o `api_token` local ou `VERISSIMO_ADMIN_PASSWORD`/`VERISSIMO_API_TOKEN`; imprime somente o hash e nao modifica a configuracao.
+2. No `api/config.local.php` privado do servidor, configure `'admin_password_hash' => 'HASH_GERADO'` e remova a chave antiga `admin_password`.
+3. Alternativamente, configure `VERISSIMO_ADMIN_PASSWORD_HASH` no ambiente do PHP com o hash gerado.
+4. Confirme o login administrativo por HTTPS. A senha atual continua a mesma; somente a representacao armazenada muda.
+
+Nao registre o hash em logs compartilhados nem o adicione ao repositorio. Esta migracao nao faz rotacao da senha.
