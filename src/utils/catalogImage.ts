@@ -1,10 +1,11 @@
-/** Grade da vitrine — ~1080px para ficar nítida em telas retina (2 colunas no celular). */
-export const CATALOG_CARD_IMAGE_WIDTH = 1080
+/** Grade da vitrine — 640px cobre 2 colunas no celular em telas retina; fotos de 1080px pesavam ~800 KB cada. */
+export const CATALOG_CARD_IMAGE_WIDTH = 640
+export const CATALOG_CARD_IMAGE_QUALITY = 82
 
 /** Miniaturas na ficha do produto */
 export const CATALOG_THUMB_IMAGE_WIDTH = 720
 
-function withMediaWidth(url: string, width: number): string {
+function withMediaWidth(url: string, width: number, quality = 92): string {
   const raw = url.trim()
   if (!raw.includes('media.php')) return raw
 
@@ -15,7 +16,7 @@ function withMediaWidth(url: string, width: number): string {
         : new URL(raw, 'https://local.invalid')
     if (!base.pathname.includes('media.php')) return raw
     base.searchParams.set('w', String(width))
-    base.searchParams.set('q', '92')
+    base.searchParams.set('q', String(quality))
     return raw.startsWith('http') ? base.toString() : `${base.pathname}${base.search}`
   } catch {
     const join = raw.includes('?') ? '&' : '?'
@@ -42,7 +43,7 @@ function withoutMediaWidth(url: string): string {
 export function catalogCardImageUrl(url: string | undefined | null): string {
   const raw = (url ?? '').trim()
   if (!raw) return ''
-  return withMediaWidth(raw, CATALOG_CARD_IMAGE_WIDTH)
+  return withMediaWidth(raw, CATALOG_CARD_IMAGE_WIDTH, CATALOG_CARD_IMAGE_QUALITY)
 }
 
 /** Foto grande na página do produto — qualidade máxima (sem ?w=) */
